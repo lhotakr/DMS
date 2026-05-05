@@ -5,9 +5,9 @@ using System.Text;
 namespace DMS.Core.Transactions;
 
 /// <summary>
-/// Převádí text z transakčního řádku na strukturovaný příkaz.
-/// Parser neřeší oprávnění ani spouštění obrazovek, pouze rozpozná režim,
-/// kód transakce a volitelný parametr.
+/// Parser transakčního řádku.
+/// Převádí textový vstup na strukturovaný TransactionCommand.
+/// Neřeší oprávnění, databázi ani otevírání obrazovek.
 /// </summary>
 public static class TransactionParser
 {

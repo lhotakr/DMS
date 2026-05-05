@@ -6,7 +6,7 @@ namespace DMS.Core.Articles;
 
 /// <summary>
 /// Centrální validace SAP čísla artiklu.
-/// Pro skleněné artikly se aktuálně počítá s desetimístným číselným kódem,
+/// Pro skleněné artikly aktuálně počítáme s desetimístným číselným kódem,
 /// například 1000018165.
 /// </summary>
 public static class ArticleNumberValidator

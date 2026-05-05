@@ -38,7 +38,8 @@
                            FontWeight="SemiBold"
                            Margin="0,0,8,0"/>
 
-                <TextBox Width="360"
+                <TextBox x:Name="TxtTransaction"
+                         Width="360"
                          Height="32"
                          Text="/nART03 1000018165"
                          Margin="0,0,8,0"/>
@@ -46,7 +47,8 @@
                 <Button Content="Spustit"
                         Width="90"
                         Height="32"
-                        Margin="0,0,8,0"/>
+                        Margin="0,0,8,0"
+                        Click="BtnRunTransaction_Click"/>
 
                 <Button Content="★"
                         Width="40"
@@ -113,48 +115,23 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0"
-                        Background="White"
-                        Padding="24"
-                        CornerRadius="8"
-                        BorderBrush="#D0D7DE"
-                        BorderThickness="1"
-                        Margin="0,0,10,0">
+                <Border Grid.Row="1"
+        Background="White"
+        Padding="24"
+        CornerRadius="8"
+        BorderBrush="#D0D7DE"
+        BorderThickness="1">
 
-                    <StackPanel>
-                        <TextBlock Text="Karta artiklu"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#0B2A4A"
-                                   Margin="0,0,0,16"/>
+                    <StackPanel x:Name="WorkspacePanel">
+                        <TextBlock Text="Vítej v DMS FiGUI"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Foreground="#0B2A4A"
+                   Margin="0,0,0,16"/>
 
-                        <TextBlock Text="SAP číslo: 1000018165" FontSize="16" Margin="0,4"/>
-                        <TextBlock Text="Název: Flakon 50 ml" FontSize="16" Margin="0,4"/>
-                        <TextBlock Text="Zákazník: Example Cosmetics" FontSize="16" Margin="0,4"/>
-                        <TextBlock Text="Stav: Připraveno" FontSize="16" Foreground="Green" Margin="0,4"/>
-                    </StackPanel>
-                </Border>
-
-                <Border Grid.Column="1"
-                        Background="White"
-                        Padding="24"
-                        CornerRadius="8"
-                        BorderBrush="#D0D7DE"
-                        BorderThickness="1"
-                        Margin="10,0,0,0">
-
-                    <StackPanel>
-                        <TextBlock Text="Dokumenty"
-                                   FontSize="20"
-                                   FontWeight="Bold"
-                                   Foreground="#0B2A4A"
-                                   Margin="0,0,0,16"/>
-
-                        <TextBlock Text="✅ Výkres" FontSize="16" Margin="0,4"/>
-                        <TextBlock Text="✅ Tisková oblast" FontSize="16" Margin="0,4"/>
-                        <TextBlock Text="✅ Massblatt" FontSize="16" Margin="0,4"/>
-                        <TextBlock Text="✅ Balicí předpis" FontSize="16" Margin="0,4"/>
-                        <TextBlock Text="✅ Receptura" FontSize="16" Margin="0,4"/>
+                        <TextBlock Text="Zadej transakci nebo vyber položku z menu."
+                   FontSize="16"
+                   Margin="0,4"/>
                     </StackPanel>
                 </Border>
             </Grid>
