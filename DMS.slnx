@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="DMS/src/DMS.Core/DMS.Core.csproj" Id="002d5af9-3aca-41dc-a1f6-ab4fc1a679ac" />
+  <Project Path="DMS/src/DMS.Data/DMS.Data.csproj" />
+  <Project Path="DMS/src/DMS.Desktop/DMS.Desktop.csproj" />
+  <Project Path="DMS/src/DMS.Integration.Mes/DMS.Integration.Mes.csproj" Id="12f9cc30-53f1-48a7-b492-d973498270c1" />
+  <Project Path="DMS/src/DMS.Integration.Sap/DMS.Integration.Sap.csproj" Id="e781f0b6-75e9-4ea4-9566-117419f6dd37" />
+  <Project Path="DMS/src/DMS.Shared/DMS.Shared.csproj" />
+  <Project Path="DMS/tests/DMS.Core.Tests/DMS.Core.Tests.csproj" Id="e10d4d24-16f6-4a87-9f38-5ad64fafaf79" />
+</Solution>

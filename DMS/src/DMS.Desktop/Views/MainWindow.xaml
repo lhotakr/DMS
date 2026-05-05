@@ -1,0 +1,163 @@
+<Window x:Class="DMS.Desktop.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DMS FiGUI Shell"
+        Height="720"
+        Width="1200"
+        WindowStartupLocation="CenterScreen">
+
+    <DockPanel Background="#F4F6F8">
+
+        <Border DockPanel.Dock="Top"
+                Background="#0B2A4A"
+                Padding="12">
+            <DockPanel>
+                <TextBlock Text="DMS FiGUI Shell"
+                           Foreground="White"
+                           FontSize="22"
+                           FontWeight="Bold"
+                           DockPanel.Dock="Left"/>
+
+                <TextBlock Text="Uživatel: Windows login"
+                           Foreground="White"
+                           FontSize="14"
+                           HorizontalAlignment="Right"
+                           DockPanel.Dock="Right"/>
+            </DockPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Top"
+                Background="White"
+                Padding="12"
+                BorderBrush="#D0D7DE"
+                BorderThickness="0,0,0,1">
+
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Transakce:"
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"
+                           Margin="0,0,8,0"/>
+
+                <TextBox Width="360"
+                         Height="32"
+                         Text="/nART03 1000018165"
+                         Margin="0,0,8,0"/>
+
+                <Button Content="Spustit"
+                        Width="90"
+                        Height="32"
+                        Margin="0,0,8,0"/>
+
+                <Button Content="★"
+                        Width="40"
+                        Height="32"/>
+            </StackPanel>
+        </Border>
+
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem Content="DB: lokální režim" />
+            <StatusBarItem Content="SAP TEST: nepřipojeno" />
+            <StatusBarItem Content="MES import: nepřipraven" />
+            <StatusBarItem Content="SSO: Windows login" />
+            <StatusBarItem Content="verze 0.1" />
+        </StatusBar>
+
+        <Border DockPanel.Dock="Left"
+                Width="260"
+                Background="White"
+                Padding="16"
+                BorderBrush="#D0D7DE"
+                BorderThickness="0,0,1,0">
+
+            <StackPanel>
+                <TextBlock Text="Oblíbené"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Margin="0,0,0,12"/>
+
+                <TextBlock Text="★ ART03  Karta artiklu" Margin="0,4"/>
+                <TextBlock Text="☆ DOC03  Dokumentace" Margin="0,4"/>
+                <TextBlock Text="☆ SCR03  Síta artiklu" Margin="0,4"/>
+                <TextBlock Text="☆ SCR10  Fronta sít" Margin="0,4"/>
+                <TextBlock Text="☆ ORD10  Zakázky" Margin="0,4"/>
+
+                <Separator Margin="0,16"/>
+
+                <TextBlock Text="Moduly"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Margin="0,0,0,12"/>
+
+                <TextBlock Text="Artikly" Margin="0,4"/>
+                <TextBlock Text="Dokumenty" Margin="0,4"/>
+                <TextBlock Text="Sítotisk" Margin="0,4"/>
+                <TextBlock Text="Zakázky" Margin="0,4"/>
+                <TextBlock Text="Administrace" Margin="0,4"/>
+            </StackPanel>
+        </Border>
+
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="Pracovní plocha"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Margin="0,0,0,16"/>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0"
+                        Background="White"
+                        Padding="24"
+                        CornerRadius="8"
+                        BorderBrush="#D0D7DE"
+                        BorderThickness="1"
+                        Margin="0,0,10,0">
+
+                    <StackPanel>
+                        <TextBlock Text="Karta artiklu"
+                                   FontSize="20"
+                                   FontWeight="Bold"
+                                   Foreground="#0B2A4A"
+                                   Margin="0,0,0,16"/>
+
+                        <TextBlock Text="SAP číslo: 1000018165" FontSize="16" Margin="0,4"/>
+                        <TextBlock Text="Název: Flakon 50 ml" FontSize="16" Margin="0,4"/>
+                        <TextBlock Text="Zákazník: Example Cosmetics" FontSize="16" Margin="0,4"/>
+                        <TextBlock Text="Stav: Připraveno" FontSize="16" Foreground="Green" Margin="0,4"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1"
+                        Background="White"
+                        Padding="24"
+                        CornerRadius="8"
+                        BorderBrush="#D0D7DE"
+                        BorderThickness="1"
+                        Margin="10,0,0,0">
+
+                    <StackPanel>
+                        <TextBlock Text="Dokumenty"
+                                   FontSize="20"
+                                   FontWeight="Bold"
+                                   Foreground="#0B2A4A"
+                                   Margin="0,0,0,16"/>
+
+                        <TextBlock Text="✅ Výkres" FontSize="16" Margin="0,4"/>
+                        <TextBlock Text="✅ Tisková oblast" FontSize="16" Margin="0,4"/>
+                        <TextBlock Text="✅ Massblatt" FontSize="16" Margin="0,4"/>
+                        <TextBlock Text="✅ Balicí předpis" FontSize="16" Margin="0,4"/>
+                        <TextBlock Text="✅ Receptura" FontSize="16" Margin="0,4"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>
