@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Media;
 using DMS.Core.Transactions;
+using DMS.Desktop.Views.Dialogs;
 
 namespace DMS.Desktop.Views;
 
@@ -16,10 +17,117 @@ public partial class MainWindow : Window
 
     private void BtnRunTransaction_Click(object sender, RoutedEventArgs e)
     {
-        var command = TransactionParser.Parse(TxtTransaction.Text);
-        var result = _transactionDispatcher.Dispatch(command);
+        ExecuteTransaction(TxtTransaction.Text);
+    }
 
+    private void ExecuteTransaction(string input)
+    {
+        var command = TransactionParser.Parse(input);
+
+        if (!TryCompleteMissingParameter(command, out var completedCommand))
+        {
+            return;
+        }
+
+        if (completedCommand.Mode == "NewWindow")
+        {
+            OpenTransactionInNewWindow(completedCommand);
+            return;
+        }
+
+        var result = _transactionDispatcher.Dispatch(completedCommand);
         RenderTransactionResult(result);
+    }
+
+    private bool TryCompleteMissingParameter(
+        TransactionCommand command,
+        out TransactionCommand completedCommand)
+    {
+        completedCommand = command;
+
+        if (!TransactionNeedsArticleNumber(command.Code))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(command.Parameter))
+        {
+            return true;
+        }
+
+        var dialog = new ArticleNumberPromptWindow
+        {
+            Owner = this
+        };
+
+        var dialogResult = dialog.ShowDialog();
+
+        if (dialogResult != true || string.IsNullOrWhiteSpace(dialog.ArticleNumber))
+        {
+            return false;
+        }
+
+        completedCommand = new TransactionCommand
+        {
+            RawInput = command.RawInput,
+            Mode = command.Mode,
+            Code = command.Code,
+            Parameter = dialog.ArticleNumber
+        };
+
+        TxtTransaction.Text = BuildTransactionText(completedCommand);
+
+        return true;
+    }
+
+    private static bool TransactionNeedsArticleNumber(string transactionCode)
+    {
+        return transactionCode.ToUpperInvariant() switch
+        {
+            "ART03" => true,
+            "DOC03" => true,
+            "SCR03" => true,
+            "MB03" => true,
+            "REC03" => true,
+            _ => false
+        };
+    }
+
+    private static string BuildTransactionText(TransactionCommand command)
+    {
+        var prefix = command.Mode switch
+        {
+            "Replace" => "/n",
+            "NewWindow" => "/o",
+            _ => string.Empty
+        };
+
+        if (string.IsNullOrWhiteSpace(command.Parameter))
+        {
+            return $"{prefix}{command.Code}";
+        }
+
+        return $"{prefix}{command.Code} {command.Parameter}";
+    }
+
+    private void OpenTransactionInNewWindow(TransactionCommand command)
+    {
+        var newWindow = new MainWindow();
+
+        newWindow.Show();
+
+        var commandForNewWindow = new TransactionCommand
+        {
+            RawInput = command.RawInput,
+            Mode = "Current",
+            Code = command.Code,
+            Parameter = command.Parameter
+        };
+
+        newWindow.TxtTransaction.Text = BuildTransactionText(commandForNewWindow);
+
+        var result = newWindow._transactionDispatcher.Dispatch(commandForNewWindow);
+        newWindow.RenderTransactionResult(result);
     }
 
     private void RenderTransactionResult(TransactionResult result)
