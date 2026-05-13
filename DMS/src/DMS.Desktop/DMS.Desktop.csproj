@@ -6,7 +6,33 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\dms_systemicon.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\DMS_SystemIcon.ico" />
+    <None Remove="Assets\LogoHG.jpg" />
+    <None Remove="Config\transactions.json" />
+    <None Remove="Config\users.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\DMS_SystemIcon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\LogoHG.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\transactions.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\users.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DMS.Core\DMS.Core.csproj" />
@@ -19,6 +45,10 @@
   <ItemGroup>
     <Folder Include="Commands\" />
     <Folder Include="Resources\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Services\DmsWindowChromeStyler.cs" />
   </ItemGroup>
 
   <ItemGroup>

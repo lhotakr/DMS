@@ -30,3 +30,11 @@ Hlavní okno aplikace je umístěné ve složce `Views`:
 - Code-behind: `DMS.Desktop/Views/MainWindow.xaml.cs`
 - Třída: `DMS.Desktop.Views.MainWindow`
 - StartupUri: `Views/MainWindow.xaml`
+
+// TODO: Přesunout users.json ze stanice na server.
+// TODO: Přidat konfigurovatelnou cestu k serverové konfiguraci.
+// TODO: Připravit databázový model users / roles / user_roles.
+// TODO: Přidat transakci ADM01 pro zobrazení aktuálního uživatele a rolí.
+// TODO: Přidat kontrolu, že uživatel bez role DMS_ADMIN nevidí administraci.
+// TODO: Přidat audit přihlášení uživatele.
+// TODO: Přidat dokumentaci: bezpečnostní model DMS.

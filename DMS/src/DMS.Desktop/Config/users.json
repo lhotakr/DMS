@@ -1,0 +1,20 @@
+[
+  {
+    "windowsLogin": "HEINZ-HOLDING\\rlhotak",
+    "displayName": "Radek Lhoták",
+    "email": "radek.lhotak@heinz-glas.com",
+    "isActive": true,
+    "roles": [
+      "DMS_ADMIN"
+    ]
+  },
+  {
+    "windowsLogin": "HEINZ-HOLDING\\ppraizler",
+    "displayName": "Pavel Praizler",
+    "email": "pavel.praizler@heinz-glas.com",
+    "isActive": true,
+    "roles": [
+      "DMS_ADMIN"
+    ]
+  }
+]

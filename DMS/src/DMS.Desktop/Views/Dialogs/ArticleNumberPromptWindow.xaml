@@ -2,53 +2,63 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Zadání čísla artiklu"
-        Height="190"
+        Height="220"
         Width="420"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        Background="{DynamicResource DmsPanelBrush}">
 
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+	<Grid Margin="20">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
 
-        <TextBlock Text="Zadej SAP číslo artiklu"
+		<TextBlock Grid.Row="0"
+                   Text="Zadej SAP číslo artiklu"
                    FontSize="18"
                    FontWeight="Bold"
-                   Foreground="#0B2A4A"
+                   Foreground="{DynamicResource DmsForegroundBrush}"
                    Margin="0,0,0,12"/>
 
-        <TextBlock Grid.Row="1"
+		<TextBlock Grid.Row="1"
                    Text="Například: 1000018165"
                    FontSize="13"
-                   Foreground="Gray"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"
                    Margin="0,0,0,8"/>
 
-        <TextBox x:Name="TxtArticleNumber"
+		<TextBox x:Name="TxtArticleNumber"
                  Grid.Row="2"
                  Height="32"
                  FontSize="15"
                  VerticalContentAlignment="Center"
-                 Margin="0,0,0,12"/>
+                 Background="{DynamicResource DmsBackgroundBrush}"
+                 Foreground="{DynamicResource DmsForegroundBrush}"
+                 BorderBrush="{DynamicResource DmsBorderBrush}"
+                 CaretBrush="{DynamicResource DmsForegroundBrush}"
+                 Margin="0,0,0,16"/>
 
-        <StackPanel Grid.Row="3"
+		<StackPanel Grid.Row="4"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
 
-            <Button Content="Zrušit"
+			<Button Content="Zrušit"
                     Width="90"
                     Height="32"
                     Margin="0,0,8,0"
                     Click="BtnCancel_Click"/>
 
-            <Button Content="OK"
+			<Button Content="OK"
                     Width="90"
                     Height="32"
                     IsDefault="True"
+                    Background="{DynamicResource DmsAccentBrush}"
+                    Foreground="{DynamicResource DmsOnAccentBrush}"
+                    BorderBrush="{DynamicResource DmsAccentBrush}"
                     Click="BtnOk_Click"/>
-        </StackPanel>
-    </Grid>
+		</StackPanel>
+	</Grid>
 </Window>

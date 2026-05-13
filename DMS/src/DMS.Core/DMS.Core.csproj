@@ -8,9 +8,8 @@
 
   <ItemGroup>
     <Folder Include="Documents\" />
-    <Folder Include="Security\" />
-    <Folder Include="Orders\" />
-    <Folder Include="Screens\" />
+    <Folder Include="Config\" />
+    <Folder Include="Logs\" />
   </ItemGroup>
 
   <ItemGroup>

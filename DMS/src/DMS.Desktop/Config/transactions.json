@@ -1,0 +1,112 @@
+[
+  {
+    "code": "ART03",
+    "name": "Karta artiklu",
+    "module": "Artikly",
+    "description": "Zobrazí kartu artiklu podle SAP čísla.",
+    "handlerKey": "ArticleCard",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "DOC03",
+    "name": "Dokumentace artiklu",
+    "module": "Dokumenty",
+    "description": "Zobrazí dokumentaci artiklu.",
+    "handlerKey": "ArticleDocuments",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "SCR03",
+    "name": "Síta artiklu",
+    "module": "Sítotisk",
+    "description": "Zobrazí síta k artiklu.",
+    "handlerKey": "ArticleScreens",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "SCR10",
+    "name": "Fronta přípravy sít",
+    "module": "Sítotisk",
+    "description": "Zobrazí frontu přípravy sít.",
+    "handlerKey": "ScreenPreparationQueue",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "ORD10",
+    "name": "Přehled zakázek",
+    "module": "Zakázky",
+    "description": "Zobrazí přehled zakázek.",
+    "handlerKey": "OrderOverview",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "WHOAMI",
+    "name": "Aktuální uživatel",
+    "module": "Systém",
+    "description": "Zobrazí aktuální Windows login, DMS uživatele a role.",
+    "handlerKey": "SystemInfo",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": []
+  },
+  {
+    "code": "HELP",
+    "name": "Seznam transakcí",
+    "module": "Systém",
+    "description": "Zobrazí dostupné transakce DMS.",
+    "handlerKey": "Help",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": []
+  },
+  {
+    "code": "SET01",
+    "name": "Nastavení klienta",
+    "module": "Systém",
+    "description": "Zobrazí základní nastavení klienta DMS.",
+    "handlerKey": "Settings",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN" ]
+  },
+  {
+    "code": "USR01",
+    "name": "Správa uživatelů",
+    "module": "Administrace",
+    "description": "Správa uživatelů DMS a jejich rolí.",
+    "handlerKey": "UserManagement",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN" ]
+  },
+  {
+    "code": "SYS01",
+    "name": "Systémová konfigurace",
+    "module": "Systém",
+    "description": "Zobrazí aktuální konfiguraci DMS klienta.",
+    "handlerKey": "SystemConfiguration",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN" ]
+  },
+  {
+    "code": "LOG03",
+    "name": "Log aplikace",
+    "module": "Systém",
+    "description": "Zobrazí poslední záznamy aplikačního logu.",
+    "handlerKey": "LogViewer",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN" ]
+  }
+]

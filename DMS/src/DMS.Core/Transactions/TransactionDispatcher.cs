@@ -1,17 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-using DMS.Core.Articles;
-
-namespace DMS.Core.Transactions;
+﻿namespace DMS.Core.Transactions;
 
 /// <summary>
-/// Centrální místo, které rozhoduje, co se má stát po zadání transakce.
-/// V budoucnu zde bude kontrola oprávnění a směrování na konkrétní obrazovky.
+/// Dispatcher transakcí.
+/// Neobsahuje pevný switch/case seznam transakcí.
+/// Transakce hledá podle definic a jejich HandlerKey.
 /// </summary>
 public sealed class TransactionDispatcher
 {
+    private readonly Dictionary<string, TransactionDefinition> _definitions;
+    private readonly Dictionary<string, ITransactionHandler> _handlers;
+
+    public TransactionDispatcher(
+        IEnumerable<TransactionDefinition> definitions,
+        IEnumerable<ITransactionHandler> handlers)
+    {
+        _definitions = definitions
+            .ToDictionary(item => item.Code.ToUpperInvariant());
+
+        _handlers = handlers
+            .ToDictionary(item => item.HandlerKey, StringComparer.OrdinalIgnoreCase);
+    }
+
     public TransactionResult Dispatch(TransactionCommand command)
     {
         if (string.IsNullOrWhiteSpace(command.Code))
@@ -19,53 +28,42 @@ public sealed class TransactionDispatcher
             return TransactionResult.Fail("", "Nebyla zadána žádná transakce.");
         }
 
-        return command.Code switch
-        {
-            "ART03" => OpenArticleCard(command),
-            "DOC03" => OpenArticleDocuments(command),
-            "SCR03" => OpenArticleScreens(command),
-            "SCR10" => TransactionResult.Ok("SCR10", null, "Otevřena fronta přípravy sít."),
-            "ORD10" => TransactionResult.Ok("ORD10", null, "Otevřen přehled zakázek."),
-            _ => TransactionResult.Fail(command.Code, $"Neznámá transakce: {command.Code}")
-        };
-    }
+        var code = command.Code.ToUpperInvariant();
 
-    private static TransactionResult OpenArticleCard(TransactionCommand command)
-    {
-        if (!ArticleNumberValidator.IsValid(command.Parameter))
+        if (!_definitions.TryGetValue(code, out var definition))
         {
-            return TransactionResult.Fail("ART03", "Transakce ART03 očekává desetimístné SAP číslo artiklu.");
+            return TransactionResult.Fail(code, $"Neznámá transakce: {code}");
         }
 
-        return TransactionResult.Ok(
-            "ART03",
-            command.Parameter,
-            $"Otevřena karta artiklu {command.Parameter}.");
-    }
-
-    private static TransactionResult OpenArticleDocuments(TransactionCommand command)
-    {
-        if (!ArticleNumberValidator.IsValid(command.Parameter))
+        if (!_handlers.TryGetValue(definition.HandlerKey, out var handler))
         {
-            return TransactionResult.Fail("DOC03", "Transakce DOC03 očekává desetimístné SAP číslo artiklu.");
+            return TransactionResult.Fail(
+                code,
+                $"Transakce {code} nemá dostupný handler: {definition.HandlerKey}");
         }
 
-        return TransactionResult.Ok(
-            "DOC03",
-            command.Parameter,
-            $"Otevřena dokumentace artiklu {command.Parameter}.");
+        return handler.Execute(command, definition);
     }
 
-    private static TransactionResult OpenArticleScreens(TransactionCommand command)
+    public TransactionDefinition? FindDefinition(string transactionCode)
     {
-        if (!ArticleNumberValidator.IsValid(command.Parameter))
+        if (string.IsNullOrWhiteSpace(transactionCode))
         {
-            return TransactionResult.Fail("SCR03", "Transakce SCR03 očekává desetimístné SAP číslo artiklu.");
+            return null;
         }
 
-        return TransactionResult.Ok(
-            "SCR03",
-            command.Parameter,
-            $"Otevřena síta artiklu {command.Parameter}.");
+        _definitions.TryGetValue(
+            transactionCode.ToUpperInvariant(),
+            out var definition);
+
+        return definition;
+    }
+
+    public IReadOnlyList<TransactionDefinition> GetDefinitions()
+    {
+        return _definitions.Values
+            .OrderBy(item => item.Module)
+            .ThenBy(item => item.Code)
+            .ToList();
     }
 }

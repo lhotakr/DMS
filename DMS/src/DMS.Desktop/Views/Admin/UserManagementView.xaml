@@ -1,0 +1,148 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Admin.UserManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsBackgroundBrush}">
+
+    <Grid Background="{DynamicResource DmsBackgroundBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0"
+                Background="{DynamicResource DmsPanelBrush}"
+                Padding="16"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Margin="0,0,12,0">
+
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top"
+                           Text="Uživatelé"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,0,12"/>
+
+                <StackPanel DockPanel.Dock="Bottom"
+                            Orientation="Horizontal"
+                            Margin="0,12,0,0">
+                    <Button Content="Nový"
+                            Width="80"
+                            Height="32"
+                            Click="BtnNew_Click"/>
+
+                    <Button Content="Načíst"
+                            Width="80"
+                            Height="32"
+                            Margin="8,0,0,0"
+                            Click="BtnReload_Click"/>
+                </StackPanel>
+
+                <ListBox x:Name="LstUsers"
+                         DisplayMemberPath="DisplayName"
+                         Background="{DynamicResource DmsBackgroundBrush}"
+                         Foreground="{DynamicResource DmsForegroundBrush}"
+                         BorderBrush="{DynamicResource DmsBorderBrush}"
+                         SelectionChanged="LstUsers_SelectionChanged"/>
+            </DockPanel>
+        </Border>
+
+        <Border Grid.Column="1"
+                Background="{DynamicResource DmsPanelBrush}"
+                Padding="20"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="Detail uživatele"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,0,16"/>
+
+                <StackPanel Grid.Row="1" Margin="0,0,0,8">
+                    <TextBlock Text="Windows login"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtWindowsLogin"
+                             Height="30"
+                             Background="{DynamicResource DmsBackgroundBrush}"
+                             Foreground="{DynamicResource DmsForegroundBrush}"
+                             BorderBrush="{DynamicResource DmsBorderBrush}"
+                             CaretBrush="{DynamicResource DmsForegroundBrush}"
+                             ToolTip="Například FIRMA\novakj"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2" Margin="0,0,0,8">
+                    <TextBlock Text="Zobrazované jméno"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtDisplayName"
+                             Height="30"
+                             Background="{DynamicResource DmsBackgroundBrush}"
+                             Foreground="{DynamicResource DmsForegroundBrush}"
+                             BorderBrush="{DynamicResource DmsBorderBrush}"
+                             CaretBrush="{DynamicResource DmsForegroundBrush}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="3" Margin="0,0,0,8">
+                    <TextBlock Text="E-mail"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtEmail"
+                             Height="30"
+                             Background="{DynamicResource DmsBackgroundBrush}"
+                             Foreground="{DynamicResource DmsForegroundBrush}"
+                             BorderBrush="{DynamicResource DmsBorderBrush}"
+                             CaretBrush="{DynamicResource DmsForegroundBrush}"/>
+                </StackPanel>
+
+                <CheckBox x:Name="ChkIsActive"
+                          Grid.Row="4"
+                          Content="Aktivní uživatel"
+                          Foreground="{DynamicResource DmsForegroundBrush}"
+                          IsChecked="True"
+                          Margin="0,8,0,16"/>
+
+                <StackPanel Grid.Row="5">
+                    <TextBlock Text="Role"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,8"/>
+
+                    <StackPanel x:Name="RolePanel"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="6"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Margin="0,16,0,0">
+
+                    <Button Content="Smazat"
+                            Width="90"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            Click="BtnDelete_Click"/>
+
+                    <Button Content="Uložit"
+                            Width="90"
+                            Height="32"
+                            Background="{DynamicResource DmsAccentBrush}"
+                            Foreground="{DynamicResource DmsOnAccentBrush}"
+                            BorderBrush="{DynamicResource DmsAccentBrush}"
+                            Click="BtnSave_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
