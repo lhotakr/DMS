@@ -16,5 +16,14 @@
     "roles": [
       "DMS_ADMIN"
     ]
+  },
+  {
+    "windowsLogin": "HEINZ-HOLDING\\jholecek",
+    "displayName": "Jan Holeček",
+    "email": "jan.holecek@heinz-glas.com",
+    "isActive": true,
+    "roles": [
+      "DMS_VYROBA"
+    ]
   }
 ]

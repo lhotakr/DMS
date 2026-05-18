@@ -1,19 +1,24 @@
-﻿using DMS.Core.Security;
+﻿using DMS.Core.Sap;
+using DMS.Core.Security;
 using DMS.Core.Transactions;
 using DMS.Core.Transactions.Handlers;
-using DMS.Desktop.Logging;
 using DMS.Desktop.Configuration;
+using DMS.Desktop.Logging;
 using DMS.Desktop.Models;
+using DMS.Desktop.Repositories;
 using DMS.Desktop.Services;
 using DMS.Desktop.Settings;
 using DMS.Desktop.Views.Admin;
+using DMS.Desktop.Views.Articles;
 using DMS.Desktop.Views.Dialogs;
 using DMS.Desktop.Views.Documents;
+using DMS.Desktop.Views.Sap;
 using DMS.Desktop.Views.Settings;
 using System.IO;
 using System.Security.Principal;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -21,6 +26,8 @@ namespace DMS.Desktop.Views;
 
 public partial class MainWindow : Window
 {
+    private bool _isLeftPanelVisible = true;
+    private GridLength _lastLeftPanelWidth = new(350);
     private TransactionDispatcher _transactionDispatcher = null!;
     private readonly DmsUserSettingsService _settingsService = new();
     private readonly DmsAppSettingsService _appSettingsService = new();
@@ -31,14 +38,26 @@ public partial class MainWindow : Window
     private DmsUserSettings _userSettings = new();
     private DmsUserContext _currentUser = new();
     private FavoriteTransactionItem? _favoriteContextMenuItem;
+    private JsonArticleRepository _articleRepository = null!;
     private string _usersConfigPath = string.Empty;
     public MainWindow()
     {
         InitializeComponent();
         _appSettings = _appSettingsService.Load();
+        var articlesFilePath = string.IsNullOrWhiteSpace(_appSettings.ArticlesDataPath)
+            ? Path.Combine(_appSettings.ConfigurationRootPath, "..", "Data", "articles.json")
+            : _appSettings.ArticlesDataPath;
+
+        articlesFilePath = Path.GetFullPath(articlesFilePath);
+
+        _articleRepository = new JsonArticleRepository(articlesFilePath);
+
+        _logger.Info($"Articles repository path: {articlesFilePath}; Exists: {File.Exists(articlesFilePath)}");
+
         _logger = new DmsLogger(_appSettings.LogsRootPath);
         _logger.Info("DMS klient spuštěn.");
 
+        EnsureLeftPanelVisibleOnStartup();
         InitializeCurrentUser();
         InitializeTransactions();
         LoadUserSettings();
@@ -333,7 +352,16 @@ public partial class MainWindow : Window
             new HelpTransactionHandler(() => _transactionDispatcher.GetDefinitions()),
             new SettingsTransactionHandler(() => _userSettings.MaxTransactionHistoryItems),
             new SimpleMessageTransactionHandler("UserManagement", "Správa uživatelů"),
-            new SimpleMessageTransactionHandler("SystemConfiguration", "Systémová konfigurace")
+            new SimpleMessageTransactionHandler("SystemConfiguration", "Systémová konfigurace"),
+            new ArticleCreateTransactionHandler(),
+            new ArticleChangeTransactionHandler(),
+            new SimpleMessageTransactionHandler("SapMaterialImport", "Import SAP dat"),
+            new SimpleMessageTransactionHandler("SapMaterialDisplay", "Náhled SAP materiálu"),
+            new SimpleMessageTransactionHandler("SapPurchasedPartDisplay", "Náhled nakupovaného dílu"),
+            new SimpleMessageTransactionHandler("SapRecipeDisplay", "Náhled receptury"),
+            new SimpleMessageTransactionHandler("SapAssemblyPartDisplay", "Náhled kompletačního dílu"),
+            new SimpleMessageTransactionHandler("SapToolFixtureDisplay", "Náhled přípravku"),
+            new SimpleMessageTransactionHandler("SapPackagingDisplay", "Náhled obalového materiálu")
         };
 
         _transactionDispatcher = new TransactionDispatcher(definitions, handlers);
@@ -853,8 +881,8 @@ public partial class MainWindow : Window
     }
 
     private bool TryCompleteMissingParameter(
-    TransactionCommand command,
-    out TransactionCommand completedCommand)
+        TransactionCommand command,
+        out TransactionCommand completedCommand)
     {
         completedCommand = command;
 
@@ -875,7 +903,17 @@ public partial class MainWindow : Window
             return true;
         }
 
-        var dialog = new ArticleNumberPromptWindow
+        var selectionConfig = GetSelectionConfig(command.Code);
+
+        if (selectionConfig is null)
+        {
+            return false;
+        }
+
+        var dialog = new ArticleNumberPromptWindow(
+            selectionConfig.Value.MaterialKind,
+            selectionConfig.Value.Title,
+            selectionConfig.Value.Subtitle)
         {
             Owner = this
         };
@@ -897,7 +935,6 @@ public partial class MainWindow : Window
 
         return true;
     }
-
     private static string BuildTransactionText(TransactionCommand command)
     {
         var prefix = command.Mode switch
@@ -935,6 +972,45 @@ public partial class MainWindow : Window
         newWindow.RenderTransactionResult(result);
     }
 
+    private static string? GetDisplayTransactionForMaterialKind(string? materialKind)
+    {
+        return materialKind switch
+        {
+            nameof(SapMaterialKind.GlassArticle) => "ART03",
+            nameof(SapMaterialKind.PurchasedPart) => "KUP03",
+            nameof(SapMaterialKind.Packaging) => "BAL03",
+            nameof(SapMaterialKind.Recipe) => "REC03",
+            nameof(SapMaterialKind.AssemblyPart) => "KOM03",
+            nameof(SapMaterialKind.ToolFixture) => "PRIP03",
+            _ => null
+        };
+    }
+
+    private static string GetMaterialKindDisplayName(string? materialKind)
+    {
+        return materialKind switch
+        {
+            nameof(SapMaterialKind.GlassArticle) => "skleněný artikl / flakon",
+            nameof(SapMaterialKind.PurchasedPart) => "nakupovaný díl",
+            nameof(SapMaterialKind.Packaging) => "obalový materiál",
+            nameof(SapMaterialKind.Recipe) => "receptura",
+            nameof(SapMaterialKind.AssemblyPart) => "kompletační díl",
+            nameof(SapMaterialKind.ToolFixture) => "přípravek",
+            nameof(SapMaterialKind.Ignored) => "ignorovaný SAP materiál",
+            _ => "neznámý typ materiálu"
+        };
+    }
+
+    private static string GetPackagingKindDisplayName(string? packagingKind)
+    {
+        return packagingKind switch
+        {
+            "PackagingSetOldReference" => "Balicí sada - vazba podle starého čísla",
+            "PackagingSetSapReference" => "Balicí sada - vazba podle SAP čísla",
+            "PackagingComponent" => "Komponenta balicí sady",
+            _ => "Neznámý typ obalu"
+        };
+    }
     private void RenderTransactionResult(TransactionResult result)
     {
         WorkspacePanel.Children.Clear();
@@ -961,7 +1037,16 @@ public partial class MainWindow : Window
 
         switch (result.TransactionCode)
         {
+            case "ART01":
+                RenderArticleCreate();
+                break;
+
+            case "ART02":
+                RenderArticleEdit(result.Parameter!);
+                break;
+
             case "ART03":
+                //RenderArticleDetail(result.Parameter!);
                 RenderArticleCard(result.Parameter!);
                 break;
 
@@ -1003,6 +1088,49 @@ public partial class MainWindow : Window
 
             case "LOG03":
                 RenderLogViewer();
+                break;
+
+            case "SAP00":
+                RenderSapImport();
+                break;
+
+            case "SAP03":
+                RenderSapMaterialDisplay(result.Parameter!);
+                break;
+
+            case "KUP03":
+                RenderTypedSapMaterialDisplay(
+                    result.Parameter!,
+                    nameof(SapMaterialKind.PurchasedPart),
+                    "KUP03 - Nakupovaný díl");
+                break;
+
+            case "REC03":
+                RenderTypedSapMaterialDisplay(
+                    result.Parameter!,
+                    nameof(SapMaterialKind.Recipe),
+                    "REC03 - Receptura");
+                break;
+
+            case "KOM03":
+                RenderTypedSapMaterialDisplay(
+                    result.Parameter!,
+                    nameof(SapMaterialKind.AssemblyPart),
+                    "KOM03 - Kompletační díl");
+                break;
+
+            case "PRIP03":
+                RenderTypedSapMaterialDisplay(
+                    result.Parameter!,
+                    nameof(SapMaterialKind.ToolFixture),
+                    "PRIP03 - Přípravek");
+                break;
+
+            case "BAL03":
+                RenderTypedSapMaterialDisplay(
+                    result.Parameter!,
+                    nameof(SapMaterialKind.Packaging),
+                    "BAL03 - Obalový materiál");
                 break;
 
             default:
@@ -1216,6 +1344,144 @@ public partial class MainWindow : Window
 
         ResetWorkspaceScroll();
     }
+    private void RenderSapImport()
+    {
+        WorkspacePanel.Children.Clear();
+
+        WorkspacePanel.Children.Add(new SapImportView());
+    }
+
+    private void RenderTypedSapMaterialDisplay(
+    string materialNumber,
+    string expectedMaterialKind,
+    string title)
+    {
+        var panel = CreateWorkspaceStack();
+
+        panel.Children.Add(CreateTitle(title));
+
+        try
+        {
+            var storagePaths = new SapStoragePaths(@"Z:\SAP\DMS-db\DEV");
+            var repository = new JsonSapMaterialRepository(storagePaths.SapMaterialsFilePath);
+
+            var material = repository.FindByMaterialNumber(materialNumber);
+
+            if (material is null)
+            {
+                panel.Children.Add(CreateArticleWarning(
+                    "Materiál nenalezen",
+                    $"SAP materiál {materialNumber} nebyl nalezen v SAP mirror cache.\n\n" +
+                    $"Soubor:\n{storagePaths.SapMaterialsFilePath}\n\n" +
+                    "Nejdřív proveď import přes SAP00."));
+                return;
+            }
+
+            if (material.PackagingInfo is not null)
+            {
+                panel.Children.Add(CreateArticleSectionTitle("Balicí vazba"));
+
+                panel.Children.Add(CreateArticleFullLine(
+                    "Typ obalu",
+                    GetPackagingKindDisplayName(material.PackagingInfo.PackagingKind)));
+
+                if (!string.IsNullOrWhiteSpace(material.PackagingInfo.LinkedArticleSapNumber))
+                {
+                    panel.Children.Add(CreateArticleFullLine(
+                        "Vazba na SAP artikl",
+                        material.PackagingInfo.LinkedArticleSapNumber));
+                }
+
+                if (!string.IsNullOrWhiteSpace(material.PackagingInfo.LinkedArticleOldNumber))
+                {
+                    panel.Children.Add(CreateArticleFullLine(
+                        "Vazba na staré číslo artiklu",
+                        material.PackagingInfo.LinkedArticleOldNumber));
+                }
+            }
+
+            if (!string.Equals(material.MaterialKind, expectedMaterialKind, StringComparison.OrdinalIgnoreCase))
+            {
+                var correctTransaction = GetDisplayTransactionForMaterialKind(material.MaterialKind);
+
+                if (!string.IsNullOrWhiteSpace(correctTransaction))
+                {
+                    panel.Children.Add(CreateArticleWarning(
+                        "Přesměrování na správnou transakci",
+                        $"Zadaný materiál {material.MaterialNumber} není typ " +
+                        $"{GetMaterialKindDisplayName(expectedMaterialKind)}, ale {GetMaterialKindDisplayName(material.MaterialKind)}.\n\n" +
+                        $"Otevírám správnou transakci: {correctTransaction} {material.MaterialNumber}"));
+
+                    ExecuteTransaction($"{correctTransaction} {material.MaterialNumber}");
+                    return;
+                }
+
+                panel.Children.Add(CreateArticleWarning(
+                    "Nesprávný typ materiálu",
+                    $"Zadaný materiál {material.MaterialNumber} má typ {material.MaterialKind}, " +
+                    $"který nemá přiřazenou náhledovou transakci.\n\n" +
+                    "Pro obecný náhled použij SAP03."));
+                return;
+            }
+
+            panel.Children.Add(CreateMaterialHeaderCard(material, title));
+
+            panel.Children.Add(CreateArticleSectionTitle("SAP základ"));
+            panel.Children.Add(CreateArticleTwoColumnLine("SAP číslo", material.MaterialNumber, "Status", NullDash(material.MaterialStatus)));
+            panel.Children.Add(CreateArticleTwoColumnLine("Staré číslo", NullDash(material.OldMaterialNumber), "Typ v DMS", material.MaterialKind));
+            panel.Children.Add(CreateArticleTwoColumnLine("Prefix", NullDash(material.TransactionPrefix), "Importováno", material.ImportedAt.ToString("dd.MM.yyyy HH:mm:ss")));
+            panel.Children.Add(CreateArticleFullLine("Označení", material.Description));
+
+            if (!string.IsNullOrWhiteSpace(material.ToolFixtureKind))
+            {
+                panel.Children.Add(CreateArticleSectionTitle("Klasifikace přípravku"));
+                panel.Children.Add(CreateArticleFullLine("Druh přípravku", material.ToolFixtureKind));
+            }
+
+            panel.Children.Add(CreateArticleSectionTitle("DMS vazby"));
+
+            var linksGrid = new UniformGrid
+            {
+                Columns = 3,
+                Margin = new Thickness(0, 4, 0, 0)
+            };
+
+            switch (expectedMaterialKind)
+            {
+                case nameof(SapMaterialKind.PurchasedPart):
+                    linksGrid.Children.Add(CreateArticleLinkTile("Použití v kusovnících", "BOM", "Kde je díl použitý"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Technické listy, specifikace"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Poznámky", "DMS", "Lokální poznámky k dílu"));
+                    break;
+
+                case nameof(SapMaterialKind.Recipe):
+                    linksGrid.Children.Add(CreateArticleLinkTile("Použití receptury", "REC", "Artikly používající recepturu"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Receptura, schválení, verze"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Kusovníky", "BOM", "Výskyt v SAP kusovnících"));
+                    break;
+
+                case nameof(SapMaterialKind.AssemblyPart):
+                    linksGrid.Children.Add(CreateArticleLinkTile("Použití v kompletaci", "KOM", "Vazby na lepení/kompletaci"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Kusovníky", "BOM", "Výskyt v SAP kusovnících"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Výkresy, schválení, specifikace"));
+                    break;
+
+                case nameof(SapMaterialKind.ToolFixture):
+                    linksGrid.Children.Add(CreateArticleLinkTile("Použití přípravku", "PRIP", "Artikly a operace používající přípravek"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Výkresy, údržba, nastavení"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Pracovní postupy", "RTG", "Vazby na operace"));
+                    break;
+            }
+
+            panel.Children.Add(linksGrid);
+        }
+        catch (Exception ex)
+        {
+            panel.Children.Add(CreateArticleWarning(
+                $"{title} se nepodařilo načíst",
+                ex.Message));
+        }
+    }
     private static TextBlock CreateFilterLabel(string text)
     {
         var label = new TextBlock
@@ -1231,6 +1497,83 @@ public partial class MainWindow : Window
         return label;
     }
 
+    private void RenderSapMaterialDisplay(string materialNumber)
+    {
+        var panel = CreateWorkspaceStack();
+
+        panel.Children.Add(CreateTitle("SAP03 - Náhled SAP materiálu"));
+        panel.Children.Add(CreateSapLikeInfoBar($"Zobrazení materiálu {materialNumber} ze SAP mirror cache"));
+
+        try
+        {
+            var storagePaths = new SapStoragePaths(@"Z:\SAP\DMS-db\DEV");
+            var repository = new JsonSapMaterialRepository(storagePaths.SapMaterialsFilePath);
+
+            var material = repository.FindByMaterialNumber(materialNumber);
+
+            if (material is null)
+            {
+                panel.Children.Add(CreateBodyText(
+                    $"SAP materiál {materialNumber} nebyl nalezen v SAP mirror cache.\n\n" +
+                    $"Očekávaný soubor:\n{storagePaths.SapMaterialsFilePath}\n\n" +
+                    "Nejdřív proveď import přes SAP00."));
+                return;
+            }
+
+            panel.Children.Add(CreateSapLikeSectionHeader("Základní data"));
+
+            panel.Children.Add(CreateSapLikeLine("Materiál", material.MaterialNumber));
+            panel.Children.Add(CreateSapLikeLine("Označení", material.Description));
+            panel.Children.Add(CreateSapLikeLine("Staré číslo", NullDash(material.OldMaterialNumber)));
+            panel.Children.Add(CreateSapLikeLine("Status", NullDash(material.MaterialStatus)));
+            panel.Children.Add(CreateSapLikeLine("Typ v DMS", material.MaterialKind));
+            panel.Children.Add(CreateSapLikeLine("Transakční prefix", NullDash(material.TransactionPrefix)));
+
+            if (!string.IsNullOrWhiteSpace(material.ToolFixtureKind))
+            {
+                panel.Children.Add(CreateSapLikeLine("Druh přípravku", material.ToolFixtureKind));
+            }
+
+            if (material.GlassInfo is not null)
+            {
+                panel.Children.Add(CreateSapLikeSeparator());
+                panel.Children.Add(CreateSapLikeSectionHeader("Rozpad označení skla"));
+
+                panel.Children.Add(CreateSapLikeLine("Forma", NullDash(material.GlassInfo.MoldNumber)));
+                panel.Children.Add(CreateSapLikeLine("Typ skla", NullDash(material.GlassInfo.GlassTypeNumber)));
+                panel.Children.Add(CreateSapLikeLine("Objem", FormatVolume(material.GlassInfo.VolumeMl)));
+                panel.Children.Add(CreateSapLikeLine("Dekorační řetězec", NullDash(material.GlassInfo.DecorationChain)));
+                panel.Children.Add(CreateSapLikeLine("Popis", NullDash(material.GlassInfo.RemainingDescription)));
+
+                panel.Children.Add(CreateSapLikeSeparator());
+                panel.Children.Add(CreateSapLikeSectionHeader("Dekorační kroky"));
+
+                if (material.GlassInfo.DecorationSteps.Count == 0)
+                {
+                    panel.Children.Add(CreateSapLikeLine("Kroky", "Nerozpoznáno"));
+                }
+                else
+                {
+                    foreach (var step in material.GlassInfo.DecorationSteps)
+                    {
+                        panel.Children.Add(CreateSapLikeLine(step, GetDecorationName(step)));
+                    }
+                }
+            }
+
+            panel.Children.Add(CreateSapLikeSeparator());
+            panel.Children.Add(CreateSapLikeSectionHeader("Technické info"));
+
+            panel.Children.Add(CreateSapLikeLine("Importováno", material.ImportedAt.ToString("dd.MM.yyyy HH:mm:ss")));
+            panel.Children.Add(CreateSapLikeLine("Soubor", storagePaths.SapMaterialsFilePath));
+        }
+        catch (Exception ex)
+        {
+            panel.Children.Add(CreateBodyText(
+                "SAP03 se nepodařilo načíst.\n\n" +
+                ex.Message));
+        }
+    }
     private static bool TryParseTime(string value, out TimeSpan time)
     {
         if (TimeSpan.TryParse(value.Trim(), out time))
@@ -1270,28 +1613,134 @@ public partial class MainWindow : Window
     {
         var panel = CreateWorkspaceStack();
 
-        panel.Children.Add(CreateTitle("Karta artiklu"));
+        panel.Children.Add(CreateTitle("ART03 - Artikelmapa"));
 
-        panel.Children.Add(CreateLine($"SAP číslo: {articleNumber}"));
-        panel.Children.Add(CreateLine("Název: Flakon 50 ml"));
-        panel.Children.Add(CreateLine("Zákazník: Example Cosmetics"));
-        panel.Children.Add(CreateLine("Stav: Připraveno"));
-
-        panel.Children.Add(new Separator
+        try
         {
-            Margin = new Thickness(0, 16, 0, 16)
-        });
+            var storagePaths = new SapStoragePaths(@"Z:\SAP\DMS-db\DEV");
+            var repository = new JsonSapMaterialRepository(storagePaths.SapMaterialsFilePath);
 
-        panel.Children.Add(CreateSectionTitle("Dokumenty"));
+            var material = repository.FindByMaterialNumber(articleNumber);
 
-        panel.Children.Add(CreateLine("✅ Výkres"));
-        panel.Children.Add(CreateLine("✅ Tisková oblast"));
-        panel.Children.Add(CreateLine("✅ Massblatt"));
-        panel.Children.Add(CreateLine("✅ Balicí předpis"));
-        panel.Children.Add(CreateLine("✅ Receptura"));
-        ResetWorkspaceScroll();
+            if (material is null)
+            {
+                panel.Children.Add(CreateArticleWarning(
+                    "Artikl nenalezen",
+                    $"SAP artikl {articleNumber} nebyl nalezen v SAP mirror cache.\n\n" +
+                    $"Soubor:\n{storagePaths.SapMaterialsFilePath}\n\n" +
+                    "Nejdřív proveď import přes SAP00."));
+                return;
+            }
+
+            if (!string.Equals(material.MaterialKind, nameof(SapMaterialKind.GlassArticle), StringComparison.OrdinalIgnoreCase))
+            {
+                var correctTransaction = GetDisplayTransactionForMaterialKind(material.MaterialKind);
+
+                if (!string.IsNullOrWhiteSpace(correctTransaction))
+                {
+                    panel.Children.Add(CreateArticleWarning(
+                        "Přesměrování na správnou transakci",
+                        $"Materiál {material.MaterialNumber} není skleněný artikl / flakon, " +
+                        $"ale {GetMaterialKindDisplayName(material.MaterialKind)}.\n\n" +
+                        $"Otevírám správnou transakci: {correctTransaction} {material.MaterialNumber}"));
+
+                    ExecuteTransaction($"{correctTransaction} {material.MaterialNumber}");
+                    return;
+                }
+
+                panel.Children.Add(CreateArticleWarning(
+                    "Nejedná se o skleněný artikl",
+                    $"Materiál {material.MaterialNumber} není skleněný artikl / flakon.\n\n" +
+                    $"Typ v DMS: {material.MaterialKind}\n\n" +
+                    "Pro obecný SAP náhled použij SAP03."));
+                return;
+            }
+
+            panel.Children.Add(CreateArticleHeaderCard(material));
+
+            panel.Children.Add(CreateArticleSectionTitle("SAP základ"));
+            panel.Children.Add(CreateArticleTwoColumnLine("SAP číslo", material.MaterialNumber, "Status", NullDash(material.MaterialStatus)));
+            panel.Children.Add(CreateArticleTwoColumnLine("Staré číslo", NullDash(material.OldMaterialNumber), "Typ v DMS", material.MaterialKind));
+            panel.Children.Add(CreateArticleFullLine("Označení", material.Description));
+
+            if (material.GlassInfo is not null)
+            {
+                panel.Children.Add(CreateArticleSectionTitle("Rozpad označení"));
+                panel.Children.Add(CreateArticleTwoColumnLine("Forma", NullDash(material.GlassInfo.MoldNumber), "Typ skla", NullDash(material.GlassInfo.GlassTypeNumber)));
+                panel.Children.Add(CreateArticleTwoColumnLine("Objem", FormatVolume(material.GlassInfo.VolumeMl), "Dekorace", NullDash(material.GlassInfo.DecorationChain)));
+                panel.Children.Add(CreateArticleFullLine("Popis", NullDash(material.GlassInfo.RemainingDescription)));
+
+                panel.Children.Add(CreateArticleSectionTitle("Dekorační tok"));
+                panel.Children.Add(CreateDecorationFlow(material.GlassInfo.DecorationSteps));
+            }
+            else
+            {
+                panel.Children.Add(CreateArticleWarning(
+                    "Označení se nepodařilo rozparsovat",
+                    "Krátký text neodpovídá očekávanému formátu:\n" +
+                    "<forma> <typ skla> <objem> <dekorace> <popis>"));
+            }
+
+            panel.Children.Add(CreateArticleSectionTitle("DMS vazby"));
+
+            var linksGrid = new UniformGrid
+            {
+                Columns = 3,
+                Margin = new Thickness(0, 4, 0, 0)
+            };
+
+            linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Výkresy, MB, tiskové oblasti"));
+            linksGrid.Children.Add(CreateArticleLinkTile("Receptury", "REC03", "SAP receptury a DMS vazby"));
+            linksGrid.Children.Add(CreateArticleLinkTile("Síta", "SCR03", "Síta a příprava sít"));
+            linksGrid.Children.Add(CreateArticleLinkTile("Kusovník", "BOM03", "SAP snapshot kusovníku"));
+            linksGrid.Children.Add(CreateArticleLinkTile("Postup", "RTG03", "SAP snapshot pracovního postupu"));
+            linksGrid.Children.Add(CreateArticleLinkTile("Přípravky", "PRIP03", "Nástroje a přípravky"));
+
+            panel.Children.Add(linksGrid);
+        }
+        catch (Exception ex)
+        {
+            panel.Children.Add(CreateArticleWarning(
+                "ART03 se nepodařilo načíst",
+                ex.Message));
+        }
     }
 
+    private static string NullDash(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? "-"
+            : value;
+    }
+
+    private static string FormatVolume(int? volumeMl)
+    {
+        return volumeMl.HasValue
+            ? $"{volumeMl.Value} ml"
+            : "-";
+    }
+
+    private static string GetDecorationName(string? code)
+    {
+        return code?.ToUpperInvariant() switch
+        {
+            "R" => "Syrové sklo",
+            "B" => "Postřik",
+            "X" => "Speciální úprava",
+            "N" => "Třídění",
+            "D" => "Sítotisk",
+            "P" => "Horká ražba",
+            "E" => "Metalizace",
+            "M" => "Matování",
+            "K" => "Lepení / kompletace",
+            "V" => "Mündung",
+            "L" => "Laser",
+            "T" => "Tamponový tisk",
+            "A" => "Aplikace / doplnit význam",
+            "O" => "Ostatní / doplnit význam",
+            _ => "Neznámý dekorační krok"
+        };
+    }
     private void RenderArticleDocuments(string articleNumber)
     {
         WorkspacePanel.Children.Clear();
@@ -1307,6 +1756,68 @@ public partial class MainWindow : Window
             filePath => _logger.OpenDocument(filePath, _currentUser.DisplayName)));
 
         ResetWorkspaceScroll();
+    }
+
+    private void RenderArticleCreate()
+    {
+        WorkspacePanel.Children.Clear();
+
+        WorkspacePanel.Children.Add(new ArticleEditView(
+            article: null,
+            saveArticle: SaveArticleFromView,
+            currentUserName: _currentUser.DisplayName));
+
+        ResetWorkspaceScroll();
+    }
+
+    private void RenderArticleEdit(string articleNumber)
+    {
+        WorkspacePanel.Children.Clear();
+
+        var article = _articleRepository.FindBySapNumber(articleNumber);
+
+        if (article is null)
+        {
+            RenderSimplePage(
+                "Artikl nenalezen",
+                $"Artikl {articleNumber} nebyl nalezen v DMS. Použij ART01 pro založení.");
+            return;
+        }
+
+        WorkspacePanel.Children.Add(new ArticleEditView(
+            article,
+            SaveArticleFromView,
+            _currentUser.DisplayName));
+
+        ResetWorkspaceScroll();
+    }
+
+    private void RenderArticleDetail(string articleNumber)
+    {
+        WorkspacePanel.Children.Clear();
+
+        var article = _articleRepository.FindBySapNumber(articleNumber);
+
+        if (article is null)
+        {
+            RenderSimplePage(
+                "Artikl nenalezen",
+                $"Artikl {articleNumber} nebyl nalezen v DMS.");
+            return;
+        }
+
+        WorkspacePanel.Children.Add(new ArticleDetailView(article));
+
+        ResetWorkspaceScroll();
+    }
+
+    private void SaveArticleFromView(DmsArticle article)
+    {
+        _articleRepository.Save(article);
+
+        _logger.Info($"Uložen artikl {article.SapArticleNumber}; uživatel: {_currentUser.DisplayName}");
+
+        RenderArticleDetail(article.SapArticleNumber);
     }
     private void RenderSimplePage(string title, string message)
     {
@@ -1352,4 +1863,649 @@ public partial class MainWindow : Window
         return CreateBodyText(text);
     }
 
+    private static Border CreateSapLikeSectionHeader(string text)
+    {
+        var border = new Border
+        {
+            Padding = new Thickness(10, 7, 10, 7),
+            Margin = new Thickness(0, 16, 0, 8),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(3),
+            Background = new SolidColorBrush(Color.FromRgb(42, 57, 72)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(86, 112, 137))
+        };
+
+        var textBlock = new TextBlock
+        {
+            Text = text,
+            FontSize = 16,
+            FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush(Color.FromRgb(207, 230, 255))
+        };
+
+        border.Child = textBlock;
+
+        return border;
+    }
+
+    private static Grid CreateSapLikeLine(string label, string value)
+    {
+        var grid = new Grid
+        {
+            Margin = new Thickness(0, 3, 0, 3)
+        };
+
+        grid.ColumnDefinitions.Add(new ColumnDefinition
+        {
+            Width = new GridLength(170)
+        });
+
+        grid.ColumnDefinitions.Add(new ColumnDefinition
+        {
+            Width = new GridLength(1, GridUnitType.Star)
+        });
+
+        var labelBlock = new TextBlock
+        {
+            Text = label + ":",
+            FontSize = 15,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(8, 4, 12, 4),
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = new SolidColorBrush(Color.FromRgb(190, 205, 220))
+        };
+
+        var valueBorder = new Border
+        {
+            Padding = new Thickness(8, 3, 8, 3),
+            Margin = new Thickness(0, 1, 8, 1),
+            MinHeight = 24,
+            BorderThickness = new Thickness(1),
+            Background = new SolidColorBrush(Color.FromRgb(31, 42, 53)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(73, 94, 115))
+        };
+
+        var valueBlock = new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(value) ? "-" : value,
+            FontSize = 15,
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = new SolidColorBrush(Color.FromRgb(245, 248, 252))
+        };
+
+        valueBorder.Child = valueBlock;
+
+        Grid.SetColumn(labelBlock, 0);
+        Grid.SetColumn(valueBorder, 1);
+
+        grid.Children.Add(labelBlock);
+        grid.Children.Add(valueBorder);
+
+        return grid;
+    }
+
+    private static Border CreateSapLikeSeparator()
+    {
+        return new Border
+        {
+            Height = 1,
+            Margin = new Thickness(0, 14, 0, 10),
+            Background = new SolidColorBrush(Color.FromRgb(78, 96, 116))
+        };
+    }
+    private static Border CreateSapLikeInfoBar(string text)
+    {
+        var border = new Border
+        {
+            Padding = new Thickness(10, 6, 10, 6),
+            Margin = new Thickness(0, 0, 0, 12),
+            CornerRadius = new CornerRadius(3),
+            Background = new SolidColorBrush(Color.FromRgb(50, 73, 94)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(92, 125, 155)),
+            BorderThickness = new Thickness(1)
+        };
+
+        var textBlock = new TextBlock
+        {
+            Text = text,
+            FontSize = 14,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = new SolidColorBrush(Color.FromRgb(230, 242, 255))
+        };
+
+        border.Child = textBlock;
+
+        return border;
+    }
+
+    private static Border CreateArticleHeaderCard(SapMaterial material)
+    {
+        var border = new Border
+        {
+            Padding = new Thickness(18),
+            Margin = new Thickness(0, 0, 0, 18),
+            CornerRadius = new CornerRadius(10),
+            BorderThickness = new Thickness(1)
+        };
+
+        border.SetResourceReference(Border.BackgroundProperty, "DmsPanelBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "DmsBorderBrush");
+
+        var stack = new StackPanel();
+
+        var title = new TextBlock
+        {
+            Text = material.MaterialNumber,
+            FontSize = 28,
+            FontWeight = FontWeights.Bold
+        };
+
+        title.SetResourceReference(
+            TextBlock.ForegroundProperty,
+            "DmsForegroundBrush");
+
+        var subtitle = new TextBlock
+        {
+            Text = material.Description,
+            FontSize = 17,
+            Margin = new Thickness(0, 6, 0, 0),
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        subtitle.SetResourceReference(
+            TextBlock.ForegroundProperty,
+            "DmsMutedForegroundBrush");
+
+        var badgePanel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 14, 0, 0)
+        };
+
+        badgePanel.Children.Add(CreateArticleBadge(material.MaterialKind));
+        badgePanel.Children.Add(CreateArticleBadge($"Status {NullDash(material.MaterialStatus)}"));
+
+        if (!string.IsNullOrWhiteSpace(material.GlassInfo?.DecorationChain))
+        {
+            badgePanel.Children.Add(CreateArticleBadge($"Dekorace {material.GlassInfo.DecorationChain}"));
+        }
+
+        stack.Children.Add(title);
+        stack.Children.Add(subtitle);
+        stack.Children.Add(badgePanel);
+
+        border.Child = stack;
+        return border;
+    }
+    private static Border CreateArticleBadge(string text)
+    {
+        var border = new Border
+        {
+            Padding = new Thickness(10, 4, 10, 4),
+            Margin = new Thickness(0, 0, 8, 0),
+            CornerRadius = new CornerRadius(12),
+            BorderThickness = new Thickness(1)
+        };
+
+        border.SetResourceReference(Border.BackgroundProperty, "DmsBackgroundBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "DmsBorderBrush");
+
+        var textBlock = new TextBlock
+        {
+            Text = text,
+            FontSize = 13,
+            FontWeight = FontWeights.SemiBold
+        };
+
+        textBlock.SetResourceReference(
+            TextBlock.ForegroundProperty,
+            "DmsForegroundBrush");
+
+        border.Child = textBlock;
+        return border;
+    }
+
+    private static Border CreateArticleSectionTitle(string text)
+    {
+        var border = new Border
+        {
+            Padding = new Thickness(0, 0, 0, 6),
+            Margin = new Thickness(0, 18, 0, 10),
+            BorderThickness = new Thickness(0, 0, 0, 1)
+        };
+
+        border.SetResourceReference(Border.BorderBrushProperty, "DmsBorderBrush");
+
+        border.Child = new TextBlock
+        {
+            Text = text,
+            FontSize = 20,
+            FontWeight = FontWeights.Bold
+        };
+
+        ((TextBlock)border.Child).SetResourceReference(
+            TextBlock.ForegroundProperty,
+            "DmsForegroundBrush");
+
+        return border;
+    }
+
+    private static Grid CreateArticleTwoColumnLine(string leftLabel, string leftValue, string rightLabel, string rightValue)
+    {
+        var grid = new Grid
+        {
+            Margin = new Thickness(0, 3, 0, 3)
+        };
+
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var left = CreateArticleField(leftLabel, leftValue);
+        var right = CreateArticleField(rightLabel, rightValue);
+
+        Grid.SetColumn(left, 0);
+        Grid.SetColumn(right, 1);
+
+        grid.Children.Add(left);
+        grid.Children.Add(right);
+
+        return grid;
+    }
+
+    private static Border CreateArticleFullLine(string label, string value)
+    {
+        return CreateArticleField(label, value);
+    }
+
+    private static Border CreateArticleField(string label, string value)
+    {
+        var border = new Border
+        {
+            Padding = new Thickness(12),
+            Margin = new Thickness(0, 2, 8, 6),
+            MinHeight = 52,
+            CornerRadius = new CornerRadius(6),
+            BorderThickness = new Thickness(1)
+        };
+
+        border.SetResourceReference(Border.BackgroundProperty, "DmsPanelBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "DmsBorderBrush");
+
+        var stack = new StackPanel();
+
+        var labelBlock = new TextBlock
+        {
+            Text = label,
+            FontSize = 12,
+            FontWeight = FontWeights.SemiBold
+        };
+
+        labelBlock.SetResourceReference(
+            TextBlock.ForegroundProperty,
+            "DmsMutedForegroundBrush");
+
+        var valueBlock = new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(value) ? "-" : value,
+            FontSize = 16,
+            FontWeight = FontWeights.SemiBold,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 3, 0, 0)
+        };
+
+        valueBlock.SetResourceReference(
+            TextBlock.ForegroundProperty,
+            "DmsForegroundBrush");
+
+        stack.Children.Add(labelBlock);
+        stack.Children.Add(valueBlock);
+
+        border.Child = stack;
+        return border;
+    }
+
+    private static StackPanel CreateDecorationFlow(List<string> steps)
+    {
+        var stack = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 4, 0, 0)
+        };
+
+        if (steps.Count == 0)
+        {
+            stack.Children.Add(CreateArticleBadge("Dekorace nerozpoznána"));
+            return stack;
+        }
+
+        for (var i = 0; i < steps.Count; i++)
+        {
+            var step = steps[i];
+
+            stack.Children.Add(CreateDecorationStep(step));
+
+            if (i < steps.Count - 1)
+            {
+                stack.Children.Add(new TextBlock
+                {
+                    Text = "→",
+                    FontSize = 22,
+                    FontWeight = FontWeights.Bold,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(6, 0, 6, 0),
+                    Foreground = new SolidColorBrush(Color.FromRgb(207, 230, 255))
+                });
+            }
+        }
+
+        return stack;
+    }
+
+    private static Border CreateDecorationStep(string code)
+    {
+        var border = new Border
+        {
+            Width = 130,
+            Padding = new Thickness(10),
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            Background = new SolidColorBrush(Color.FromRgb(31, 42, 53)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(92, 125, 155))
+        };
+
+        var stack = new StackPanel
+        {
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = code,
+            FontSize = 24,
+            FontWeight = FontWeights.Bold,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Foreground = new SolidColorBrush(Color.FromRgb(230, 242, 255))
+        });
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = GetDecorationName(code),
+            FontSize = 12,
+            TextWrapping = TextWrapping.Wrap,
+            TextAlignment = TextAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Foreground = new SolidColorBrush(Color.FromRgb(190, 205, 220))
+        });
+
+        border.Child = stack;
+        return border;
+    }
+
+    private static Border CreateArticleLinkTile(string title, string transaction, string description)
+    {
+        var border = new Border
+        {
+            Padding = new Thickness(12),
+            Margin = new Thickness(0, 0, 10, 10),
+            MinHeight = 85,
+            CornerRadius = new CornerRadius(8),
+            BorderThickness = new Thickness(1),
+            Background = new SolidColorBrush(Color.FromRgb(31, 42, 53)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(73, 94, 115))
+        };
+
+        var stack = new StackPanel();
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = $"{transaction} - {title}",
+            FontSize = 15,
+            FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush(Color.FromRgb(230, 242, 255))
+        });
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = description,
+            FontSize = 13,
+            Margin = new Thickness(0, 4, 0, 0),
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = new SolidColorBrush(Color.FromRgb(175, 195, 215))
+        });
+
+        border.Child = stack;
+        return border;
+    }
+
+    private static Border CreateArticleWarning(string title, string message)
+    {
+        var border = new Border
+        {
+            Padding = new Thickness(14),
+            Margin = new Thickness(0, 12, 0, 0),
+            CornerRadius = new CornerRadius(6),
+            BorderThickness = new Thickness(1),
+            Background = new SolidColorBrush(Color.FromRgb(68, 48, 35)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(150, 105, 70))
+        };
+
+        var stack = new StackPanel();
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontSize = 18,
+            FontWeight = FontWeights.Bold,
+            Foreground = new SolidColorBrush(Color.FromRgb(255, 225, 190))
+        });
+
+        stack.Children.Add(new TextBlock
+        {
+            Text = message,
+            FontSize = 14,
+            Margin = new Thickness(0, 6, 0, 0),
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = new SolidColorBrush(Color.FromRgb(255, 240, 220))
+        });
+
+        border.Child = stack;
+        return border;
+    }
+
+    private static Border CreateMaterialHeaderCard(SapMaterial material, string title)
+    {
+        var border = new Border
+        {
+            Padding = new Thickness(18),
+            Margin = new Thickness(0, 0, 0, 18),
+            CornerRadius = new CornerRadius(10),
+            BorderThickness = new Thickness(1)
+        };
+
+        border.SetResourceReference(Border.BackgroundProperty, "DmsPanelBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "DmsBorderBrush");
+
+        var stack = new StackPanel();
+
+        var smallTitle = new TextBlock
+        {
+            Text = title,
+            FontSize = 14,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+
+        smallTitle.SetResourceReference(TextBlock.ForegroundProperty, "DmsMutedForegroundBrush");
+
+        var number = new TextBlock
+        {
+            Text = material.MaterialNumber,
+            FontSize = 28,
+            FontWeight = FontWeights.Bold
+        };
+
+        number.SetResourceReference(TextBlock.ForegroundProperty, "DmsForegroundBrush");
+
+        var description = new TextBlock
+        {
+            Text = material.Description,
+            FontSize = 17,
+            Margin = new Thickness(0, 6, 0, 0),
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        description.SetResourceReference(TextBlock.ForegroundProperty, "DmsMutedForegroundBrush");
+
+        var badgePanel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 14, 0, 0)
+        };
+
+        badgePanel.Children.Add(CreateArticleBadge(material.MaterialKind));
+        badgePanel.Children.Add(CreateArticleBadge($"Status {NullDash(material.MaterialStatus)}"));
+
+        if (!string.IsNullOrWhiteSpace(material.TransactionPrefix))
+        {
+            badgePanel.Children.Add(CreateArticleBadge($"Prefix {material.TransactionPrefix}"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(material.ToolFixtureKind))
+        {
+            badgePanel.Children.Add(CreateArticleBadge(material.ToolFixtureKind));
+        }
+
+        stack.Children.Add(smallTitle);
+        stack.Children.Add(number);
+        stack.Children.Add(description);
+        stack.Children.Add(badgePanel);
+
+        border.Child = stack;
+        return border;
+    }
+
+    private static (string? MaterialKind, string Title, string Subtitle)? GetSelectionConfig(string transactionCode)
+    {
+        return transactionCode.ToUpperInvariant() switch
+        {
+            "SAP03" => (
+                null,
+                "Výběr SAP materiálu",
+                "Zobrazují se všechny importované SAP materiály ze SAP mirror cache."),
+
+            "ART03" => (
+                nameof(SapMaterialKind.GlassArticle),
+                "Výběr artiklu",
+                "Zobrazují se pouze skleněné artikly / flakony."),
+
+            "KUP03" => (
+                nameof(SapMaterialKind.PurchasedPart),
+                "Výběr nakupovaného dílu",
+                "Zobrazují se pouze nakupované díly."),
+
+            "REC03" => (
+                nameof(SapMaterialKind.Recipe),
+                "Výběr receptury",
+                "Zobrazují se pouze receptury."),
+
+            "KOM03" => (
+                nameof(SapMaterialKind.AssemblyPart),
+                "Výběr kompletačního dílu",
+                "Zobrazují se pouze kompletační díly."),
+
+            "PRIP03" => (
+                nameof(SapMaterialKind.ToolFixture),
+                "Výběr přípravku",
+                "Zobrazují se pouze přípravky."),
+
+            "BAL03" => (
+                nameof(SapMaterialKind.Packaging),
+                "Výběr obalového materiálu",
+                "Zobrazují se obalové materiály a balicí sady z okruhu 13*."),
+
+            _ => null
+        };
+    }
+
+    private void BtnToggleLeftPanel_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleLeftPanel();
+    }
+
+    private void EnsureLeftPanelVisibleOnStartup()
+    {
+        _isLeftPanelVisible = true;
+
+        LeftPanelColumn.MinWidth = 350;
+        LeftPanelColumn.Width = new GridLength(283);
+        LeftPanelSplitterColumn.Width = new GridLength(5);
+
+        LeftMenuPanel.Visibility = Visibility.Visible;
+        LeftPanelSplitter.Visibility = Visibility.Visible;
+
+        BtnToggleLeftPanel.Content = "☰";
+        BtnToggleLeftPanel.ToolTip = "Skrýt levý panel";
+    }
+
+    private void ToggleLeftPanel()
+    {
+        if (_isLeftPanelVisible)
+        {
+            if (LeftPanelColumn.Width.Value > 0)
+            {
+                _lastLeftPanelWidth = LeftPanelColumn.Width;
+            }
+
+            LeftMenuPanel.Visibility = Visibility.Collapsed;
+            LeftPanelSplitter.Visibility = Visibility.Collapsed;
+
+            LeftPanelColumn.MinWidth = 0;
+            LeftPanelColumn.Width = new GridLength(0);
+            LeftPanelSplitterColumn.Width = new GridLength(0);
+
+            _isLeftPanelVisible = false;
+
+            BtnToggleLeftPanel.Content = "☰";
+            BtnToggleLeftPanel.ToolTip = "Zobrazit levý panel";
+
+            return;
+        }
+
+        LeftPanelColumn.MinWidth = 320;
+        LeftPanelColumn.Width = _lastLeftPanelWidth.Value > 0
+            ? _lastLeftPanelWidth
+            : new GridLength(283);
+
+        LeftPanelSplitterColumn.Width = new GridLength(5);
+
+        LeftMenuPanel.Visibility = Visibility.Visible;
+        LeftPanelSplitter.Visibility = Visibility.Visible;
+
+        _isLeftPanelVisible = true;
+
+        BtnToggleLeftPanel.Content = "☰";
+        BtnToggleLeftPanel.ToolTip = "Skrýt levý panel";
+    }
+
+    private void LeftMenuScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is not ScrollViewer scrollViewer)
+        {
+            return;
+        }
+
+        scrollViewer.ScrollToVerticalOffset(
+            scrollViewer.VerticalOffset - e.Delta);
+
+        e.Handled = true;
+    }
+
+    private void LeftMenuChild_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        LeftMenuScrollViewer.ScrollToVerticalOffset(
+            LeftMenuScrollViewer.VerticalOffset - e.Delta);
+
+        e.Handled = true;
+    }
 }

@@ -4,7 +4,7 @@ public sealed class DmsAppSettings
 {
     public string Environment { get; set; } = "DEV";
     public string ConfigurationMode { get; set; } = "LocalJson";
-
+    public string ArticlesDataPath { get; set; } = string.Empty;
     public string ConfigurationRootPath { get; set; } = string.Empty;
     public string DocumentsRootPath { get; set; } = string.Empty;
     public string LogsRootPath { get; set; } = string.Empty;

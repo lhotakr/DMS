@@ -1,9 +1,29 @@
 [
   {
-    "code": "ART03",
-    "name": "Karta artiklu",
+    "code": "ART01",
+    "name": "Založení artiklu",
     "module": "Artikly",
-    "description": "Zobrazí kartu artiklu podle SAP čísla.",
+    "description": "Založí nový DMS profil artiklu.",
+    "handlerKey": "ArticleCreate",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE" ]
+  },
+  {
+    "code": "ART02",
+    "name": "Změna artiklu",
+    "module": "Artikly",
+    "description": "Upraví DMS profil artiklu.",
+    "handlerKey": "ArticleChange",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE" ]
+  },
+  {
+    "code": "ART03",
+    "name": "Náhled artiklu",
+    "module": "Artikly",
+    "description": "Zobrazí DMS kartu artiklu.",
     "handlerKey": "ArticleCard",
     "requiresArticleNumber": true,
     "isActive": true,
@@ -108,5 +128,95 @@
     "requiresArticleNumber": false,
     "isActive": true,
     "roles": [ "DMS_ADMIN" ]
+  },
+  {
+    "code": "SAP00",
+    "name": "Import SAP dat",
+    "module": "SAP",
+    "description": "Importuje SAP materiály ze souborů MARA a MAKT.",
+    "handlerKey": "SapMaterialImport",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE" ]
+  },
+  {
+    "code": "SAP03",
+    "name": "Náhled SAP materiálu",
+    "module": "SAP",
+    "description": "Zobrazí SAP materiál z lokální SAP mirror cache.",
+    "handlerKey": "SapMaterialDisplay",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "SAP01",
+    "name": "Založení SAP materiálu v DMS",
+    "module": "SAP",
+    "description": "Ručně založí SAP materiál do lokální DMS cache.",
+    "handlerKey": "SapMaterialCreate",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE" ]
+  },
+  {
+    "code": "SAP02",
+    "name": "Úprava SAP materiálu v DMS",
+    "module": "SAP",
+    "description": "Upraví lokální DMS údaje k SAP materiálu.",
+    "handlerKey": "SapMaterialEdit",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE" ]
+  },
+  {
+    "code": "KUP03",
+    "name": "Náhled nakupovaného dílu",
+    "module": "SAP",
+    "description": "Zobrazí nakupovaný díl ze SAP mirror cache.",
+    "handlerKey": "SapPurchasedPartDisplay",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "REC03",
+    "name": "Náhled receptury",
+    "module": "SAP",
+    "description": "Zobrazí recepturu ze SAP mirror cache.",
+    "handlerKey": "SapRecipeDisplay",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "KOM03",
+    "name": "Náhled kompletačního dílu",
+    "module": "SAP",
+    "description": "Zobrazí kompletační díl ze SAP mirror cache.",
+    "handlerKey": "SapAssemblyPartDisplay",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "PRIP03",
+    "name": "Náhled přípravku",
+    "module": "SAP",
+    "description": "Zobrazí přípravek ze SAP mirror cache.",
+    "handlerKey": "SapToolFixtureDisplay",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "BAL03",
+    "name": "Náhled obalového materiálu",
+    "module": "SAP",
+    "description": "Zobrazí obalový materiál nebo balicí sadu ze SAP mirror cache.",
+    "handlerKey": "SapPackagingDisplay",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
   }
 ]

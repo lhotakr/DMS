@@ -8,6 +8,93 @@
         Icon="/Assets/DMS_SystemIcon.ico"
         Background="{DynamicResource DmsBackgroundBrush}">
 
+    <Window.Resources>
+        <Style TargetType="{x:Type ToolTip}">
+            <Setter Property="Background"
+                Value="{DynamicResource DmsPanelBrush}"/>
+
+            <Setter Property="Foreground"
+                Value="{DynamicResource DmsForegroundBrush}"/>
+
+            <Setter Property="BorderBrush"
+                Value="{DynamicResource DmsBorderBrush}"/>
+
+            <Setter Property="BorderThickness"
+                Value="1"/>
+
+            <Setter Property="Padding"
+                Value="8,5"/>
+
+            <Setter Property="FontSize"
+                Value="13"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToolTip}">
+                        <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            
+        </Style>
+        <Style TargetType="{x:Type ScrollBar}">
+            <Setter Property="Background"
+            Value="{DynamicResource DmsBackgroundBrush}"/>
+
+            <Setter Property="Foreground"
+            Value="{DynamicResource DmsMutedForegroundBrush}"/>
+
+            <Setter Property="BorderBrush"
+            Value="{DynamicResource DmsBorderBrush}"/>
+
+            <Setter Property="Width"
+            Value="12"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollBar}">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Track x:Name="PART_Track"
+                           IsDirectionReversed="True">
+
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand"
+                                          Opacity="0"
+                                          Focusable="False"/>
+                                </Track.DecreaseRepeatButton>
+
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="{x:Type Thumb}">
+                                                <Border Margin="2"
+                                                CornerRadius="4"
+                                                Background="{DynamicResource DmsBorderBrush}"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand"
+                                          Opacity="0"
+                                          Focusable="False"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+    </Window.Resources>
+
     <Window.CommandBindings>
         <CommandBinding Command="ApplicationCommands.New"
                         Executed="NewWindowCommand_Executed" />
@@ -56,12 +143,12 @@
 
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Transakce:"
-                           VerticalAlignment="Center"
-                           Margin="0,0,8,0"
-                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+               VerticalAlignment="Center"
+               Margin="0,0,8,0"
+               Foreground="{DynamicResource DmsForegroundBrush}"/>
 
                 <Grid Width="420"
-      Height="32">
+          Height="32">
 
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -69,55 +156,66 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBox x:Name="TxtTransaction"
-             Grid.Column="0"
-             Height="32"
-             VerticalContentAlignment="Center"
-             KeyDown="TxtTransaction_KeyDown"
-             Background="{DynamicResource DmsBackgroundBrush}"
-             Foreground="{DynamicResource DmsForegroundBrush}"
-             BorderBrush="{DynamicResource DmsBorderBrush}"
-             CaretBrush="{DynamicResource DmsForegroundBrush}"/>
+                 Grid.Column="0"
+                 Height="32"
+                 VerticalContentAlignment="Center"
+                 KeyDown="TxtTransaction_KeyDown"
+                 Background="{DynamicResource DmsBackgroundBrush}"
+                 Foreground="{DynamicResource DmsForegroundBrush}"
+                 BorderBrush="{DynamicResource DmsBorderBrush}"
+                 CaretBrush="{DynamicResource DmsForegroundBrush}"/>
 
                     <Button x:Name="BtnTransactionHistory"
-            Grid.Column="1"
-            Content="▼"
-            Height="32"
-            Background="{DynamicResource DmsPanelBrush}"
-            Foreground="{DynamicResource DmsForegroundBrush}"
-            BorderBrush="{DynamicResource DmsBorderBrush}"
-            Click="BtnTransactionHistory_Click"/>
+                Grid.Column="1"
+                Content="▼"
+                Height="32"
+                Background="{DynamicResource DmsPanelBrush}"
+                Foreground="{DynamicResource DmsForegroundBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                Click="BtnTransactionHistory_Click"/>
 
                     <Popup x:Name="PopupTransactionHistory"
-           PlacementTarget="{Binding ElementName=TxtTransaction}"
-           Placement="Bottom"
-           StaysOpen="False"
-           AllowsTransparency="True"
-           Width="420">
+               PlacementTarget="{Binding ElementName=TxtTransaction}"
+               Placement="Bottom"
+               StaysOpen="False"
+               AllowsTransparency="True"
+               Width="420">
 
                         <Border Background="{DynamicResource DmsPanelBrush}"
-                BorderBrush="{DynamicResource DmsBorderBrush}"
-                BorderThickness="1"
-                MaxHeight="320">
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    MaxHeight="320">
 
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <ListBox x:Name="LstTransactionHistory"
-                         Background="{DynamicResource DmsPanelBrush}"
-                         Foreground="{DynamicResource DmsForegroundBrush}"
-                         BorderThickness="0"
-                         MouseLeftButtonUp="LstTransactionHistory_MouseLeftButtonUp"/>
+                             Background="{DynamicResource DmsPanelBrush}"
+                             Foreground="{DynamicResource DmsForegroundBrush}"
+                             BorderThickness="0"
+                             MouseLeftButtonUp="LstTransactionHistory_MouseLeftButtonUp"/>
                             </ScrollViewer>
                         </Border>
                     </Popup>
                 </Grid>
 
                 <Button Content="★"
-                        Width="40"
-                        Height="32"
-                        Margin="8,0,0,0"
-                        Background="{DynamicResource DmsPanelBrush}"
-                        Foreground="{DynamicResource DmsForegroundBrush}"
-                        BorderBrush="{DynamicResource DmsBorderBrush}"
-                        Click="BtnAddFavorite_Click"/>
+            Width="40"
+            Height="32"
+            Margin="8,0,0,0"
+            Background="{DynamicResource DmsPanelBrush}"
+            Foreground="{DynamicResource DmsForegroundBrush}"
+            BorderBrush="{DynamicResource DmsBorderBrush}"
+            Click="BtnAddFavorite_Click"/>
+
+                <Button x:Name="BtnToggleLeftPanel"
+            Content="☰"
+            Width="42"
+            Height="32"
+            Margin="8,0,0,0"
+            ToolTip="Skrýt levý panel"
+            Background="{DynamicResource DmsAccentBrush}"
+            Foreground="{DynamicResource DmsOnAccentBrush}"
+            BorderBrush="{DynamicResource DmsBorderBrush}"
+            Click="BtnToggleLeftPanel_Click"/>
             </StackPanel>
         </Border>
 
@@ -133,157 +231,195 @@
         </StatusBar>
 
         <!-- Levé menu -->
-        <Border x:Name="LeftMenuPanel"
-                DockPanel.Dock="Left"
-                Width="283"
-                Background="{DynamicResource DmsPanelBrush}"
-                Padding="16"
-                BorderBrush="{DynamicResource DmsBorderBrush}"
-                BorderThickness="0,0,1,0">
-            <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled"
-                  CanContentScroll="False">
-                <StackPanel>
-                    <TextBlock Text="Oblíbené"
+        <!-- Hlavní obsah: levý panel + splitter + pracovní plocha -->
+        <Grid x:Name="MainContentGrid"
+              Background="{DynamicResource DmsBackgroundBrush}">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="LeftPanelColumn"
+                          Width="283"
+                          MinWidth="220"
+                          MaxWidth="520"/>
+
+                <ColumnDefinition x:Name="LeftPanelSplitterColumn"
+                          Width="5"/>
+
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Levé menu -->
+            <Border x:Name="LeftMenuPanel"
+            Grid.Column="0"
+            Background="{DynamicResource DmsPanelBrush}"
+            Padding="16"
+            BorderBrush="{DynamicResource DmsBorderBrush}"
+            BorderThickness="0,0,1,0">
+
+                <ScrollViewer x:Name="LeftMenuScrollViewer"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              CanContentScroll="False"
+                              PreviewMouseWheel="LeftMenuScrollViewer_PreviewMouseWheel">
+
+                    <StackPanel>
+                        <TextBlock Text="Oblíbené"
                            FontSize="16"
                            FontWeight="Bold"
                            Foreground="{DynamicResource DmsForegroundBrush}"
                            Margin="0,0,0,8"/>
 
-                    <ListBox x:Name="LstFavorites"
-                         BorderThickness="0"
-                         Background="Transparent"
-                         Foreground="{DynamicResource DmsForegroundBrush}"
-                         DisplayMemberPath="DisplayText"
-                         PreviewMouseRightButtonDown="LstFavorites_PreviewMouseRightButtonDown"
-                         Margin="0,0,0,8">
+                        <ListBox x:Name="LstFavorites"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource DmsForegroundBrush}"
+                                 DisplayMemberPath="DisplayText"
+                                 PreviewMouseWheel="LeftMenuChild_PreviewMouseWheel"
+                                 PreviewMouseRightButtonDown="LstFavorites_PreviewMouseRightButtonDown"
+                                 Margin="0,0,0,8">
 
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListBoxItem}">
-                                <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <EventSetter Event="MouseLeftButtonUp"
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListBoxItem}">
+                                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <EventSetter Event="MouseLeftButtonUp"
                                          Handler="FavoriteItem_MouseLeftButtonUp"/>
-                            </Style>
-                        </ListBox.ItemContainerStyle>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
 
-                        <ListBox.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Odebrat z oblíbených"
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Odebrat z oblíbených"
                                       Click="RemoveFavoriteMenuItem_Click"/>
-                            </ContextMenu>
-                        </ListBox.ContextMenu>
-                    </ListBox>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+                        </ListBox>
 
-                    <Separator Margin="0,12"
+                        <Separator Margin="0,12"
                            Background="{DynamicResource DmsBorderBrush}"/>
 
-                    <TextBlock Text="Moduly"
+                        <TextBlock Text="Moduly"
                            FontSize="16"
                            FontWeight="Bold"
                            Foreground="{DynamicResource DmsForegroundBrush}"
                            Margin="0,0,0,8"/>
 
-                    <ListBox x:Name="LstModules"
-                         BorderThickness="0"
-                         Background="Transparent"
-                         Foreground="{DynamicResource DmsForegroundBrush}"
-                         DisplayMemberPath="DisplayText"
-                         SelectionChanged="LstModules_SelectionChanged"
-                         Margin="0,0,0,8"/>
+                        <ListBox x:Name="LstModules"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource DmsForegroundBrush}"
+                                 DisplayMemberPath="DisplayText"
+                                 SelectionChanged="LstModules_SelectionChanged"
+                                 PreviewMouseWheel="LeftMenuChild_PreviewMouseWheel"
+                                 Margin="0,0,0,8"/>
 
-                    <Separator Margin="0,12"
+                        <Separator Margin="0,12"
                            Background="{DynamicResource DmsBorderBrush}"/>
 
-                    <TextBlock Text="Transakce v modulu"
+                        <TextBlock Text="Transakce v modulu"
                            FontSize="16"
                            FontWeight="Bold"
                            Foreground="{DynamicResource DmsForegroundBrush}"
                            Margin="0,0,0,8"/>
 
-                    <ListBox x:Name="LstModuleTransactions"
-                         BorderThickness="0"
-                         Background="Transparent"
-                         Foreground="{DynamicResource DmsForegroundBrush}"
-                         Margin="0,0,0,8"
-                         HorizontalContentAlignment="Stretch">
+                        <ListBox x:Name="LstModuleTransactions"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource DmsForegroundBrush}"
+                                 Margin="0,0,0,8"
+                                 HorizontalContentAlignment="Stretch"
+                                 PreviewMouseWheel="LeftMenuChild_PreviewMouseWheel">
 
-                        <ListBox.Resources>
-                            <Style x:Key="FlatIconButtonStyle" TargetType="Button">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="Padding" Value="0"/>
-                                <Setter Property="Margin" Value="0"/>
-                                <Setter Property="Focusable" Value="False"/>
-                                <Setter Property="Cursor" Value="Hand"/>
-                                <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
-                            </Style>
-                        </ListBox.Resources>
+                            <ListBox.Resources>
+                                <Style x:Key="FlatIconButtonStyle"
+                               TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="Focusable" Value="False"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                                </Style>
+                            </ListBox.Resources>
 
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0,2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="24"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="24"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
 
-                                    <Button Grid.Column="0"
+                                        <Button Grid.Column="0"
                                         Style="{StaticResource FlatIconButtonStyle}"
                                         Content="{Binding FavoriteIcon}"
                                         ToolTip="{Binding FavoriteToolTip}"
                                         Tag="{Binding Code}"
                                         Click="BtnToggleFavorite_Click"/>
 
-                                    <Button Grid.Column="1"
+                                        <Button Grid.Column="1"
                                         Style="{StaticResource FlatIconButtonStyle}"
                                         Tag="{Binding Code}"
                                         HorizontalContentAlignment="Left"
                                         Click="BtnExecuteModuleTransaction_Click">
-                                        <TextBlock Text="{Binding DisplayText}"
+
+                                            <TextBlock Text="{Binding DisplayText}"
                                                Foreground="{DynamicResource DmsForegroundBrush}"
                                                VerticalAlignment="Center"/>
-                                    </Button>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
 
-        <!-- Pracovní plocha -->
-        <Grid Background="{DynamicResource DmsBackgroundBrush}"
-              Margin="20">
+            <!-- Resizer levého panelu -->
+            <GridSplitter x:Name="LeftPanelSplitter"
+                  Grid.Column="1"
+                  Width="5"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  Background="{DynamicResource DmsBorderBrush}"
+                  ResizeBehavior="PreviousAndNext"
+                  ResizeDirection="Columns"
+                  ShowsPreview="True"/>
 
-            <ScrollViewer x:Name="WorkspaceScrollViewer"
-                  VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Auto"
-                  CanContentScroll="False">
+            <!-- Pracovní plocha -->
+            <Grid Grid.Column="2"
+          Background="{DynamicResource DmsBackgroundBrush}"
+          Margin="20">
 
-                <Border x:Name="WorkspaceHost"
+                <ScrollViewer x:Name="WorkspaceScrollViewer"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Auto"
+                      CanContentScroll="False">
+
+                    <Border x:Name="WorkspaceHost"
                     Background="{DynamicResource DmsPanelBrush}"
                     Padding="24"
                     CornerRadius="4"
                     BorderBrush="{DynamicResource DmsBorderBrush}"
                     BorderThickness="1">
 
-                    <Grid x:Name="WorkspacePanel">
-                        <StackPanel>
-                            <TextBlock Text="Vítejte v DMS"
-                   FontSize="24"
-                   FontWeight="Bold"
-                   Foreground="{DynamicResource DmsForegroundBrush}"
-                   Margin="0,0,0,16"/>
+                        <Grid x:Name="WorkspacePanel">
+                            <StackPanel>
+                                <TextBlock Text="Vítejte v DMS"
+                                   FontSize="24"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   Margin="0,0,0,16"/>
 
-                            <TextBlock Text="Zadejte transakci nebo vyberte položku z menu."
-                   FontSize="16"
-                   Foreground="{DynamicResource DmsForegroundBrush}"
-                   Margin="0,4"/>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-            </ScrollViewer>
+                                <TextBlock Text="Zadejte transakci nebo vyberte položku z menu."
+                                   FontSize="16"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   Margin="0,4"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </ScrollViewer>
+            </Grid>
         </Grid>
     </DockPanel>
 </Window>

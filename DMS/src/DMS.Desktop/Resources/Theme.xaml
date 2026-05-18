@@ -26,11 +26,13 @@
 
     <!-- TextBox -->
     <Style TargetType="{x:Type TextBox}">
-        <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
-        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
-        <Setter Property="CaretBrush" Value="{DynamicResource DmsForegroundBrush}"/>
-        <Setter Property="Padding" Value="4"/>
+    	<Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+    	<Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+    	<Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+    	<Setter Property="CaretBrush" Value="{DynamicResource DmsForegroundBrush}"/>
+    	<Setter Property="SelectionBrush" Value="{DynamicResource DmsAccentBrush}"/>
+    	<Setter Property="SelectionTextBrush" Value="{DynamicResource DmsOnAccentBrush}"/>
+    	<Setter Property="Padding" Value="6,3"/>
     </Style>
 
     <!-- ComboBox -->
@@ -160,9 +162,13 @@
     <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource DmsBorderBrush}"/>
     <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource DmsBorderBrush}"/>
     <Setter Property="HeadersVisibility" Value="Column"/>
+    <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+    <Setter Property="CanUserResizeColumns" Value="True"/>
+    <Setter Property="CanUserReorderColumns" Value="True"/>
+    <Setter Property="CanUserSortColumns" Value="True"/>
 </Style>
 
-<!-- Hlavička sloupce -->
+<!-- Hlavička DataGrid sloupce -->
 <Style TargetType="{x:Type DataGridColumnHeader}">
     <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
     <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
@@ -172,7 +178,7 @@
     <Setter Property="FontWeight" Value="Bold"/>
 </Style>
 
-<!-- Řádek -->
+<!-- DataGrid řádek -->
 <Style TargetType="{x:Type DataGridRow}">
     <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
     <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
@@ -189,7 +195,7 @@
     </Style.Triggers>
 </Style>
 
-<!-- Buňka -->
+<!-- DataGrid buňka -->
 <Style TargetType="{x:Type DataGridCell}">
     <Setter Property="Background" Value="Transparent"/>
     <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
@@ -205,4 +211,86 @@
     </Style.Triggers>
 </Style>
 
+<Style TargetType="{x:Type TextBox}" x:Key="DmsDataGridEditingTextBoxStyle">
+    <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource DmsAccentBrush}"/>
+    <Setter Property="CaretBrush" Value="{DynamicResource DmsForegroundBrush}"/>
+    <Setter Property="SelectionBrush" Value="{DynamicResource DmsAccentBrush}"/>
+    <Setter Property="SelectionTextBrush" Value="{DynamicResource DmsOnAccentBrush}"/>
+    <Setter Property="Padding" Value="4,2"/>
+</Style>
+
+<!-- TabControl -->
+<Style TargetType="{x:Type TabControl}">
+    <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+</Style>
+
+<Style TargetType="{x:Type TabItem}">
+    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+    <Setter Property="Padding" Value="12,7"/>
+    <Setter Property="Margin" Value="0,0,2,0"/>
+    <Setter Property="Template">
+        <Setter.Value>
+            <ControlTemplate TargetType="{x:Type TabItem}">
+                <Border x:Name="TabBorder"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="1"
+                        Padding="{TemplateBinding Padding}">
+                    <ContentPresenter x:Name="ContentSite"
+                                      ContentSource="Header"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      RecognizesAccessKey="True"/>
+                </Border>
+
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter TargetName="TabBorder"
+                                Property="Background"
+                                Value="{DynamicResource DmsPanelBrush}"/>
+                        <Setter TargetName="TabBorder"
+                                Property="BorderBrush"
+                                Value="{DynamicResource DmsAccentBrush}"/>
+                        <Setter Property="Foreground"
+                                Value="{DynamicResource DmsForegroundBrush}"/>
+                        <Setter Property="FontWeight"
+                                Value="SemiBold"/>
+                    </Trigger>
+
+                    <Trigger Property="IsSelected" Value="False">
+                        <Setter TargetName="TabBorder"
+                                Property="Background"
+                                Value="{DynamicResource DmsBackgroundBrush}"/>
+                        <Setter Property="Foreground"
+                                Value="{DynamicResource DmsMutedForegroundBrush}"/>
+                    </Trigger>
+
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="TabBorder"
+                                Property="BorderBrush"
+                                Value="{DynamicResource DmsAccentBrush}"/>
+                        <Setter Property="Foreground"
+                                Value="{DynamicResource DmsForegroundBrush}"/>
+                    </Trigger>
+
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter TargetName="TabBorder"
+                                Property="Background"
+                                Value="{DynamicResource DmsBackgroundBrush}"/>
+                        <Setter Property="Foreground"
+                                Value="{DynamicResource DmsMutedForegroundBrush}"/>
+                        <Setter Property="Opacity"
+                                Value="0.55"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+        </Setter.Value>
+    </Setter>
+</Style>
 </ResourceDictionary>
