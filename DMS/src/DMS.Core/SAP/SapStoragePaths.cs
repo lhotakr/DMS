@@ -14,7 +14,7 @@ public sealed class SapStoragePaths
         Path.Combine(RootDirectory, "DmsData");
 
     public string MaterialRangesFilePath =>
-        Path.Combine(ConfigDirectory, "sap-material-ranges.json");
+        Path.Combine(ConfigDirectory, "sap-material-rules.json");
 
     public string SapMaterialsFilePath =>
         Path.Combine(SapMirrorDirectory, "sap-materials.json");

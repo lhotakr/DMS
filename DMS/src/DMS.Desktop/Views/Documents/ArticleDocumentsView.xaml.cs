@@ -209,4 +209,5 @@ public partial class ArticleDocumentsView : UserControl
                 MessageBoxImage.Error);
         }
     }
+
 }

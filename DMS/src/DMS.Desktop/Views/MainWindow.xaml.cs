@@ -12,9 +12,13 @@ using DMS.Desktop.Views.Admin;
 using DMS.Desktop.Views.Articles;
 using DMS.Desktop.Views.Dialogs;
 using DMS.Desktop.Views.Documents;
-using DMS.Desktop.Views.Sap;
 using DMS.Desktop.Views.Settings;
+using DMS.Desktop.Views.SystemRoles;
+using DMS.Desktop.Views.SystemSettings;
+using DMS.Desktop.Views.SystemTransactions;
+using DMS.Desktop.Views.SystemModules;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Security.Principal;
 using System.Windows;
 using System.Windows.Controls;
@@ -33,6 +37,7 @@ public partial class MainWindow : Window
     private readonly DmsAppSettingsService _appSettingsService = new();
     private readonly DmsLogger _logger = new(@"Z:\SAP\DMS-db\DEV\Logs");
     private readonly DmsLogReader _logReader = new();
+    private SapDecorationRuleService _decorationRuleService = null!;
 
     private DmsAppSettings _appSettings = new();
     private DmsUserSettings _userSettings = new();
@@ -40,10 +45,18 @@ public partial class MainWindow : Window
     private FavoriteTransactionItem? _favoriteContextMenuItem;
     private JsonArticleRepository _articleRepository = null!;
     private string _usersConfigPath = string.Empty;
+
+    private readonly Stack<string> _navigationBackStack = new();
+    private readonly Stack<string> _navigationForwardStack = new();
+    private string? _currentTransactionCommand;
+    private bool _isNavigatingFromHistory;
+  
+
     public MainWindow()
     {
         InitializeComponent();
         _appSettings = _appSettingsService.Load();
+
         var articlesFilePath = string.IsNullOrWhiteSpace(_appSettings.ArticlesDataPath)
             ? Path.Combine(_appSettings.ConfigurationRootPath, "..", "Data", "articles.json")
             : _appSettings.ArticlesDataPath;
@@ -56,6 +69,13 @@ public partial class MainWindow : Window
 
         _logger = new DmsLogger(_appSettings.LogsRootPath);
         _logger.Info("DMS klient spuštěn.");
+
+        var decorationRulesPath = Path.Combine(AppContext.BaseDirectory, "Config", "sap-decoration-rules.json");
+
+        var decorationRules = new SapDecorationRulesLoader()
+            .LoadFromJson(decorationRulesPath);
+
+        _decorationRuleService = new SapDecorationRuleService(decorationRules);
 
         EnsureLeftPanelVisibleOnStartup();
         InitializeCurrentUser();
@@ -274,10 +294,12 @@ public partial class MainWindow : Window
         newWindow.Show();
     }
 
+    [SupportedOSPlatform("windows")]
     private void InitializeCurrentUser()
     {
+        //var windowsLogin = WindowsIdentity.GetCurrent()?.Name ?? string.Empty;
         var windowsLogin = WindowsIdentity.GetCurrent()?.Name ?? string.Empty;
-        _usersConfigPath = Path.Combine(AppContext.BaseDirectory,"Config","users.json");
+        _usersConfigPath = Path.Combine(AppContext.BaseDirectory, "Config", "users.json");
 
         var loader = new DmsUserLoader();
         var users = loader.LoadFromJson(_usersConfigPath);
@@ -342,26 +364,50 @@ public partial class MainWindow : Window
 
         var handlers = new ITransactionHandler[]
         {
+            // DMS set
+            new SettingsTransactionHandler(() => _userSettings.MaxTransactionHistoryItems),
+            new SimpleMessageTransactionHandler("ClientSettings", "Nastavení klienta"),
+            new SimpleMessageTransactionHandler("SystemSettings", "Nastavení systému DMS"),
+            new SimpleMessageTransactionHandler("SystemDisplay", "Náhled systému DMS"),
+            new SimpleMessageTransactionHandler("TransactionManagement", "Správa transakcí"),
+            new SimpleMessageTransactionHandler("RoleManagement", "Správa rolí"),
+            new SimpleMessageTransactionHandler("ModuleManagement", "Správa modulů"),
             new SimpleMessageTransactionHandler("LogViewer", "Log aplikace"),
+            // DMS app
+            new SimpleMessageTransactionHandler("TechnicalArticleSummary","Technologický souhrn artiklu"),
+            new SimpleMessageTransactionHandler("RecipeOverview","Technologický souhrn receptur"),
+            new SimpleMessageTransactionHandler("SimpleMessage", "Transakce"),
+            // misc
             new ArticleCardTransactionHandler(),
             new ArticleDocumentsTransactionHandler(),
             new ArticleScreensTransactionHandler(),
             new SimpleMessageTransactionHandler("ScreenPreparationQueue", "Fronta přípravy sít"),
             new SimpleMessageTransactionHandler("OrderOverview", "Přehled zakázek"),
-            new SystemInfoTransactionHandler(() => _currentUser),
             new HelpTransactionHandler(() => _transactionDispatcher.GetDefinitions()),
-            new SettingsTransactionHandler(() => _userSettings.MaxTransactionHistoryItems),
             new SimpleMessageTransactionHandler("UserManagement", "Správa uživatelů"),
-            new SimpleMessageTransactionHandler("SystemConfiguration", "Systémová konfigurace"),
             new ArticleCreateTransactionHandler(),
             new ArticleChangeTransactionHandler(),
-            new SimpleMessageTransactionHandler("SapMaterialImport", "Import SAP dat"),
+            // SAP
+            new SimpleMessageTransactionHandler("SapSettings","SAP nastavení"),
             new SimpleMessageTransactionHandler("SapMaterialDisplay", "Náhled SAP materiálu"),
+            new SimpleMessageTransactionHandler("SapCockpit", "SAP import cockpit"),
+            new SimpleMessageTransactionHandler("SapMaterialCreate", "Ruční založení materiálu"),
+            new SimpleMessageTransactionHandler("SapMaterialEdit", "Ruční editace materiálu"),
             new SimpleMessageTransactionHandler("SapPurchasedPartDisplay", "Náhled nakupovaného dílu"),
             new SimpleMessageTransactionHandler("SapRecipeDisplay", "Náhled receptury"),
             new SimpleMessageTransactionHandler("SapAssemblyPartDisplay", "Náhled kompletačního dílu"),
             new SimpleMessageTransactionHandler("SapToolFixtureDisplay", "Náhled přípravku"),
-            new SimpleMessageTransactionHandler("SapPackagingDisplay", "Náhled obalového materiálu")
+            new SimpleMessageTransactionHandler("SapPackagingDisplay", "Náhled obalového materiálu"),
+            // Quality Assurance Department
+            new SimpleMessageTransactionHandler("QualitySettings","Quality nastavení"),
+            new SimpleMessageTransactionHandler("QualityCockpit", "Quality cockpit"),
+            new SimpleMessageTransactionHandler("QualityArticleDisplay", "Quality karta"),
+            new SimpleMessageTransactionHandler("QualityPrintVersionList", "Přehled tiskových verzí"),
+            new SimpleMessageTransactionHandler("QualityArticleEdit", "Změna quality dat"),
+            new SimpleMessageTransactionHandler("QualityArticleCreate", "Založení quality dat"),
+            new SimpleMessageTransactionHandler("QualityTasksOverview","Quality úkoly"),
+
+
         };
 
         _transactionDispatcher = new TransactionDispatcher(definitions, handlers);
@@ -755,6 +801,7 @@ public partial class MainWindow : Window
         if (!UserCanExecuteTransaction(completedCommand.Code, out var authorizationMessage))
         {
             _logger.Warning($"Zamítnuté spuštění transakce {completedCommand.Code}: {authorizationMessage}");
+
             RenderTransactionResult(TransactionResult.Fail(
                 completedCommand.Code,
                 authorizationMessage));
@@ -764,6 +811,8 @@ public partial class MainWindow : Window
         }
 
         var completedTransactionText = BuildTransactionText(completedCommand);
+
+        RegisterNavigation(completedTransactionText);
 
         AddTransactionToHistory(completedTransactionText);
         ClearTransactionInput();
@@ -1046,12 +1095,11 @@ public partial class MainWindow : Window
                 break;
 
             case "ART03":
-                //RenderArticleDetail(result.Parameter!);
                 RenderArticleCard(result.Parameter!);
                 break;
 
             case "DOC03":
-                RenderArticleDocuments(result.Parameter!);
+                RenderArticleDocuments(result.Parameter ?? string.Empty);
                 break;
 
             case "SCR03":
@@ -1074,28 +1122,84 @@ public partial class MainWindow : Window
                 RenderHelp(result.Message);
                 break;
 
-            case "SET01":
+            case "CLSET":
                 RenderClientSettings();
+                break;
+
+            case "SYS01":
+                RenderSystemSettings();
+                break;
+
+            case "SYS03":
+                RenderSystemDisplay();
+                break;
+
+            case "SYS11":
+                RenderTransactionManagement();
+                break;
+
+            case "SYS12":
+                RenderRoleManagement();
+                break;
+
+            case "SYS13":
+                RenderModuleManagement();
                 break;
 
             case "USR01":
                 RenderUserManagement();
                 break;
 
-            case "SYS01":
-                RenderSystemConfiguration();
-                break;
-
             case "LOG03":
                 RenderLogViewer();
                 break;
 
+            case "QASET":
+                RenderQualitySettings();
+                break;
+
+            case "QA00":
+                RenderQualityCockpit();
+                break;
+
+            case "QA05":
+                RenderQualityPrintVersions();
+                break;
+
+            case "QA03":
+                RenderQualityArticle(result.Parameter ?? string.Empty);
+                break;
+
+            case "QA02":
+                RenderQualityArticleEdit(result.Parameter ?? string.Empty);
+                break;
+
+            case "QA01":
+                RenderQualityArticleCreate(result.Parameter ?? string.Empty);
+                break;
+
+            case "QATASK":
+                RenderQualityTasksOverview();
+                break;
+
+            case "SAPSET":
+                RenderSapSettings();
+                break;
+
             case "SAP00":
-                RenderSapImport();
+                RenderSapCockpit();
+                break;
+
+            case "SAP01":
+                RenderSimplePage("Ruční založení materiálu", result.Message);
+                break;
+
+            case "SAP02":
+                RenderSimplePage("Ruční editace materiálu", result.Message);
                 break;
 
             case "SAP03":
-                RenderSapMaterialDisplay(result.Parameter!);
+                RenderSapMaterialDisplay(result.Parameter ?? string.Empty);
                 break;
 
             case "KUP03":
@@ -1105,11 +1209,12 @@ public partial class MainWindow : Window
                     "KUP03 - Nakupovaný díl");
                 break;
 
+            case "MAT03":
+                RenderMaterialUsage(result.Parameter ?? string.Empty);
+                break;
+
             case "REC03":
-                RenderTypedSapMaterialDisplay(
-                    result.Parameter!,
-                    nameof(SapMaterialKind.Recipe),
-                    "REC03 - Receptura");
+                RenderRecipeOverview(result.Parameter ?? string.Empty);
                 break;
 
             case "KOM03":
@@ -1131,6 +1236,10 @@ public partial class MainWindow : Window
                     result.Parameter!,
                     nameof(SapMaterialKind.Packaging),
                     "BAL03 - Obalový materiál");
+                break;
+
+            case "TEC03":
+                RenderTechnicalArticleSummary(result.Parameter ?? string.Empty);
                 break;
 
             default:
@@ -1344,13 +1453,7 @@ public partial class MainWindow : Window
 
         ResetWorkspaceScroll();
     }
-    private void RenderSapImport()
-    {
-        WorkspacePanel.Children.Clear();
-
-        WorkspacePanel.Children.Add(new SapImportView());
-    }
-
+   
     private void RenderTypedSapMaterialDisplay(
     string materialNumber,
     string expectedMaterialKind,
@@ -1584,7 +1687,56 @@ public partial class MainWindow : Window
         time = TimeSpan.Zero;
         return false;
     }
-    private void RenderSystemConfiguration()
+
+    private void RenderSystemSettings()
+    {
+        WorkspacePanel.Children.Clear();
+
+        var systemSettingsPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Config",
+            "dms-system-settings.json");
+
+        var sapMaterialsFilePath = Path.Combine(
+            @"Z:\SAP\DMS-db\DEV",
+            "Data",
+            "sap-materials.json");
+
+        WorkspacePanel.Children.Add(new SystemSettingsView(
+            systemSettingsPath,
+            sapMaterialsFilePath));
+
+        ResetWorkspaceScroll();
+    }
+
+    private void RenderTransactionManagement()
+    {
+        WorkspacePanel.Children.Clear();
+
+        var transactionsPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Config",
+            "transactions.json");
+
+        var rolesPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Config",
+            "dms-roles.json");
+
+        var modulesPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Config",
+            "dms-modules.json");
+
+        WorkspacePanel.Children.Add(new TransactionManagementView(
+            transactionsPath,
+            rolesPath,
+            modulesPath,
+            afterSave: ReloadTransactionsAfterManagementSave));
+
+        ResetWorkspaceScroll();
+    }
+    private void RenderSystemDisplay()
     {
         var panel = CreateWorkspaceStack();
 
@@ -1606,6 +1758,11 @@ public partial class MainWindow : Window
         panel.Children.Add(CreateLine($"SAP: {_appSettings.SapMode}"));
         panel.Children.Add(CreateLine($"MES: {_appSettings.MesMode}"));
         panel.Children.Add(CreateLine($"Databáze: {_appSettings.DatabaseMode}"));
+
+        panel.Children.Add(CreateSectionTitle("Aktuální uživatel"));
+        panel.Children.Add(CreateLine($"Windows login: {_currentUser.WindowsLogin}"));
+        panel.Children.Add(CreateLine($"DMS jméno: {_currentUser.DisplayName}"));
+        panel.Children.Add(CreateLine($"Role: {string.Join(", ", _currentUser.Roles)}"));
 
         ResetWorkspaceScroll();
     }
@@ -1720,26 +1877,9 @@ public partial class MainWindow : Window
             : "-";
     }
 
-    private static string GetDecorationName(string? code)
+    private string GetDecorationName(string? code)
     {
-        return code?.ToUpperInvariant() switch
-        {
-            "R" => "Syrové sklo",
-            "B" => "Postřik",
-            "X" => "Speciální úprava",
-            "N" => "Třídění",
-            "D" => "Sítotisk",
-            "P" => "Horká ražba",
-            "E" => "Metalizace",
-            "M" => "Matování",
-            "K" => "Lepení / kompletace",
-            "V" => "Mündung",
-            "L" => "Laser",
-            "T" => "Tamponový tisk",
-            "A" => "Aplikace / doplnit význam",
-            "O" => "Ostatní / doplnit význam",
-            _ => "Neznámý dekorační krok"
-        };
+        return _decorationRuleService.GetName(code);
     }
     private void RenderArticleDocuments(string articleNumber)
     {
@@ -2165,7 +2305,7 @@ public partial class MainWindow : Window
         return border;
     }
 
-    private static StackPanel CreateDecorationFlow(List<string> steps)
+    private StackPanel CreateDecorationFlow(List<string> steps)
     {
         var stack = new StackPanel
         {
@@ -2202,7 +2342,7 @@ public partial class MainWindow : Window
         return stack;
     }
 
-    private static Border CreateDecorationStep(string code)
+    private Border CreateDecorationStep(string code)
     {
         var border = new Border
         {
@@ -2394,9 +2534,19 @@ public partial class MainWindow : Window
                 "Výběr SAP materiálu",
                 "Zobrazují se všechny importované SAP materiály ze SAP mirror cache."),
 
+            "MAT03" => (
+                null,
+                "Výběr SAP materiálu",
+                "Zobrazují se všechny importované SAP materiály ze SAP mirror cache."),
+
             "ART03" => (
                 nameof(SapMaterialKind.GlassArticle),
                 "Výběr artiklu",
+                "Zobrazují se pouze skleněné artikly / flakony."),
+
+            "DOC03" => (
+                nameof(SapMaterialKind.GlassArticle),
+                "Výběr artiklu pro dokumentaci",
                 "Zobrazují se pouze skleněné artikly / flakony."),
 
             "KUP03" => (
@@ -2423,6 +2573,16 @@ public partial class MainWindow : Window
                 nameof(SapMaterialKind.Packaging),
                 "Výběr obalového materiálu",
                 "Zobrazují se obalové materiály a balicí sady z okruhu 13*."),
+
+            "QA03" => (
+                null,
+                "Výběr pro QA03",
+                "Zadej SAP materiál, nebo ručně napiš celé číslo tiskové verze."),
+
+            "QA02" => (
+                null,
+                "Výběr quality artiklu",
+                "Zadej SAP materiál nebo celé číslo tiskové verze."),
 
             _ => null
         };
@@ -2507,5 +2667,149 @@ public partial class MainWindow : Window
             LeftMenuScrollViewer.VerticalOffset - e.Delta);
 
         e.Handled = true;
+    }
+
+    private void BtnBack_Click(object sender, RoutedEventArgs e)
+    {
+        if (_navigationBackStack.Count == 0)
+        {
+            return;
+        }
+
+        var previousCommand = _navigationBackStack.Pop();
+
+        if (!string.IsNullOrWhiteSpace(_currentTransactionCommand))
+        {
+            _navigationForwardStack.Push(_currentTransactionCommand);
+        }
+
+        NavigateWithoutRecording(previousCommand);
+    }
+
+    private void UpdateBackButtonState()
+    {
+        if (BtnBack is not null)
+        {
+            BtnBack.IsEnabled = _navigationBackStack.Count > 0;
+        }
+    }
+
+    private void RegisterNavigation(string newCommandText)
+    {
+        if (string.IsNullOrWhiteSpace(newCommandText))
+        {
+            return;
+        }
+
+        newCommandText = newCommandText.Trim();
+
+        // Důležité:
+        // Pokud se pohybujeme přes Zpět/Vpřed/Aktualizovat,
+        // nesmíme čistit forward stack ani zapisovat novou historii.
+        if (_isNavigatingFromHistory)
+        {
+            _currentTransactionCommand = newCommandText;
+            UpdateNavigationButtons();
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_currentTransactionCommand) &&
+            !string.Equals(_currentTransactionCommand, newCommandText, StringComparison.OrdinalIgnoreCase))
+        {
+            _navigationBackStack.Push(_currentTransactionCommand);
+
+            // Forward se maže jen při úplně nové ruční navigaci.
+            _navigationForwardStack.Clear();
+        }
+
+        _currentTransactionCommand = newCommandText;
+
+        UpdateNavigationButtons();
+    }
+
+    private void UpdateNavigationButtons()
+    {
+        BtnBack.IsEnabled = _navigationBackStack.Count > 0;
+        BtnForward.IsEnabled = _navigationForwardStack.Count > 0;
+        BtnRefreshTransaction.IsEnabled = !string.IsNullOrWhiteSpace(_currentTransactionCommand);
+    }
+
+    private void BtnForward_Click(object sender, RoutedEventArgs e)
+    {
+        if (_navigationForwardStack.Count == 0)
+        {
+            return;
+        }
+
+        var nextCommand = _navigationForwardStack.Pop();
+
+        if (!string.IsNullOrWhiteSpace(_currentTransactionCommand))
+        {
+            _navigationBackStack.Push(_currentTransactionCommand);
+        }
+
+        NavigateWithoutRecording(nextCommand);
+    }
+
+    private void BtnRefreshTransaction_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_currentTransactionCommand))
+        {
+            return;
+        }
+
+        NavigateWithoutRecording(_currentTransactionCommand);
+    }
+
+    private void NavigateWithoutRecording(string commandText)
+    {
+        _isNavigatingFromHistory = true;
+
+        try
+        {
+            TxtTransaction.Text = commandText;
+            ExecuteTransaction(commandText);
+        }
+        finally
+        {
+            _isNavigatingFromHistory = false;
+            UpdateNavigationButtons();
+        }
+    }
+
+    private void ReloadTransactionsAfterManagementSave()
+    {
+        InitializeTransactions();
+
+        RefreshFavoritesList();
+        RefreshModulesList();
+        RefreshModuleTransactionsList(GetSelectedModuleName());
+    }
+    private void RenderRoleManagement()
+    {
+        WorkspacePanel.Children.Clear();
+
+        var rolesPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Config",
+            "dms-roles.json");
+
+        WorkspacePanel.Children.Add(new RoleManagementView(rolesPath));
+
+        ResetWorkspaceScroll();
+    }
+
+    private void RenderModuleManagement()
+    {
+        WorkspacePanel.Children.Clear();
+
+        var modulesPath = Path.Combine(
+            AppContext.BaseDirectory,
+            "Config",
+            "dms-modules.json");
+
+        WorkspacePanel.Children.Add(new ModuleManagementView(modulesPath));
+
+        ResetWorkspaceScroll();
     }
 }

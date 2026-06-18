@@ -1,0 +1,117 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Sap.SapCacheStatusView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Stav SAP cache"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Margin="0,0,0,8"
+                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+        <TextBlock x:Name="TxtSummary"
+                   Grid.Row="1"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,14"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+
+        <DataGrid x:Name="GridCacheStatus"
+                  Grid.Row="2"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserResizeColumns="True"
+                  CanUserReorderColumns="True"
+                  HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal"
+                  Margin="0,0,0,12"
+                  MinHeight="260"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  Background="{DynamicResource DmsBackgroundBrush}"
+                  Foreground="{DynamicResource DmsForegroundBrush}"
+                  BorderBrush="{DynamicResource DmsBorderBrush}"
+                  SelectionMode="Extended"
+                  SelectionUnit="FullRow"
+                  ClipboardCopyMode="IncludeHeader"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto">
+
+            <DataGrid.Resources>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="Padding" Value="8,4"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                    <Setter Property="MinWidth" Value="70"/>
+                    <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+                </Style>
+
+                <Style TargetType="DataGridCell">
+                    <Setter Property="Padding" Value="8,2"/>
+                    <Setter Property="MinWidth" Value="70"/>
+                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+                </Style>
+            </DataGrid.Resources>
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Oblast"
+                                    Binding="{Binding Area}"
+                                    Width="180"
+                                    MinWidth="160"/>
+
+                <DataGridTextColumn Header="Soubor"
+                                    Binding="{Binding FileName}"
+                                    Width="220"
+                                    MinWidth="180"/>
+
+                <DataGridTextColumn Header="Stav"
+                                    Binding="{Binding Status}"
+                                    Width="90"
+                                    MinWidth="80"/>
+
+                <DataGridTextColumn Header="Počet"
+                                    Binding="{Binding CountText}"
+                                    Width="170"
+                                    MinWidth="140"/>
+
+                <DataGridTextColumn Header="Poslední změna"
+                                    Binding="{Binding LastChangedText}"
+                                    Width="180"
+                                    MinWidth="160"/>
+
+                <DataGridTextColumn Header="Cesta"
+                                    Binding="{Binding Path}"
+                                    Width="*"
+                                    MinWidth="320"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal">
+
+            <Button Content="Aktualizovat přehled"
+                    Padding="12,6"
+                    Margin="0,0,8,0"
+                    Click="BtnRefresh_Click"
+                    Background="{DynamicResource DmsAccentBrush}"
+                    Foreground="{DynamicResource DmsOnAccentBrush}"/>
+
+            <Button Content="Kopírovat do schránky"
+                    Padding="12,6"
+                    Click="BtnCopy_Click"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

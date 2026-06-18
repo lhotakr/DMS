@@ -11,6 +11,12 @@ public partial class SapImportView : UserControl
     public SapImportView()
     {
         InitializeComponent();
+
+        DgvColumnMapping.ItemsSource = GetMaterialColumnMappings();
+
+        TxtResult.Text =
+            "Připraveno k importu materiálů.\n\n" +
+            "Vyber export MARA a MAKT ze SAPu.";
     }
 
     private void BtnSelectMara_Click(object sender, RoutedEventArgs e)
@@ -35,35 +41,39 @@ public partial class SapImportView : UserControl
 
     private void BtnImport_Click(object sender, RoutedEventArgs e)
     {
+        if (!ValidateInputFiles())
+        {
+            return;
+        }
+
         try
         {
             var storagePaths = new SapStoragePaths(@"Z:\SAP\DMS-db\DEV");
             storagePaths.EnsureDirectories();
 
-            var rangesPath = storagePaths.MaterialRangesFilePath;
+            var rulesPath = Path.Combine(
+                AppContext.BaseDirectory,
+                "Config",
+                "sap-material-rules.json");
+
             var outputPath = storagePaths.SapMaterialsFilePath;
 
-            if (!File.Exists(rangesPath))
+            var rules = new SapMaterialRulesLoader().LoadFromJson(rulesPath);
+
+            var numberRuleCount = rules.MaterialNumberRules?.Count ?? 0;
+            var textRuleCount = rules.TextClassificationRules?.Count ?? 0;
+
+            if (numberRuleCount == 0)
             {
                 TxtResult.Text =
                     "Import zastaven.\n\n" +
-                    "Nenalezen konfigurační soubor číselných okruhů:\n" +
-                    rangesPath;
+                    "Nenačetla se žádná SAP materiálová pravidla:\n" +
+                    rulesPath;
+
                 return;
             }
 
-            var ranges = new SapMaterialRangeLoader().LoadFromJson(rangesPath);
-
-            if (ranges.Count == 0)
-            {
-                TxtResult.Text =
-                    "Import zastaven.\n\n" +
-                    "Nenačetly se žádné SAP číselné okruhy:\n" +
-                    rangesPath;
-                return;
-            }
-
-            var classifier = new SapMaterialClassifier(ranges);
+            var classifier = new SapMaterialClassifier(rules);
             var repository = new JsonSapMaterialRepository(outputPath);
 
             var service = new SapMaterialExcelImportService(
@@ -71,11 +81,15 @@ public partial class SapImportView : UserControl
                 repository);
 
             var result = service.Import(
-                TxtMaraFile.Text,
-                TxtMaktFile.Text);
+                TxtMaraFile.Text.Trim(),
+                TxtMaktFile.Text.Trim());
 
             TxtResult.Text =
                 result.ToDisplayText() +
+                "\n\nPoužitá pravidla:\n" +
+                rulesPath +
+                "\n\nPočet číselných pravidel: " + numberRuleCount +
+                "\nPočet textových pravidel: " + textRuleCount +
                 "\n\nVýstupní soubor:\n" +
                 outputPath;
         }
@@ -85,54 +99,33 @@ public partial class SapImportView : UserControl
                 "Import selhal.\n\n" +
                 ex.Message;
         }
-        if (!File.Exists(TxtMaraFile.Text))
+    }
+
+    private bool ValidateInputFiles()
+    {
+        if (!File.Exists(TxtMaraFile.Text.Trim()))
         {
             MessageBox.Show(
                 "Nejdřív vyber platný MARA Excel.",
-                "SAP00",
+                "SAP00 - Import materiálů",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
-            return;
+
+            return false;
         }
 
-        if (!File.Exists(TxtMaktFile.Text))
+        if (!File.Exists(TxtMaktFile.Text.Trim()))
         {
             MessageBox.Show(
                 "Nejdřív vyber platný MAKT Excel.",
-                "SAP00",
+                "SAP00 - Import materiálů",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
-            return;
+
+            return false;
         }
 
-        try
-        {
-            var storagePaths = new SapStoragePaths(@"Z:\SAP\DMS-db\DEV");
-            storagePaths.EnsureDirectories();
-
-            var rangesPath = storagePaths.MaterialRangesFilePath;
-            var outputPath = storagePaths.SapMaterialsFilePath;
-
-            var ranges = new SapMaterialRangeLoader().LoadFromJson(rangesPath);
-            var classifier = new SapMaterialClassifier(ranges);
-            var repository = new JsonSapMaterialRepository(outputPath);
-
-            var service = new SapMaterialExcelImportService(
-                classifier,
-                repository);
-
-            var result = service.Import(
-                TxtMaraFile.Text,
-                TxtMaktFile.Text);
-
-            TxtResult.Text = result.ToDisplayText();
-        }
-        catch (Exception ex)
-        {
-            TxtResult.Text =
-                "Import selhal.\n\n" +
-                ex.Message;
-        }
+        return true;
     }
 
     private static string? SelectExcelFile(string title)
@@ -140,11 +133,67 @@ public partial class SapImportView : UserControl
         var dialog = new OpenFileDialog
         {
             Title = title,
-            Filter = "Excel soubory (*.xlsx)|*.xlsx|Všechny soubory (*.*)|*.*"
+            Filter = "Excel soubory (*.xlsx;*.xlsm)|*.xlsx;*.xlsm|Všechny soubory (*.*)|*.*"
         };
 
         return dialog.ShowDialog() == true
             ? dialog.FileName
             : null;
+    }
+
+    private static IReadOnlyList<MaterialColumnMappingRow> GetMaterialColumnMappings()
+    {
+        return new List<MaterialColumnMappingRow>
+        {
+            new()
+            {
+                TableName = "MARA",
+                ColumnName = "MATNR",
+                IsRequired = true,
+                SapMeaning = "Číslo materiálu",
+                DmsMeaning = "Hlavní SAP číslo materiálu / artiklu. V DMS se ukládá jako text."
+            },
+            new()
+            {
+                TableName = "MARA",
+                ColumnName = "BISMT",
+                IsRequired = true,
+                SapMeaning = "Staré číslo materiálu",
+                DmsMeaning = "Původní / staré označení artiklu, důležité pro dohledání a vazby."
+            },
+            new()
+            {
+                TableName = "MARA",
+                ColumnName = "MSTAE",
+                IsRequired = true,
+                SapMeaning = "Cross-plant material status",
+                DmsMeaning = "Celopodnikový stav materiálu. V DMS slouží pro kontrolu použitelnosti artiklu."
+            },
+            new()
+            {
+                TableName = "MAKT",
+                ColumnName = "MATNR",
+                IsRequired = true,
+                SapMeaning = "Číslo materiálu",
+                DmsMeaning = "Klíč pro spojení MAKT s MARA."
+            },
+            new()
+            {
+                TableName = "MAKT",
+                ColumnName = "MAKTX",
+                IsRequired = true,
+                SapMeaning = "Krátký text materiálu",
+                DmsMeaning = "Popis materiálu. Používá se i pro rozpoznání dekorace, externího skla, obalových sestav a dalších typů."
+            }
+        };
+    }
+
+    private sealed class MaterialColumnMappingRow
+    {
+        public string TableName { get; init; } = string.Empty;
+        public string ColumnName { get; init; } = string.Empty;
+        public bool IsRequired { get; init; }
+        public string SapMeaning { get; init; } = string.Empty;
+        public string DmsMeaning { get; init; } = string.Empty;
     }
 }

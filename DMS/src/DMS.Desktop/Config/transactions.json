@@ -30,14 +30,34 @@
     "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
   },
   {
-    "code": "DOC03",
-    "name": "Dokumentace artiklu",
+    "code": "DOC01",
+    "name": "Přidání dokumentu",
     "module": "Dokumenty",
-    "description": "Zobrazí dokumentaci artiklu.",
-    "handlerKey": "ArticleDocuments",
+    "description": "Přidá dokument k SAP ID podle zvoleného kontextu.",
+    "handlerKey": "DocumentCreate",
     "requiresArticleNumber": true,
     "isActive": true,
-    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+    "roles": [ "DMS_ADMIN", "DMS_KVALITA", "DMS_TECHNOLOGIE", "DMS_PRODUCT_DEVELOPMENT" ]
+  },
+  {
+    "code": "DOC02",
+    "name": "Změna dokumentu",
+    "module": "Dokumenty",
+    "description": "Upraví metadata dokumentu nebo přidá novou verzi.",
+    "handlerKey": "DocumentChange",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_KVALITA", "DMS_TECHNOLOGIE", "DMS_PRODUCT_DEVELOPMENT" ]
+  },
+  {
+    "code": "DOC03",
+    "name": "Zobrazení dokumentů",
+    "module": "Dokumenty",
+    "description": "Zobrazí dokumenty k SAP ID podle zvoleného kontextu.",
+    "handlerKey": "DocumentDisplay",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_KVALITA", "DMS_TECHNOLOGIE", "DMS_PRODUCT_DEVELOPMENT", "DMS_READONLY" ]
   },
   {
     "code": "SCR03",
@@ -72,17 +92,17 @@
   {
     "code": "WHOAMI",
     "name": "Aktuální uživatel",
-    "module": "Systém",
+    "module": "Administrace",
     "description": "Zobrazí aktuální Windows login, DMS uživatele a role.",
     "handlerKey": "SystemInfo",
     "requiresArticleNumber": false,
-    "isActive": true,
+    "isActive": false,
     "roles": []
   },
   {
     "code": "HELP",
     "name": "Seznam transakcí",
-    "module": "Systém",
+    "module": "Administrace",
     "description": "Zobrazí dostupné transakce DMS.",
     "handlerKey": "Help",
     "requiresArticleNumber": false,
@@ -90,11 +110,61 @@
     "roles": []
   },
   {
-    "code": "SET01",
+    "code": "CLSET",
     "name": "Nastavení klienta",
-    "module": "Systém",
-    "description": "Zobrazí základní nastavení klienta DMS.",
-    "handlerKey": "Settings",
+    "module": "Administrace",
+    "description": "Zobrazí uživatelské nastavení klienta DMS.",
+    "handlerKey": "ClientSettings",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN" ]
+  },
+  {
+    "code": "SYS01",
+    "name": "Nastavení systému DMS",
+    "module": "Administrace",
+    "description": "Správa systémového nastavení DMS, cest a serverových složek.",
+    "handlerKey": "SystemSettings",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN" ]
+  },
+  {
+    "code": "SYS03",
+    "name": "Náhled systému DMS",
+    "module": "Administrace",
+    "description": "Zobrazí aktuální systémovou konfiguraci, prostředí, cesty a přihlášeného uživatele.",
+    "handlerKey": "SystemDisplay",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": []
+  },
+  {
+    "code": "SYS11",
+    "name": "Správa transakcí",
+    "module": "Administrace",
+    "description": "Správa názvů, popisů, aktivace a rolí DMS transakcí.",
+    "handlerKey": "TransactionManagement",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN" ]
+  },
+  {
+    "code": "SYS12",
+    "name": "Správa rolí",
+    "module": "Administrace",
+    "description": "Správa DMS rolí používaných pro řízení přístupu k transakcím.",
+    "handlerKey": "RoleManagement",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN" ]
+  },
+  {
+    "code": "SYS13",
+    "name": "Správa modulů",
+    "module": "Administrace",
+    "description": "Správa DMS modulů používaných pro členění transakcí v menu.",
+    "handlerKey": "ModuleManagement",
     "requiresArticleNumber": false,
     "isActive": true,
     "roles": [ "DMS_ADMIN" ]
@@ -110,19 +180,9 @@
     "roles": [ "DMS_ADMIN" ]
   },
   {
-    "code": "SYS01",
-    "name": "Systémová konfigurace",
-    "module": "Systém",
-    "description": "Zobrazí aktuální konfiguraci DMS klienta.",
-    "handlerKey": "SystemConfiguration",
-    "requiresArticleNumber": false,
-    "isActive": true,
-    "roles": [ "DMS_ADMIN" ]
-  },
-  {
     "code": "LOG03",
     "name": "Log aplikace",
-    "module": "Systém",
+    "module": "Administrace",
     "description": "Zobrazí poslední záznamy aplikačního logu.",
     "handlerKey": "LogViewer",
     "requiresArticleNumber": false,
@@ -130,11 +190,23 @@
     "roles": [ "DMS_ADMIN" ]
   },
   {
-    "code": "SAP00",
-    "name": "Import SAP dat",
+    "code": "SAPSET",
+    "name": "SAP nastavení",
     "module": "SAP",
-    "description": "Importuje SAP materiály ze souborů MARA a MAKT.",
-    "handlerKey": "SapMaterialImport",
+    "description": "Správa SAP-DMS pravidel, mapování a validačních nastavení.",
+    "handlerKey": "SapSettings",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [
+      "DMS_ADMIN"
+    ]
+  },
+  {
+    "code": "SAP00",
+    "name": "SAP import cockpit",
+    "module": "SAP",
+    "description": "Zobrazí SAP importní cockpit s materiály, kusovníky, pracovními postupy a importními dávkami.",
+    "handlerKey": "SapCockpit",
     "requiresArticleNumber": false,
     "isActive": true,
     "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE" ]
@@ -151,19 +223,19 @@
   },
   {
     "code": "SAP01",
-    "name": "Založení SAP materiálu v DMS",
+    "name": "Ruční založení materiálu",
     "module": "SAP",
-    "description": "Ručně založí SAP materiál do lokální DMS cache.",
+    "description": "Umožní ruční založení materiálu do DMS podle přísných SAP importních pravidel.",
     "handlerKey": "SapMaterialCreate",
-    "requiresArticleNumber": true,
+    "requiresArticleNumber": false,
     "isActive": true,
     "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE" ]
   },
   {
     "code": "SAP02",
-    "name": "Úprava SAP materiálu v DMS",
+    "name": "Ruční editace materiálu",
     "module": "SAP",
-    "description": "Upraví lokální DMS údaje k SAP materiálu.",
+    "description": "Umožní ruční editaci SAP-like materiálu v DMS podle přísných validačních pravidel.",
     "handlerKey": "SapMaterialEdit",
     "requiresArticleNumber": true,
     "isActive": true,
@@ -180,12 +252,22 @@
     "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
   },
   {
-    "code": "REC03",
-    "name": "Náhled receptury",
+    "code": "MAT03",
+    "name": "Použití materiálu",
     "module": "SAP",
-    "description": "Zobrazí recepturu ze SAP mirror cache.",
-    "handlerKey": "SapRecipeDisplay",
+    "description": "Zobrazí, kde se SAP materiál používá jako komponenta a jeho vlastní kusovníky.",
+    "handlerKey": "SimpleMessage",
     "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "REC03",
+    "name": "Přehled receptur",
+    "module": "SAP",
+    "description": "Zobrazení receptur, jejich kusovníků, použití v artiklech a návazností komponent v dalších recepturách.",
+    "handlerKey": "SimpleMessage",
+    "requiresArticleNumber": false,
     "isActive": true,
     "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
   },
@@ -218,5 +300,99 @@
     "requiresArticleNumber": true,
     "isActive": true,
     "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "TEC03",
+    "name": "Technologický souhrn artiklu",
+    "module": "Technologie",
+    "description": "Zobrazí technologický souhrn artiklu z importovaných SAP dat: materiál, kusovníky, pracovní postupy a pracoviště.",
+    "handlerKey": "TechnicalArticleSummary",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE" ]
+  },
+  {
+    "code": "QASET",
+    "name": "Quality nastavení",
+    "module": "Quality",
+    "description": "Správa číselníků a nastavení quality vrstvy.",
+    "handlerKey": "QualitySettings",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [
+      "DMS_ADMIN",
+      "DMS_QUALITY_EDIT"
+    ]
+  },
+  {
+    "code": "QA00",
+    "name": "Quality cockpit",
+    "module": "Quality",
+    "description": "Importní a kontrolní cockpit pro quality vrstvu nad artikelmapou.",
+    "handlerKey": "QualityCockpit",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "QA03",
+    "name": "Quality karta",
+    "module": "Quality",
+    "description": "Zobrazí quality vrstvu artiklu, tiskové verze, úkoly a zakázky.",
+    "handlerKey": "QualityArticleDisplay",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "QA02",
+    "name": "Změna quality dat",
+    "module": "Quality",
+    "description": "Umožní upravit quality informace artiklu, tiskové verze a úkoly.",
+    "handlerKey": "QualityArticleEdit",
+    "requiresArticleNumber": true,
+    "isActive": true,
+    "roles": [
+      "DMS_ADMIN",
+      "DMS_QUALITY_EDIT"
+    ]
+  },
+  {
+    "code": "QA01",
+    "name": "Založení quality dat",
+    "module": "Quality",
+    "description": "Založí quality artikl a první tiskovou verzi podle SAP cache.",
+    "handlerKey": "QualityArticleCreate",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [
+      "DMS_ADMIN",
+      "DMS_QUALITY_EDIT"
+    ]
+  },
+  {
+    "code": "QA05",
+    "name": "Přehled tiskových verzí",
+    "module": "Quality",
+    "description": "Zobrazí přehled tiskových verzí z quality vrstvy.",
+    "handlerKey": "QualityPrintVersionList",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+  },
+  {
+    "code": "QATASK",
+    "name": "Quality úkoly",
+    "module": "Quality",
+    "description": "Souhrnný přehled quality úkolů napříč artikly a tiskovými verzemi.",
+    "handlerKey": "QualityTasksOverview",
+    "requiresArticleNumber": false,
+    "isActive": true,
+    "roles": [
+      "DMS_ADMIN",
+      "DMS_QUALITY_EDIT",
+      "DMS_QUALITY_VIEW"
+    ]
   }
+
 ]

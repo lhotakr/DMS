@@ -1,0 +1,165 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Quality.QualityTasksOverviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+
+    <Grid Margin="18">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="QATASK - Quality úkoly"
+                   Style="{StaticResource DmsTitleTextStyle}"
+                   Margin="0,0,0,8"/>
+
+        <Grid Grid.Row="1"
+              Margin="0,0,0,12">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="90"/>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="Stav"
+                       Style="{StaticResource DmsFormLabelStyle}"/>
+
+            <ComboBox x:Name="CmbCompletionFilter"
+                      Grid.Column="1"
+                      Margin="0,4,14,4"
+                      SelectionChanged="Filter_Changed">
+                <ComboBoxItem Content="Nesplněné" Tag="open" IsSelected="True"/>
+                <ComboBoxItem Content="Splněné" Tag="done"/>
+                <ComboBoxItem Content="Vše" Tag="all"/>
+            </ComboBox>
+
+            <TextBlock Grid.Column="2"
+                       Text="SAP ID"
+                       Style="{StaticResource DmsFormLabelStyle}"/>
+
+            <TextBox x:Name="TxtSapFilter"
+                     Grid.Column="3"
+                     Margin="0,4,14,4"
+                     Style="{StaticResource DmsFormTextBoxStyle}"
+                     TextChanged="Filter_Changed"/>
+
+            <Button Grid.Column="4"
+                    Content="Vyčistit"
+                    Margin="0,4,8,4"
+                    Style="{StaticResource DmsFormButtonStyle}"
+                    Click="BtnClearFilter_Click"/>
+
+            <Button Grid.Column="5"
+                    Content="Aktualizovat"
+                    Margin="0,4,0,4"
+                    Style="{StaticResource DmsFormButtonStyle}"
+                    Click="BtnReload_Click"/>
+        </Grid>
+
+        <DataGrid x:Name="GridTasks"
+          Grid.Row="2"
+          Style="{StaticResource DmsDataGridStyle}"
+          AutoGenerateColumns="False"
+          IsReadOnly="True"
+          SelectionUnit="FullRow"
+          SelectionMode="Extended"
+          HorizontalScrollBarVisibility="Auto"
+          VerticalScrollBarVisibility="Auto"
+          Loaded="GridTasks_Loaded"
+          SizeChanged="GridTasks_SizeChanged"
+          MouseDoubleClick="GridTasks_MouseDoubleClick">
+
+            <DataGrid.RowStyle>
+                <Style TargetType="{x:Type DataGridRow}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding DelaySeverity}"
+                         Value="Yellow">
+                            <Setter Property="Background"
+                        Value="#4A3D18"/>
+                        </DataTrigger>
+
+                        <DataTrigger Binding="{Binding DelaySeverity}"
+                         Value="Red">
+                            <Setter Property="Background"
+                        Value="#4A2020"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="SAP ID"
+                        Binding="{Binding SapMaterialNumber}"
+                        Width="155"
+                        MinWidth="155"/>
+
+                <DataGridTextColumn Header="Status"
+                        Binding="{Binding MaterialStatus}"
+                        Width="70"
+                        MinWidth="70"/>
+
+                <DataGridTextColumn Header="Staré číslo"
+                        Binding="{Binding OldMaterialNumber}"
+                        Width="165"
+                        MinWidth="165"/>
+
+                <DataGridTextColumn Header="Číslo úkolu"
+                        Binding="{Binding TaskNumber}"
+                        Width="85"
+                        MinWidth="85"/>
+
+                <DataGridTextColumn x:Name="ColTaskText"
+                        Header="Úkol"
+                        Binding="{Binding TaskText}"
+                        Width="500"
+                        MinWidth="420"/>
+
+                <DataGridTextColumn Header="Datum zadání"
+                        Binding="{Binding CreatedAtText}"
+                        Width="115"
+                        MinWidth="115"/>
+
+                <DataGridTextColumn Header="Autor úkolu"
+                        Binding="{Binding CreatedBy}"
+                        Width="130"
+                        MinWidth="130"/>
+
+                <DataGridTextColumn Header="Termín"
+                        Binding="{Binding DueDateText}"
+                        Width="115"
+                        MinWidth="115"/>
+
+                <DataGridTextColumn Header="Zpoždění"
+                        Binding="{Binding DelayText}"
+                        Width="95"
+                        MinWidth="95"/>
+
+                <DataGridTextColumn Header="Datum odevzdání"
+                        Binding="{Binding CompletedAtText}"
+                        Width="130"
+                        MinWidth="130"/>
+
+                <DataGridTextColumn Header="Zpracovatel"
+                        Binding="{Binding CompletedBy}"
+                        Width="130"
+                        MinWidth="130"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock x:Name="TxtStatus"
+                   Grid.Row="3"
+                   Margin="0,10,0,0"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+
+    </Grid>
+</UserControl>

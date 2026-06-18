@@ -1,0 +1,19 @@
+{
+  "documentsRootPath": "Z:\\SAP\\DMS-db\\DEV\\Documents",
+  "articleFoldersRootPath": "Z:\\SAP\\DMS-db\\DEV\\Documents\\Articles",
+  "createArticleFoldersOnSapImport": true,
+  "articleSubFolders": [
+    {
+      "code": "QA",
+      "name": "Quality",
+      "relativePath": "QA",
+      "isActive": true
+    },
+    {
+      "code": "PD",
+      "name": "Product Development",
+      "relativePath": "PD",
+      "isActive": true
+    }
+  ]
+}

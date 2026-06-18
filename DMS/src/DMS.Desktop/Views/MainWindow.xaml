@@ -8,7 +8,41 @@
         Icon="/Assets/DMS_SystemIcon.ico"
         Background="{DynamicResource DmsBackgroundBrush}">
 
+
+
     <Window.Resources>
+        <Style x:Key="DmsToolbarButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="MinWidth" Value="38"/>
+            <Setter Property="Margin" Value="4,0,0,0"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+                </Trigger>
+
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Opacity" Value="0.85"/>
+                </Trigger>
+
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource DmsMutedForegroundBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+                    <Setter Property="Opacity" Value="0.45"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
         <Style TargetType="{x:Type ToolTip}">
             <Setter Property="Background"
                 Value="{DynamicResource DmsPanelBrush}"/>
@@ -142,13 +176,33 @@
                 Padding="10">
 
             <StackPanel Orientation="Horizontal">
+                <Button x:Name="BtnBack"
+                          Content="←"
+                          ToolTip="Zpět"
+                          IsEnabled="False"
+                          Click="BtnBack_Click"
+                          Style="{StaticResource DmsToolbarButtonStyle}"/>
+
+                <Button x:Name="BtnForward"
+                          Content="→"
+                          ToolTip="Vpřed"
+                          IsEnabled="False"
+                          Click="BtnForward_Click"
+                          Style="{StaticResource DmsToolbarButtonStyle}"/>
+
+                <Button x:Name="BtnRefreshTransaction"
+                          Content="⟳"
+                          ToolTip="Aktualizovat aktuální transakci"
+                          IsEnabled="False"
+                          Click="BtnRefreshTransaction_Click"
+                          Style="{StaticResource DmsToolbarButtonStyle}"/>
                 <TextBlock Text="Transakce:"
-               VerticalAlignment="Center"
-               Margin="0,0,8,0"
-               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"
+                           Foreground="{DynamicResource DmsForegroundBrush}"/>
 
                 <Grid Width="420"
-          Height="32">
+                      Height="32">
 
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -156,15 +210,14 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBox x:Name="TxtTransaction"
-                 Grid.Column="0"
-                 Height="32"
-                 VerticalContentAlignment="Center"
-                 KeyDown="TxtTransaction_KeyDown"
-                 Background="{DynamicResource DmsBackgroundBrush}"
-                 Foreground="{DynamicResource DmsForegroundBrush}"
-                 BorderBrush="{DynamicResource DmsBorderBrush}"
-                 CaretBrush="{DynamicResource DmsForegroundBrush}"/>
-
+                               Grid.Column="0"
+                               Height="32"
+                               VerticalContentAlignment="Center"
+                               KeyDown="TxtTransaction_KeyDown"
+                               Background="{DynamicResource DmsBackgroundBrush}"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               BorderBrush="{DynamicResource DmsBorderBrush}"
+                               CaretBrush="{DynamicResource DmsForegroundBrush}" />
                     <Button x:Name="BtnTransactionHistory"
                 Grid.Column="1"
                 Content="▼"

@@ -1,0 +1,29 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Sap.SapSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+
+    <Grid Margin="18">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="SAPSET - SAP nastavení"
+                   Style="{StaticResource DmsTitleTextStyle}"
+                   Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="Customizace SAP-DMS pravidel, číselníků a validační logiky. SAP00 zůstává pouze pro importy a stav cache."
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,14"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+
+        <TabControl x:Name="TabsSettings"
+                    Grid.Row="2"/>
+
+    </Grid>
+</UserControl>

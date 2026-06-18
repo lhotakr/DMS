@@ -1,0 +1,353 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Quality.QualitySettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+
+    <Grid Margin="18">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="QASET - Quality nastavení"
+                   Style="{StaticResource DmsTitleTextStyle}"
+                   Margin="0,0,0,8"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="Správa číselníků a customizace quality vrstvy. Nové řádky jsou zelené, změněné oranžové a řádky označené ke smazání červené."
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,14"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+
+        <TabControl Grid.Row="2"
+                    x:Name="TabsSettings">
+
+            <!-- ===================================================== -->
+            <!-- ZÁKAZNÍCI -->
+            <!-- ===================================================== -->
+
+            <TabItem Header="Zákazníci">
+                <DockPanel Margin="12">
+
+                    <StackPanel DockPanel.Dock="Top"
+                                Orientation="Horizontal"
+                                Margin="0,0,0,10">
+
+                        <Button Content="Přidat"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnAddCustomer_Click"/>
+
+                        <Button Content="Smazat"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnDeleteCustomer_Click"/>
+
+                        <Button Content="Uložit"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsPrimaryButtonStyle}"
+                                Click="BtnSaveCustomers_Click"/>
+
+                        <Button Content="Obnovit"
+                                Width="90"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnReload_Click"/>
+
+                    </StackPanel>
+
+                    <DataGrid x:Name="GridCustomers"
+                              Style="{StaticResource DmsEditableGridStyle}"
+                              RowStyle="{StaticResource DmsEditableGridRowStyle}"
+                              AutoGenerateColumns="False"
+                              CellEditEnding="GridCustomers_CellEditEnding">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn Header="Název"
+                                                Binding="{Binding Item.Name, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="320"
+                                                MinWidth="220"/>
+
+                            <DataGridCheckBoxColumn Header="Aktivní"
+                                                    Binding="{Binding Item.IsActive, UpdateSourceTrigger=PropertyChanged}"
+                                                    Width="90"
+                                                    MinWidth="80"/>
+
+                            <DataGridCheckBoxColumn Header="L'Oréal"
+                                                    Binding="{Binding Item.IsLoreal, UpdateSourceTrigger=PropertyChanged}"
+                                                    Width="90"
+                                                    MinWidth="80"/>
+
+                            <DataGridTextColumn Header="Source ID"
+                                                Binding="{Binding Item.SourceId}"
+                                                Width="100"
+                                                MinWidth="90"
+                                                IsReadOnly="True"/>
+
+                            <DataGridTextColumn Header="JSON Code"
+                                                Binding="{Binding Item.Code, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="120"
+                                                MinWidth="100"/>
+
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                </DockPanel>
+            </TabItem>
+
+            <!-- ===================================================== -->
+            <!-- TYPY BAREV -->
+            <!-- ===================================================== -->
+
+            <TabItem Header="Typy barev">
+                <DockPanel Margin="12">
+
+                    <StackPanel DockPanel.Dock="Top"
+                                Orientation="Horizontal"
+                                Margin="0,0,0,10">
+
+                        <Button Content="Přidat"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnAddColorType_Click"/>
+
+                        <Button Content="Smazat"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnDeleteColorType_Click"/>
+
+                        <Button Content="Uložit"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsPrimaryButtonStyle}"
+                                Click="BtnSaveColorTypes_Click"/>
+
+                        <Button Content="Obnovit"
+                                Width="90"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnReload_Click"/>
+
+                    </StackPanel>
+
+                    <DataGrid x:Name="GridColorTypes"
+                              Style="{StaticResource DmsEditableGridStyle}"
+                              RowStyle="{StaticResource DmsEditableGridRowStyle}"
+                              AutoGenerateColumns="False"
+                              CellEditEnding="GridLookup_CellEditEnding">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn Header="Kód"
+                                                Binding="{Binding Item.Code, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="130"
+                                                MinWidth="100"/>
+
+                            <DataGridTextColumn Header="Název"
+                                                Binding="{Binding Item.Name, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="280"
+                                                MinWidth="180"/>
+
+                            <DataGridCheckBoxColumn Header="Aktivní"
+                                                    Binding="{Binding Item.IsActive, UpdateSourceTrigger=PropertyChanged}"
+                                                    Width="90"
+                                                    MinWidth="80"/>
+
+                            <DataGridTextColumn Header="Pořadí"
+                                                Binding="{Binding Item.SortOrder, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="90"
+                                                MinWidth="80"/>
+
+                            <DataGridTextColumn Header="Poznámky"
+                                                Binding="{Binding Item.Notes, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="*"
+                                                MinWidth="300"/>
+
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                </DockPanel>
+            </TabItem>
+
+            <!-- ===================================================== -->
+            <!-- ÚPRAVY SKLA -->
+            <!-- ===================================================== -->
+
+            <TabItem Header="Úpravy skla">
+                <DockPanel Margin="12">
+
+                    <StackPanel DockPanel.Dock="Top"
+                                Orientation="Horizontal"
+                                Margin="0,0,0,10">
+
+                        <Button Content="Přidat"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnAddGlassTreatment_Click"/>
+
+                        <Button Content="Smazat"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnDeleteGlassTreatment_Click"/>
+
+                        <Button Content="Uložit"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsPrimaryButtonStyle}"
+                                Click="BtnSaveGlassTreatments_Click"/>
+
+                        <Button Content="Obnovit"
+                                Width="90"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnReload_Click"/>
+
+                    </StackPanel>
+
+                    <DataGrid x:Name="GridGlassTreatments"
+                              Style="{StaticResource DmsEditableGridStyle}"
+                              RowStyle="{StaticResource DmsEditableGridRowStyle}"
+                              AutoGenerateColumns="False"
+                              CellEditEnding="GridLookup_CellEditEnding">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn Header="Kód"
+                                                Binding="{Binding Item.Code, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="130"
+                                                MinWidth="100"/>
+
+                            <DataGridTextColumn Header="Název"
+                                                Binding="{Binding Item.Name, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="280"
+                                                MinWidth="180"/>
+
+                            <DataGridCheckBoxColumn Header="Aktivní"
+                                                    Binding="{Binding Item.IsActive, UpdateSourceTrigger=PropertyChanged}"
+                                                    Width="90"
+                                                    MinWidth="80"/>
+
+                            <DataGridTextColumn Header="Pořadí"
+                                                Binding="{Binding Item.SortOrder, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="90"
+                                                MinWidth="80"/>
+
+                            <DataGridTextColumn Header="Poznámky"
+                                                Binding="{Binding Item.Notes, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="*"
+                                                MinWidth="300"/>
+
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                </DockPanel>
+            </TabItem>
+
+            <!-- ===================================================== -->
+            <!-- TŘÍDY KVALITY -->
+            <!-- ===================================================== -->
+
+            <TabItem Header="Třídy kvality">
+                <DockPanel Margin="12">
+
+                    <StackPanel DockPanel.Dock="Top"
+                                Orientation="Horizontal"
+                                Margin="0,0,0,10">
+
+                        <Button Content="Přidat"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnAddQualityClass_Click"/>
+
+                        <Button Content="Smazat"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnDeleteQualityClass_Click"/>
+
+                        <Button Content="Uložit"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsPrimaryButtonStyle}"
+                                Click="BtnSaveQualityClasses_Click"/>
+
+                        <Button Content="Obnovit"
+                                Width="90"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnReload_Click"/>
+
+                    </StackPanel>
+
+                    <DataGrid x:Name="GridQualityClasses"
+                              Style="{StaticResource DmsEditableGridStyle}"
+                              RowStyle="{StaticResource DmsEditableGridRowStyle}"
+                              AutoGenerateColumns="False"
+                              CellEditEnding="GridLookup_CellEditEnding">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn Header="Kód"
+                                                Binding="{Binding Item.Code, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="130"
+                                                MinWidth="100"/>
+
+                            <DataGridTextColumn Header="Název"
+                                                Binding="{Binding Item.Name, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="280"
+                                                MinWidth="180"/>
+
+                            <DataGridCheckBoxColumn Header="Aktivní"
+                                                    Binding="{Binding Item.IsActive, UpdateSourceTrigger=PropertyChanged}"
+                                                    Width="90"
+                                                    MinWidth="80"/>
+
+                            <DataGridTextColumn Header="Pořadí"
+                                                Binding="{Binding Item.SortOrder, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="90"
+                                                MinWidth="80"/>
+
+                            <DataGridTextColumn Header="Poznámky"
+                                                Binding="{Binding Item.Notes, UpdateSourceTrigger=PropertyChanged}"
+                                                Width="*"
+                                                MinWidth="300"/>
+
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                </DockPanel>
+            </TabItem>
+
+            <!-- ===================================================== -->
+            <!-- CESTY -->
+            <!-- ===================================================== -->
+
+            <TabItem Header="Cesty">
+                <StackPanel Margin="14">
+
+                    <TextBlock x:Name="TxtPaths"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                </StackPanel>
+            </TabItem>
+
+        </TabControl>
+
+        <TextBlock Grid.Row="3"
+                   x:Name="TxtStatus"
+                   Margin="0,10,0,0"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+
+    </Grid>
+</UserControl>

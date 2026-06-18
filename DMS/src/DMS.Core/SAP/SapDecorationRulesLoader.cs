@@ -2,23 +2,23 @@
 
 namespace DMS.Core.Sap;
 
-public sealed class SapMaterialRangeLoader
+public sealed class SapDecorationRulesLoader
 {
-    public IReadOnlyList<SapMaterialNumberRange> LoadFromJson(string filePath)
+    public SapDecorationRulesOptions LoadFromJson(string filePath)
     {
         if (!File.Exists(filePath))
         {
-            return Array.Empty<SapMaterialNumberRange>();
+            return new SapDecorationRulesOptions();
         }
 
         var json = File.ReadAllText(filePath);
 
-        return JsonSerializer.Deserialize<List<SapMaterialNumberRange>>(
+        return JsonSerializer.Deserialize<SapDecorationRulesOptions>(
             json,
             new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             })
-            ?? new List<SapMaterialNumberRange>();
+            ?? new SapDecorationRulesOptions();
     }
 }

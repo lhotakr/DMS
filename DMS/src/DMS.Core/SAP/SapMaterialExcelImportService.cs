@@ -47,40 +47,49 @@ public sealed class SapMaterialExcelImportService
 
                 result.JoinedRows++;
 
-                var range = _classifier.Classify(mara.MaterialNumber);
+                var description = makt.Description ?? string.Empty;
 
-                if (range is null || !range.IsImported)
+                var rule = _classifier.Classify(
+                    mara.MaterialNumber,
+                    description,
+                    mara.OldMaterialNumber ?? string.Empty);
+
+                if (rule is null || !rule.Import)
                 {
                     result.IgnoredRows++;
                     continue;
                 }
 
                 var glassInfo = string.Equals(
-                    range.MaterialKind,
+                    rule.MaterialKind,
                     nameof(SapMaterialKind.GlassArticle),
                     StringComparison.OrdinalIgnoreCase)
-                    ? SapArticleTextParser.TryParseGlassArticleText(makt.Description)
+                    ? SapArticleTextParser.TryParseGlassArticleText(description)
                     : null;
 
                 var packagingInfo = string.Equals(
-                    range.MaterialKind,
+                    rule.MaterialKind,
                     nameof(SapMaterialKind.Packaging),
                     StringComparison.OrdinalIgnoreCase)
-                    ? SapPackagingTextParser.Parse(makt.Description)
+                    ? SapPackagingTextParser.Parse(description)
                     : null;
 
                 var toolFixtureKind = GetToolFixtureKind(
-                    range.MaterialKind,
-                    makt.Description);
+                    rule.MaterialKind,
+                    description);
 
                 importedMaterials.Add(new SapMaterial
                 {
                     MaterialNumber = mara.MaterialNumber,
-                    Description = makt.Description,
+                    Description = description,
                     OldMaterialNumber = mara.OldMaterialNumber,
                     MaterialStatus = mara.MaterialStatus,
-                    MaterialKind = range.MaterialKind,
-                    TransactionPrefix = range.TransactionPrefix,
+                    MaterialKind = rule.MaterialKind,
+
+                    // Dočasně plníme staré pole ze sap-material-rules.
+                    // Později bych ho v SapMaterial přejmenoval spíš na SapNumberPrefix.
+                    TransactionPrefix = rule.SapNumberPrefix,
+
                     ToolFixtureKind = toolFixtureKind,
                     GlassInfo = glassInfo,
                     PackagingInfo = packagingInfo,
@@ -98,14 +107,19 @@ public sealed class SapMaterialExcelImportService
 
         _repository.SaveAll(importedMaterials);
 
-        result.Messages.Insert(0, $"Uloženo do lokální DMS cache: {result.ImportedRows} materiálů.");
+        result.Messages.Insert(
+            0,
+            $"Uloženo do lokální DMS cache: {result.ImportedRows} materiálů.");
 
         return result;
     }
 
     private static string? GetToolFixtureKind(string materialKind, string description)
     {
-        if (!string.Equals(materialKind, nameof(SapMaterialKind.ToolFixture), StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(
+                materialKind,
+                nameof(SapMaterialKind.ToolFixture),
+                StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }

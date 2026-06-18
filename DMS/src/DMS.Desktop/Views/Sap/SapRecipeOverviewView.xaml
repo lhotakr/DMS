@@ -1,0 +1,161 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UserControl x:Class="DMS.Desktop.Views.Sap.SapRecipeOverviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Nadpis -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+            <TextBlock Text="REC03 - Přehled receptur"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+            <TextBlock Text="Přehled receptur, jejich kusovníků, použití v artiklech a návazností komponent v dalších recepturách."
+                       Margin="0,6,0,0"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <!-- Filtry -->
+        <Border Grid.Row="1"
+                Padding="12"
+                CornerRadius="8"
+                BorderThickness="1"
+                Margin="0,0,0,14"
+                Background="{DynamicResource DmsBackgroundBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="260"/>
+                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="260"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="Receptura/text:"
+                           VerticalAlignment="Center"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                <TextBox x:Name="TxtRecipeFilter"
+                         Grid.Column="1"
+                         Margin="0,0,12,0"
+                         Background="{DynamicResource DmsPanelBrush}"
+                         Foreground="{DynamicResource DmsForegroundBrush}"
+                         BorderBrush="{DynamicResource DmsBorderBrush}"/>
+
+                <TextBlock Grid.Column="2"
+                           Text="Použita v artiklu:"
+                           VerticalAlignment="Center"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                <TextBox x:Name="TxtArticleFilter"
+                         Grid.Column="3"
+                         Margin="0,0,12,0"
+                         Background="{DynamicResource DmsPanelBrush}"
+                         Foreground="{DynamicResource DmsForegroundBrush}"
+                         BorderBrush="{DynamicResource DmsBorderBrush}"/>
+
+                <Button Grid.Column="4"
+                        Content="Hledat"
+                        Width="110"
+                        Padding="12,6"
+                        Click="BtnSearch_Click"
+                        Background="{DynamicResource DmsAccentBrush}"
+                        Foreground="{DynamicResource DmsOnAccentBrush}"/>
+            </Grid>
+        </Border>
+
+        <!-- Hlavní obsah -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="420"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Seznam receptur -->
+            <Border Grid.Column="0"
+                    Padding="10"
+                    CornerRadius="8"
+                    BorderThickness="1"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}">
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Nalezené receptury"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Margin="0,0,0,8"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                    <DataGrid x:Name="DgvRecipes"
+                              Grid.Row="1"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              SelectionChanged="DgvRecipes_SelectionChanged"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              Background="{DynamicResource DmsBackgroundBrush}"
+                              Foreground="{DynamicResource DmsForegroundBrush}"
+                              BorderBrush="{DynamicResource DmsBorderBrush}"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              EnableRowVirtualization="True">
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Receptura"
+                                                Binding="{Binding RecipeNumber}"
+                                                Width="110"/>
+
+                            <DataGridTextColumn Header="Popis"
+                                                Binding="{Binding Description}"
+                                                Width="*"/>
+
+                            <DataGridTextColumn Header="Použití"
+                                                Binding="{Binding UsedInArticleCount}"
+                                                Width="70"/>
+
+                            <DataGridTextColumn Header="Pol."
+                                                Binding="{Binding BomItemCount}"
+                                                Width="55"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <!-- Detail -->
+            <Border Grid.Column="2"
+                    Padding="10"
+                    CornerRadius="8"
+                    BorderThickness="1"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}">
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="DetailPanel"/>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

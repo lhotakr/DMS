@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 
 namespace DMS.Core.Sap;
 
@@ -18,7 +20,7 @@ public sealed class JsonSapMaterialRepository
             return Array.Empty<SapMaterial>();
         }
 
-        var json = File.ReadAllText(_filePath);
+        var json = File.ReadAllText(_filePath, Encoding.UTF8);
 
         return JsonSerializer.Deserialize<List<SapMaterial>>(
             json,
@@ -32,7 +34,10 @@ public sealed class JsonSapMaterialRepository
     public SapMaterial? FindByMaterialNumber(string materialNumber)
     {
         return LoadAll().FirstOrDefault(item =>
-            string.Equals(item.MaterialNumber, materialNumber, StringComparison.OrdinalIgnoreCase));
+            string.Equals(
+                item.MaterialNumber,
+                materialNumber,
+                StringComparison.OrdinalIgnoreCase));
     }
 
     public void SaveAll(IReadOnlyList<SapMaterial> materials)
@@ -48,9 +53,13 @@ public sealed class JsonSapMaterialRepository
             materials.OrderBy(item => item.MaterialNumber).ToList(),
             new JsonSerializerOptions
             {
-                WriteIndented = true
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             });
 
-        File.WriteAllText(_filePath, json);
+        File.WriteAllText(
+            _filePath,
+            json,
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 }
