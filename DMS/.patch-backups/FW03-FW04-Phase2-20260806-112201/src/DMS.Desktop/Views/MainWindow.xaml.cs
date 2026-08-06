@@ -1416,16 +1416,13 @@ public partial class MainWindow : Window
 
             case "FW01":
             case "FW02":
+            case "FW03":
             case "FW05":
             case "FW06":
             case "FW07":
             case "FW08":
             case "FW09":
                 RenderFrameworkHub(result.TransactionCode);
-                break;
-
-            case "FW03":
-                RenderFrameworkRuntimeConfiguration();
                 break;
 
             case "FW04":
