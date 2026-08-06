@@ -11,4 +11,9 @@ public sealed class DmsSystemSettings
     public List<DmsArticleSubFolderDefinition> ArticleSubFolders { get; set; } = new();
 
     public List<DmsMaterialRangeDefinition> ArticleFolderMaterialRanges { get; set; } = new();
+
+    // Branding / logo
+    public string HeaderSecondaryLogoPath { get; set; } = string.Empty;
+    public double HeaderSecondaryLogoMaxWidth { get; set; } = 320;
+    public double HeaderSecondaryLogoMaxHeight { get; set; } = 80;
 }

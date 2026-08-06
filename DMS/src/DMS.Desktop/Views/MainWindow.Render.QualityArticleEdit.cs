@@ -8,7 +8,6 @@ public partial class MainWindow
 {
     private void RenderQualityArticleEdit(string query)
     {
-        // Kontrola musí být před odstraněním aktuální obrazovky.
         if (!CanLeaveCurrentWorkspace())
         {
             return;
@@ -19,13 +18,27 @@ public partial class MainWindow
         if (string.IsNullOrWhiteSpace(query))
         {
             RenderSimplePage(
-                "QA02 - Změna quality dat",
-                "Zadej SAP číslo nebo celé číslo tiskové verze.");
+                T("QA02.Title"),
+                T("QA02.Warning.MissingQuery"));
 
             return;
         }
 
-        var view = new QualityArticleEditView(query);
+        var dmsRootPath = GetDmsDataRootPath();
+
+        _logger.AdminAction(
+            "QA02",
+            "OpenQualityArticleEdit",
+            _currentUser.DisplayName,
+            $"Root={dmsRootPath}; Query={query}");
+
+        var view = new QualityArticleEditView(
+            query,
+            dmsRootPath,
+            _logger,
+            _currentUser.DisplayName,
+            translate: key => T(key),
+            translateFormat: (key, args) => T(key, args));
 
         view.TransactionRequested += ExecuteTransactionFromView;
 

@@ -1,5 +1,7 @@
-﻿using DMS.Core.Quality;
+﻿using ClosedXML.Excel;
+using DMS.Core.Quality;
 using DMS.Core.Sap;
+using DMS.Desktop.Logging;
 using DMS.Desktop.UI;
 using System.IO;
 using System.Windows;
@@ -13,6 +15,10 @@ public partial class QualityArticleCreateView : UserControl
 {
     private readonly QualityArticleCreateService _service;
     private readonly JsonQualityRepository _repository;
+    private readonly DmsLogger? _logger;
+    private readonly string _currentUserName;
+    private readonly Func<string, string>? _translate;
+    private readonly Func<string, object[], string>? _translateFormat;
 
     private IReadOnlyList<QualityCustomer> _customers = Array.Empty<QualityCustomer>();
     private IReadOnlyList<QualityLookupItem> _colorTypes = Array.Empty<QualityLookupItem>();
@@ -26,17 +32,43 @@ public partial class QualityArticleCreateView : UserControl
     public event Action<string>? TransactionRequested;
 
     public QualityArticleCreateView(string query)
+        : this(
+            query,
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..")),
+            null,
+            null,
+            null,
+            null)
+    {
+    }
+
+    public QualityArticleCreateView(
+        string query,
+        string dmsRootPath,
+        DmsLogger? logger = null,
+        string? currentUserName = null,
+        Func<string, string>? translate = null,
+        Func<string, object[], string>? translateFormat = null)
     {
         InitializeComponent();
 
-        const string basePath = @"Z:\SAP\DMS-db\DEV";
+        _logger = logger;
+        _currentUserName = string.IsNullOrWhiteSpace(currentUserName)
+            ? "UNKNOWN"
+            : currentUserName;
+        _translate = translate;
+        _translateFormat = translateFormat;
 
-        var qualityPaths = new QualityStoragePaths(basePath);
+        var rootPath = string.IsNullOrWhiteSpace(dmsRootPath)
+            ? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".."))
+            : dmsRootPath;
+
+        var qualityPaths = new QualityStoragePaths(rootPath);
         qualityPaths.EnsureDirectories();
 
         _repository = new JsonQualityRepository(qualityPaths);
 
-        var sapStoragePaths = new SapStoragePaths(basePath);
+        var sapStoragePaths = new SapStoragePaths(rootPath);
         sapStoragePaths.EnsureDirectories();
 
         var sapMaterials =
@@ -45,7 +77,7 @@ public partial class QualityArticleCreateView : UserControl
                 .LoadAll();
 
         var decorationRulesPath = Path.Combine(
-            basePath,
+            rootPath,
             "Config",
             "sap-decoration-rules.json");
 
@@ -61,13 +93,63 @@ public partial class QualityArticleCreateView : UserControl
             sapMaterials,
             decorationRuleService);
 
+        ApplyLocalization();
         LoadLookupData();
+
+        _logger?.AdminAction(
+            "QA01",
+            "OpenQualityArticleCreate",
+            _currentUserName,
+            $"Root={rootPath}; Query={query}");
 
         if (!string.IsNullOrWhiteSpace(query))
         {
             TxtSapInput.Text = query.Trim();
             LoadSap();
         }
+    }
+
+    private void ApplyLocalization()
+    {
+        TxtTitle.Text = T("QA01.Title");
+        TxtSubtitle.Text = T("QA01.Subtitle");
+
+        TxtSectionSapMaterial.Text = T("QA01.Section.SapMaterial");
+        LblSapNumber.Text = T("QA01.Field.SapNumber");
+        BtnLoadSap.Content = T("QA01.Action.LoadSap");
+
+        TxtSectionSapBase.Text = T("QA01.Section.SapBase");
+        LblSapId.Text = T("QA01.Field.SapId");
+        LblOldNumber.Text = T("QA01.Field.OldNumber");
+        LblSapTitle.Text = T("QA01.Field.SapTitle");
+
+        TxtSectionArticleInfo.Text = T("QA01.Section.ArticleInfo");
+        LblImportantInfo.Text = T("QA01.Field.ImportantInfo");
+        LblArticleNotes.Text = T("QA01.Field.ArticleNotes");
+
+        TxtSectionFirstPrintVersion.Text = T("QA01.Section.FirstPrintVersion");
+        LblPrintVersionNumber.Text = T("QA01.Field.PrintVersionNumber");
+        LblPrintVersionTitle.Text = T("QA01.Field.PrintVersionTitle");
+        LblCustomer.Text = T("QA01.Field.Customer");
+        LblDecoration.Text = T("QA01.Field.Decoration");
+        TxtDecoration.ToolTip = T("QA01.Tooltip.DecorationFromSap");
+        LblColorType.Text = T("QA01.Field.ColorType");
+        TxtColorType.ToolTip = T("QA01.Tooltip.MultipleValues");
+        BtnClearColorTypes.Content = T("QA01.Action.Clear");
+        BtnApplyColorTypes.Content = T("QA01.Action.Apply");
+        LblGlassTreatment.Text = T("QA01.Field.GlassTreatment");
+        LblQualityClass.Text = T("QA01.Field.QualityClass");
+        LblHdNumber.Text = T("QA01.Field.HdNumber");
+        LblSampleLocation.Text = T("QA01.Field.SampleLocation");
+        LblBoardLocation.Text = T("QA01.Field.BoardLocation");
+        LblGaugeLocation.Text = T("QA01.Field.GaugeLocation");
+        ChkHasGauge.Content = T("QA01.Flag.HasGauge");
+        ChkComplaint.Content = T("QA01.Flag.Complaint");
+        ChkSamplesOnCamera.Content = T("QA01.Flag.SamplesOnCamera");
+        LblPrintVersionNotes.Text = T("QA01.Field.Notes");
+
+        BtnCreate.Content = T("QA01.Action.Create");
+        BtnClear.Content = T("QA01.Action.Clear");
     }
 
     // ============================================================
@@ -102,7 +184,7 @@ public partial class QualityArticleCreateView : UserControl
 
         if (string.IsNullOrWhiteSpace(sapInput))
         {
-            ShowWarning("Zadej SAP číslo materiálu.");
+            ShowWarning(T("QA01.Warning.EnterSapNumber"));
             return;
         }
 
@@ -111,8 +193,13 @@ public partial class QualityArticleCreateView : UserControl
 
         if (_model is null)
         {
-            ShowWarning(
-                $"SAP materiál {sapInput} nebyl nalezen v lokální SAP cache.");
+            ShowWarning(TF("QA01.Warning.SapNotFound", sapInput));
+
+            _logger?.AdminAction(
+                "QA01",
+                "SapMaterialNotFound",
+                _currentUserName,
+                $"SapMaterial={sapInput}");
 
             PrintVersionForm.IsEnabled = false;
             BtnCreate.IsEnabled = false;
@@ -123,9 +210,7 @@ public partial class QualityArticleCreateView : UserControl
         if (_service.ExistsSapMaterialQualityData(
                 _model.SapMaterialNumber))
         {
-            ShowWarning(
-                $"Quality data pro SAP {_model.SapMaterialNumber} už existují.\n\n" +
-                "Pro změnu použij QA02 nebo pro náhled QA03.");
+            ShowWarning(TF("QA01.Warning.QualityExists", _model.SapMaterialNumber));
 
             BtnCreate.IsEnabled = false;
             PrintVersionForm.IsEnabled = false;
@@ -139,9 +224,7 @@ public partial class QualityArticleCreateView : UserControl
             _service.ExistsPrintVersion(
                 _model.FullPrintVersionNumber))
         {
-            ShowWarning(
-                $"Tisková verze {_model.FullPrintVersionNumber} už existuje.\n\n" +
-                "Číslo tiskové verze musí být unikátní.");
+            ShowWarning(TF("QA01.Warning.PrintVersionExists", _model.FullPrintVersionNumber));
 
             BtnCreate.IsEnabled = false;
             PrintVersionForm.IsEnabled = false;
@@ -156,6 +239,12 @@ public partial class QualityArticleCreateView : UserControl
 
         PrintVersionForm.IsEnabled = true;
         BtnCreate.IsEnabled = true;
+
+        _logger?.AdminAction(
+            "QA01",
+            "SapMaterialLoaded",
+            _currentUserName,
+            $"SapMaterial={_model.SapMaterialNumber}; PrintVersion={_model.FullPrintVersionNumber}");
     }
 
     private void FillSapPreview(
@@ -292,8 +381,7 @@ public partial class QualityArticleCreateView : UserControl
 
         if (!_hasLoadedSap || _model is null)
         {
-            ShowWarning(
-                "Nejdřív načti SAP materiál ze SAP cache.");
+            ShowWarning(T("QA01.Warning.LoadSapFirst"));
 
             return;
         }
@@ -309,14 +397,47 @@ public partial class QualityArticleCreateView : UserControl
             return;
         }
 
-        MessageBox.Show(
-            result.Message,
-            "QA01 - založeno",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        LogCreatedQualityData(result.CreatedPrintVersionNumber);
+
+        DmsConfirmDialog.ShowInfo(
+            Window.GetWindow(this),
+            T("QA01.Dialog.Created.Title"),
+            TF("QA01.Dialog.Created.Message",
+                _model.SapMaterialNumber,
+                result.CreatedPrintVersionNumber));
 
         TransactionRequested?.Invoke(
             $"QA03 {result.CreatedPrintVersionNumber}");
+    }
+
+    private void LogCreatedQualityData(string? createdPrintVersionNumber)
+    {
+        if (_model is null)
+        {
+            return;
+        }
+
+        _logger?.AuditCreated(
+            "QA01",
+            "QualityArticle",
+            _model.SapMaterialNumber,
+            _currentUserName,
+            $"SapTitle={_model.SapTitle}; OldMaterialNumber={_model.OldMaterialNumber}; Customer={_model.Customer}; ImportantInfo={_model.ImportantInfo}; IsActive=True");
+
+        _logger?.AuditCreated(
+            "QA01",
+            "QualityPrintVersion",
+            string.IsNullOrWhiteSpace(createdPrintVersionNumber)
+                ? _model.FullPrintVersionNumber
+                : createdPrintVersionNumber,
+            _currentUserName,
+            $"SapMaterial={_model.SapMaterialNumber}; Title={_model.PrintVersionTitle}; Decoration={_model.DecorationCode}; ColorType={_model.ColorType}; GlassTreatment={_model.GlassTreatment}; QualityClass={_model.QualityClass}; HdNumber={_model.HdNumber}; HasGauge={_model.HasGauge}; Complaint={_model.HasComplaint}; SamplesOnCamera={_model.SamplesOnCamera}");
+
+        _logger?.AdminAction(
+            "QA01",
+            "CreateQualityData",
+            _currentUserName,
+            $"SapMaterial={_model.SapMaterialNumber}; PrintVersion={createdPrintVersionNumber}; Customer={_model.Customer}");
     }
 
     private void BtnClear_Click(
@@ -360,10 +481,16 @@ public partial class QualityArticleCreateView : UserControl
         BtnCreate.IsEnabled = false;
 
         ClearWarning();
+
+        _logger?.AdminAction(
+            "QA01",
+            "ClearQualityArticleCreateForm",
+            _currentUserName,
+            string.Empty);
     }
 
     // ============================================================
-    // LOOKUPY
+    // LOOKUPS
     // ============================================================
 
     private void LoadLookupData()
@@ -580,5 +707,41 @@ public partial class QualityArticleCreateView : UserControl
 
         TxtDuplicateWarning.Text =
             string.Empty;
+    }
+
+    private string T(string key)
+    {
+        var value = _translate?.Invoke(key) ?? key;
+        return IsMissing(value, key) ? key : value;
+    }
+
+    private string TF(string key, params object[] args)
+    {
+        if (_translateFormat is not null)
+        {
+            var translated = _translateFormat(key, args);
+            if (!IsMissing(translated, key))
+            {
+                return translated;
+            }
+        }
+
+        var pattern = T(key);
+
+        try
+        {
+            return string.Format(pattern, args);
+        }
+        catch
+        {
+            return pattern;
+        }
+    }
+
+    private static bool IsMissing(string? value, string key)
+    {
+        return string.IsNullOrWhiteSpace(value)
+               || string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase);
     }
 }

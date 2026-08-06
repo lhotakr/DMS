@@ -1,0 +1,10 @@
+{
+  "code": "MES00",
+  "name": "Nastavení MES komunikace",
+  "module": "MES",
+  "description": "Centrální nastavení monitoringu zařízení a budoucí komunikace mezi DMS a strojem.",
+  "handlerKey": "MesCommunicationSettings",
+  "requiresArticleNumber": false,
+  "isActive": true,
+  "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE" ]
+}

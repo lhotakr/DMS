@@ -1,4 +1,4 @@
-﻿namespace DMS.Core.Quality;
+namespace DMS.Core.Quality;
 
 public sealed class QualityOrder
 {
@@ -40,6 +40,26 @@ public sealed class QualityOrder
     public string Notes { get; init; } = string.Empty;
 
     public string DefectReport { get; init; } = string.Empty;
+
+    public bool TesaTest { get; init; }
+
+    public bool AcetoneTest { get; init; }
+
+    public bool GridTest { get; init; }
+
+    public bool VisualCheck { get; init; }
+
+    public bool Approved { get; init; }
+
+    public string ReleaseNotes { get; init; } = string.Empty;
+
+    public string ReleasedBy { get; init; } = string.Empty;
+
+    public DateTime? ReleasedAt { get; init; }
+
+    public string BlockedBy { get; init; } = string.Empty;
+
+    public DateTime? BlockedAt { get; init; }
 
     public bool Finished { get; init; }
 

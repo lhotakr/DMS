@@ -8,155 +8,198 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="QATASK - Quality úkoly"
-                   Style="{StaticResource DmsTitleTextStyle}"
+        <StackPanel Grid.Row="0"
+                    Margin="0,0,0,12">
+            <TextBlock x:Name="TxtTitle"
+                       Text="QATASK - Quality tasks"
+                       Style="{StaticResource DmsTitleTextStyle}"
+                       Margin="0,0,0,6"/>
+
+            <TextBlock x:Name="TxtSubtitle"
+                       Text="Overview of open and completed quality tasks across print versions."
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Style="{StaticResource DmsCardBorderStyle}"
+                Margin="0,0,0,12">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="260"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="TxtCompletionFilterLabel"
+                           Grid.Column="0"
+                           Text="Status"
+                           Style="{StaticResource DmsFormLabelStyle}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"/>
+
+                <ComboBox x:Name="CmbCompletionFilter"
+                          Grid.Column="1"
+                          Margin="0,4,14,4"
+                          SelectionChanged="Filter_Changed">
+                    <ComboBoxItem x:Name="CbiOpen" Content="Open" Tag="open" IsSelected="True"/>
+                    <ComboBoxItem x:Name="CbiDone" Content="Completed" Tag="done"/>
+                    <ComboBoxItem x:Name="CbiAll" Content="All" Tag="all"/>
+                </ComboBox>
+
+                <TextBlock x:Name="TxtSapFilterLabel"
+                           Grid.Column="2"
+                           Text="SAP ID"
+                           Style="{StaticResource DmsFormLabelStyle}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"/>
+
+                <TextBox x:Name="TxtSapFilter"
+                         Grid.Column="3"
+                         Margin="0,4,14,4"
+                         Style="{StaticResource DmsFormTextBoxStyle}"
+                         TextChanged="Filter_Changed"/>
+
+                <Button x:Name="BtnClearFilter"
+                        Grid.Column="4"
+                        Content="Clear"
+                        Margin="0,4,8,4"
+                        Style="{StaticResource DmsFormButtonStyle}"
+                        Click="BtnClearFilter_Click"/>
+
+                <Button x:Name="BtnReload"
+                        Grid.Column="5"
+                        Content="Refresh"
+                        Margin="0,4,0,4"
+                        Style="{StaticResource DmsFormButtonStyle}"
+                        Click="BtnReload_Click"/>
+            </Grid>
+        </Border>
+
+        <TextBlock x:Name="TxtHint"
+                   Grid.Row="2"
+                   Text="Double-click a task to open the related quality card in QA03."
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"
                    Margin="0,0,0,8"/>
 
-        <Grid Grid.Row="1"
-              Margin="0,0,0,12">
-
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"/>
-                <ColumnDefinition Width="180"/>
-                <ColumnDefinition Width="90"/>
-                <ColumnDefinition Width="220"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0"
-                       Text="Stav"
-                       Style="{StaticResource DmsFormLabelStyle}"/>
-
-            <ComboBox x:Name="CmbCompletionFilter"
-                      Grid.Column="1"
-                      Margin="0,4,14,4"
-                      SelectionChanged="Filter_Changed">
-                <ComboBoxItem Content="Nesplněné" Tag="open" IsSelected="True"/>
-                <ComboBoxItem Content="Splněné" Tag="done"/>
-                <ComboBoxItem Content="Vše" Tag="all"/>
-            </ComboBox>
-
-            <TextBlock Grid.Column="2"
-                       Text="SAP ID"
-                       Style="{StaticResource DmsFormLabelStyle}"/>
-
-            <TextBox x:Name="TxtSapFilter"
-                     Grid.Column="3"
-                     Margin="0,4,14,4"
-                     Style="{StaticResource DmsFormTextBoxStyle}"
-                     TextChanged="Filter_Changed"/>
-
-            <Button Grid.Column="4"
-                    Content="Vyčistit"
-                    Margin="0,4,8,4"
-                    Style="{StaticResource DmsFormButtonStyle}"
-                    Click="BtnClearFilter_Click"/>
-
-            <Button Grid.Column="5"
-                    Content="Aktualizovat"
-                    Margin="0,4,0,4"
-                    Style="{StaticResource DmsFormButtonStyle}"
-                    Click="BtnReload_Click"/>
-        </Grid>
-
         <DataGrid x:Name="GridTasks"
-          Grid.Row="2"
-          Style="{StaticResource DmsDataGridStyle}"
-          AutoGenerateColumns="False"
-          IsReadOnly="True"
-          SelectionUnit="FullRow"
-          SelectionMode="Extended"
-          HorizontalScrollBarVisibility="Auto"
-          VerticalScrollBarVisibility="Auto"
-          Loaded="GridTasks_Loaded"
-          SizeChanged="GridTasks_SizeChanged"
-          MouseDoubleClick="GridTasks_MouseDoubleClick">
+                  Grid.Row="3"
+                  Style="{StaticResource DmsDataGridStyle}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionUnit="FullRow"
+                  SelectionMode="Extended"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  Loaded="GridTasks_Loaded"
+                  SizeChanged="GridTasks_SizeChanged"
+                  MouseDoubleClick="GridTasks_MouseDoubleClick">
 
             <DataGrid.RowStyle>
                 <Style TargetType="{x:Type DataGridRow}">
+                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding DelaySeverity}"
-                         Value="Yellow">
-                            <Setter Property="Background"
-                        Value="#4A3D18"/>
+                        <DataTrigger Binding="{Binding DelaySeverity}" Value="Yellow">
+                            <Setter Property="Background" Value="#4A3D18"/>
                         </DataTrigger>
 
-                        <DataTrigger Binding="{Binding DelaySeverity}"
-                         Value="Red">
-                            <Setter Property="Background"
-                        Value="#4A2020"/>
+                        <DataTrigger Binding="{Binding DelaySeverity}" Value="Red">
+                            <Setter Property="Background" Value="#4A2020"/>
                         </DataTrigger>
+
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource DmsAccentBrush}"/>
+                        </Trigger>
                     </Style.Triggers>
                 </Style>
             </DataGrid.RowStyle>
 
             <DataGrid.Columns>
-                <DataGridTextColumn Header="SAP ID"
-                        Binding="{Binding SapMaterialNumber}"
-                        Width="155"
-                        MinWidth="155"/>
+                <DataGridTextColumn x:Name="ColSapId"
+                                    Header="SAP ID"
+                                    Binding="{Binding SapMaterialNumber}"
+                                    Width="155"
+                                    MinWidth="155"/>
 
-                <DataGridTextColumn Header="Status"
-                        Binding="{Binding MaterialStatus}"
-                        Width="70"
-                        MinWidth="70"/>
+                <DataGridTextColumn x:Name="ColMaterialStatus"
+                                    Header="Status"
+                                    Binding="{Binding MaterialStatus}"
+                                    Width="70"
+                                    MinWidth="70"/>
 
-                <DataGridTextColumn Header="Staré číslo"
-                        Binding="{Binding OldMaterialNumber}"
-                        Width="165"
-                        MinWidth="165"/>
+                <DataGridTextColumn x:Name="ColOldNumber"
+                                    Header="Old number"
+                                    Binding="{Binding OldMaterialNumber}"
+                                    Width="165"
+                                    MinWidth="165"/>
 
-                <DataGridTextColumn Header="Číslo úkolu"
-                        Binding="{Binding TaskNumber}"
-                        Width="85"
-                        MinWidth="85"/>
+                <DataGridTextColumn x:Name="ColTaskNumber"
+                                    Header="Task no."
+                                    Binding="{Binding TaskNumber}"
+                                    Width="85"
+                                    MinWidth="85"/>
 
                 <DataGridTextColumn x:Name="ColTaskText"
-                        Header="Úkol"
-                        Binding="{Binding TaskText}"
-                        Width="500"
-                        MinWidth="420"/>
+                                    Header="Task"
+                                    Binding="{Binding TaskText}"
+                                    Width="500"
+                                    MinWidth="420"/>
 
-                <DataGridTextColumn Header="Datum zadání"
-                        Binding="{Binding CreatedAtText}"
-                        Width="115"
-                        MinWidth="115"/>
+                <DataGridTextColumn x:Name="ColCreatedAt"
+                                    Header="Created"
+                                    Binding="{Binding CreatedAtText}"
+                                    Width="115"
+                                    MinWidth="115"/>
 
-                <DataGridTextColumn Header="Autor úkolu"
-                        Binding="{Binding CreatedBy}"
-                        Width="130"
-                        MinWidth="130"/>
+                <DataGridTextColumn x:Name="ColCreatedBy"
+                                    Header="Created by"
+                                    Binding="{Binding CreatedBy}"
+                                    Width="130"
+                                    MinWidth="130"/>
 
-                <DataGridTextColumn Header="Termín"
-                        Binding="{Binding DueDateText}"
-                        Width="115"
-                        MinWidth="115"/>
+                <DataGridTextColumn x:Name="ColDueDate"
+                                    Header="Due date"
+                                    Binding="{Binding DueDateText}"
+                                    Width="115"
+                                    MinWidth="115"/>
 
-                <DataGridTextColumn Header="Zpoždění"
-                        Binding="{Binding DelayText}"
-                        Width="95"
-                        MinWidth="95"/>
+                <DataGridTextColumn x:Name="ColDelay"
+                                    Header="Delay"
+                                    Binding="{Binding DelayText}"
+                                    Width="95"
+                                    MinWidth="95"/>
 
-                <DataGridTextColumn Header="Datum odevzdání"
-                        Binding="{Binding CompletedAtText}"
-                        Width="130"
-                        MinWidth="130"/>
+                <DataGridTextColumn x:Name="ColCompletedAt"
+                                    Header="Completed"
+                                    Binding="{Binding CompletedAtText}"
+                                    Width="130"
+                                    MinWidth="130"/>
 
-                <DataGridTextColumn Header="Zpracovatel"
-                        Binding="{Binding CompletedBy}"
-                        Width="130"
-                        MinWidth="130"/>
+                <DataGridTextColumn x:Name="ColCompletedBy"
+                                    Header="Completed by"
+                                    Binding="{Binding CompletedBy}"
+                                    Width="130"
+                                    MinWidth="130"/>
             </DataGrid.Columns>
         </DataGrid>
 
         <TextBlock x:Name="TxtStatus"
-                   Grid.Row="3"
+                   Grid.Row="4"
                    Margin="0,10,0,0"
                    TextWrapping="Wrap"
                    Foreground="{DynamicResource DmsMutedForegroundBrush}"/>

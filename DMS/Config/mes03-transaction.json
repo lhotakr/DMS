@@ -1,0 +1,10 @@
+{
+  "code": "MES03",
+  "name": "Data stanic",
+  "module": "MES",
+  "description": "Čtení datových bodů z jednotlivých MES stanic, B&R/BRIO modulů a Siemens PLC.",
+  "handlerKey": "MesStationData",
+  "requiresArticleNumber": false,
+  "isActive": true,
+  "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+}

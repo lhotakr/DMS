@@ -1,4 +1,4 @@
-﻿namespace DMS.Desktop.Configuration;
+namespace DMS.Desktop.Configuration;
 
 public sealed class DmsAppSettings
 {
@@ -8,6 +8,7 @@ public sealed class DmsAppSettings
     public string ConfigurationRootPath { get; set; } = string.Empty;
     public string DocumentsRootPath { get; set; } = string.Empty;
     public string LogsRootPath { get; set; } = string.Empty;
+    public string BrandingRootPath { get; set; } = string.Empty;
 
     public string DefaultTestArticleNumber { get; set; } = "1000015148";
 

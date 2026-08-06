@@ -1,0 +1,637 @@
+[
+  {
+    "stationCode": "PSL-3",
+    "displayName": "S7AGL4 PSL-3",
+    "workCenter": "PSL-3",
+    "protocol": "SiemensS7",
+    "host": "10.131.10.87",
+    "port": 102,
+    "rack": 0,
+    "slot": 1,
+    "pollTimeoutMs": 1500,
+    "isActive": true,
+    "note": "Siemens PLC. Doplň reálné S7 adresy v poli address, jakmile je získáme.",
+    "dataPoints": [
+      {
+        "name": "Counter1",
+        "displayName": "Counter 1",
+        "address": "Counter1",
+        "dataType": "Int32",
+        "role": "Counter",
+        "isRequired": true
+      },
+      {
+        "name": "Counter2",
+        "displayName": "Counter 2",
+        "address": "Counter2",
+        "dataType": "Int32",
+        "role": "Counter",
+        "isRequired": true
+      },
+      {
+        "name": "Input1",
+        "displayName": "Input 1",
+        "address": "Input1",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input2",
+        "displayName": "Input 2",
+        "address": "Input2",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input3",
+        "displayName": "Input 3",
+        "address": "Input3",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input4",
+        "displayName": "Input 4",
+        "address": "Input4",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input5",
+        "displayName": "Input 5",
+        "address": "Input5",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input6",
+        "displayName": "Input 6",
+        "address": "Input6",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Output1",
+        "displayName": "Output 1",
+        "address": "Output1",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output2",
+        "displayName": "Output 2",
+        "address": "Output2",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output3",
+        "displayName": "Output 3",
+        "address": "Output3",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output4",
+        "displayName": "Output 4",
+        "address": "Output4",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output5",
+        "displayName": "Output 5",
+        "address": "Output5",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output6",
+        "displayName": "Output 6",
+        "address": "Output6",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      }
+    ]
+  },
+  {
+    "stationCode": "HPR-1",
+    "displayName": "S7AGL4 HPR-1",
+    "workCenter": "HPR-1",
+    "protocol": "SiemensS7",
+    "host": "10.131.10.88",
+    "port": 102,
+    "rack": 0,
+    "slot": 1,
+    "pollTimeoutMs": 1500,
+    "isActive": true,
+    "note": "Siemens PLC. Doplň reálné S7 adresy v poli address.",
+    "dataPoints": [
+      {
+        "name": "Counter1",
+        "displayName": "Counter 1",
+        "address": "Counter1",
+        "dataType": "Int32",
+        "role": "Counter",
+        "isRequired": true
+      },
+      {
+        "name": "Counter2",
+        "displayName": "Counter 2",
+        "address": "Counter2",
+        "dataType": "Int32",
+        "role": "Counter",
+        "isRequired": true
+      },
+      {
+        "name": "Input1",
+        "displayName": "Input 1",
+        "address": "Input1",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input2",
+        "displayName": "Input 2",
+        "address": "Input2",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input3",
+        "displayName": "Input 3",
+        "address": "Input3",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input4",
+        "displayName": "Input 4",
+        "address": "Input4",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input5",
+        "displayName": "Input 5",
+        "address": "Input5",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input6",
+        "displayName": "Input 6",
+        "address": "Input6",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Output1",
+        "displayName": "Output 1",
+        "address": "Output1",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output2",
+        "displayName": "Output 2",
+        "address": "Output2",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output3",
+        "displayName": "Output 3",
+        "address": "Output3",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output4",
+        "displayName": "Output 4",
+        "address": "Output4",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output5",
+        "displayName": "Output 5",
+        "address": "Output5",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output6",
+        "displayName": "Output 6",
+        "address": "Output6",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      }
+    ]
+  },
+  {
+    "stationCode": "KMP-L1",
+    "displayName": "S7AGL4 KMP-L1",
+    "workCenter": "KMP-L1",
+    "protocol": "SiemensS7",
+    "host": "10.131.10.89",
+    "port": 102,
+    "rack": 0,
+    "slot": 1,
+    "pollTimeoutMs": 1500,
+    "isActive": true,
+    "note": "Siemens PLC. Doplň reálné S7 adresy v poli address.",
+    "dataPoints": [
+      {
+        "name": "Counter1",
+        "displayName": "Counter 1",
+        "address": "Counter1",
+        "dataType": "Int32",
+        "role": "Counter",
+        "isRequired": true
+      },
+      {
+        "name": "Counter2",
+        "displayName": "Counter 2",
+        "address": "Counter2",
+        "dataType": "Int32",
+        "role": "Counter",
+        "isRequired": true
+      },
+      {
+        "name": "Input1",
+        "displayName": "Input 1",
+        "address": "Input1",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input2",
+        "displayName": "Input 2",
+        "address": "Input2",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input3",
+        "displayName": "Input 3",
+        "address": "Input3",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input4",
+        "displayName": "Input 4",
+        "address": "Input4",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input5",
+        "displayName": "Input 5",
+        "address": "Input5",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input6",
+        "displayName": "Input 6",
+        "address": "Input6",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Output1",
+        "displayName": "Output 1",
+        "address": "Output1",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output2",
+        "displayName": "Output 2",
+        "address": "Output2",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output3",
+        "displayName": "Output 3",
+        "address": "Output3",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output4",
+        "displayName": "Output 4",
+        "address": "Output4",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output5",
+        "displayName": "Output 5",
+        "address": "Output5",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output6",
+        "displayName": "Output 6",
+        "address": "Output6",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      }
+    ]
+  },
+  {
+    "stationCode": "K14-01",
+    "displayName": "BRIO K14-01",
+    "workCenter": "K14-01",
+    "protocol": "BRGateway",
+    "host": "10.131.10.60",
+    "port": 0,
+    "rack": 0,
+    "slot": 0,
+    "pollTimeoutMs": 1500,
+    "isActive": true,
+    "note": "B&R/BRIO přes budoucí gateway. Nastav port po potvrzení rozhraní.",
+    "dataPoints": [
+      {
+        "name": "Counter1",
+        "displayName": "Counter 1",
+        "address": "Counter1",
+        "dataType": "Int32",
+        "role": "Counter",
+        "isRequired": true
+      },
+      {
+        "name": "Counter2",
+        "displayName": "Counter 2",
+        "address": "Counter2",
+        "dataType": "Int32",
+        "role": "Counter",
+        "isRequired": true
+      },
+      {
+        "name": "Input1",
+        "displayName": "Input 1",
+        "address": "Input1",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input2",
+        "displayName": "Input 2",
+        "address": "Input2",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input3",
+        "displayName": "Input 3",
+        "address": "Input3",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input4",
+        "displayName": "Input 4",
+        "address": "Input4",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input5",
+        "displayName": "Input 5",
+        "address": "Input5",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input6",
+        "displayName": "Input 6",
+        "address": "Input6",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Output1",
+        "displayName": "Output 1",
+        "address": "Output1",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output2",
+        "displayName": "Output 2",
+        "address": "Output2",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output3",
+        "displayName": "Output 3",
+        "address": "Output3",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output4",
+        "displayName": "Output 4",
+        "address": "Output4",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output5",
+        "displayName": "Output 5",
+        "address": "Output5",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output6",
+        "displayName": "Output 6",
+        "address": "Output6",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      }
+    ]
+  },
+  {
+    "stationCode": "K14-02",
+    "displayName": "BRIO K14-02",
+    "workCenter": "K14-02",
+    "protocol": "BRGateway",
+    "host": "10.131.10.72",
+    "port": 0,
+    "rack": 0,
+    "slot": 0,
+    "pollTimeoutMs": 1500,
+    "isActive": true,
+    "note": "B&R/BRIO přes budoucí gateway. Nastav port po potvrzení rozhraní.",
+    "dataPoints": [
+      {
+        "name": "Counter1",
+        "displayName": "Counter 1",
+        "address": "Counter1",
+        "dataType": "Int32",
+        "role": "Counter",
+        "isRequired": true
+      },
+      {
+        "name": "Counter2",
+        "displayName": "Counter 2",
+        "address": "Counter2",
+        "dataType": "Int32",
+        "role": "Counter",
+        "isRequired": true
+      },
+      {
+        "name": "Input1",
+        "displayName": "Input 1",
+        "address": "Input1",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input2",
+        "displayName": "Input 2",
+        "address": "Input2",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input3",
+        "displayName": "Input 3",
+        "address": "Input3",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input4",
+        "displayName": "Input 4",
+        "address": "Input4",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input5",
+        "displayName": "Input 5",
+        "address": "Input5",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Input6",
+        "displayName": "Input 6",
+        "address": "Input6",
+        "dataType": "Bool",
+        "role": "Input",
+        "isRequired": true
+      },
+      {
+        "name": "Output1",
+        "displayName": "Output 1",
+        "address": "Output1",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output2",
+        "displayName": "Output 2",
+        "address": "Output2",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output3",
+        "displayName": "Output 3",
+        "address": "Output3",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output4",
+        "displayName": "Output 4",
+        "address": "Output4",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output5",
+        "displayName": "Output 5",
+        "address": "Output5",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      },
+      {
+        "name": "Output6",
+        "displayName": "Output 6",
+        "address": "Output6",
+        "dataType": "Bool",
+        "role": "Output",
+        "isRequired": true
+      }
+    ]
+  }
+]

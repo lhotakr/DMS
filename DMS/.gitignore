@@ -1,0 +1,10 @@
+﻿bin/
+obj/
+.vs/
+*.user
+*.suo
+*.tmp
+*.bak
+*.Backup.tmp
+Thumbs.db
+*.sap01-sap02-backup-*

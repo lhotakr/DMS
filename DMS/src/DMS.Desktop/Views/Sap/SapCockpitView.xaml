@@ -1,0 +1,53 @@
+<UserControl x:Class="DMS.Desktop.Views.Sap.SapCockpitView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+
+    <DockPanel LastChildFill="True">
+
+        <StackPanel DockPanel.Dock="Top"
+                    Margin="0,0,0,10">
+
+            <TextBlock x:Name="TxtTitle"
+                       Text="SAP00 - SAP import cockpit"
+                       Style="{StaticResource DmsTitleTextStyle}"/>
+
+            <TextBlock x:Name="TxtSubtitle"
+                       Text="Import center for SAP materials, BOMs, routings and work centers."
+                       FontSize="15"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,8"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+
+            <Border CornerRadius="8"
+                    Padding="12"
+                    Margin="0,4,0,8"
+                    HorizontalAlignment="Stretch"
+                    BorderThickness="1"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}">
+
+                <StackPanel>
+                    <TextBlock x:Name="TxtInfo"
+                               Text="SAP00 is the operational read-only import cockpit. SAP-DMS rule customization belongs to SAPSET."
+                               FontSize="14"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                    <TextBlock x:Name="TxtPaths"
+                               Margin="0,8,0,0"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <TabControl x:Name="TabsSapCockpit"
+                    Margin="0,4,0,0"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Background="{DynamicResource DmsPanelBrush}"
+                    Foreground="{DynamicResource DmsForegroundBrush}"/>
+    </DockPanel>
+</UserControl>

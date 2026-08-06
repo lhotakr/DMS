@@ -1,4 +1,7 @@
-﻿using DMS.Desktop.Models;
+using DMS.Core.Documents;
+using DMS.Desktop.Logging;
+using DMS.Desktop.UI;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -7,147 +10,137 @@ using System.Windows.Input;
 
 namespace DMS.Desktop.Views.Documents;
 
-public partial class ArticleDocumentsView : UserControl
+public partial class ArticleDocumentsView : UserControl, INotifyPropertyChanged
 {
-    private readonly List<ArticleDocumentItem> _documents = new();
+    private readonly string _articleNumber;
+    private readonly string _articleFolderPath;
+    private readonly DmsArticleDocumentIndexService _indexService;
+    private readonly DmsLogger? _logger;
+    private readonly string _currentUserName;
+    private readonly Func<string, string>? _translate;
+    private readonly Func<string, object[], string>? _translateFormat;
 
-    private readonly Action<string>? _documentOpened;
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public event Action<string>? TransactionRequested;
+
+    public string OpenButtonText => T("DOC03.Button.Open");
 
     public ArticleDocumentsView(
         string articleNumber,
         string articleFolderPath,
         Action<string>? documentOpened = null)
+        : this(articleNumber, articleFolderPath, null, null, null, null)
+    {
+        if (documentOpened is not null)
+        {
+            _documentOpened = documentOpened;
+        }
+    }
+
+    private Action<string>? _documentOpened;
+
+    public ArticleDocumentsView(
+        string articleNumber,
+        string articleFolderPath,
+        DmsLogger? logger = null,
+        string? currentUserName = null,
+        Func<string, string>? translate = null,
+        Func<string, object[], string>? translateFormat = null)
     {
         InitializeComponent();
 
-        _documentOpened = documentOpened;
+        _articleNumber = articleNumber;
+        _articleFolderPath = articleFolderPath;
+        _indexService = new DmsArticleDocumentIndexService(articleFolderPath);
+        _logger = logger;
+        _currentUserName = string.IsNullOrWhiteSpace(currentUserName) ? "UNKNOWN" : currentUserName;
+        _translate = translate;
+        _translateFormat = translateFormat;
 
-        TxtTitle.Text = $"Dokumentace artiklu {articleNumber}";
-        TxtFolder.Text = articleFolderPath;
-
-        LoadDocuments(articleFolderPath);
+        ApplyLocalization();
+        LoadDocuments();
     }
 
-    private void LoadDocuments(string articleFolderPath)
+    private void ApplyLocalization()
     {
-        _documents.Clear();
+        TxtTitle.Text = TF("DOC03.Title", _articleNumber);
+        TxtSummary.Text = T("DOC03.Summary");
+        TxtFolderLabel.Text = T("DOC03.Folder");
+        TxtFolder.Text = _articleFolderPath;
 
-        if (!Directory.Exists(articleFolderPath))
-        {
-            MessageBox.Show(
-                $"Složka dokumentů pro artikl neexistuje.\n\n{articleFolderPath}",
-                "DMS - dokumentace artiklu",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+        BtnOpenTec03.Content = T("DOC03.Button.OpenTec03");
+        BtnOpenDoc02.Content = T("DOC03.Button.OpenDoc02");
+        BtnRefresh.Content = T("DOC03.Button.Refresh");
 
-            DgvDocuments.ItemsSource = _documents;
-            return;
-        }
+        ColFileName.Header = T("DOC03.Column.FileName");
+        ColKind.Header = T("DOC03.Column.Kind");
+        ColDescription.Header = T("DOC03.Column.Description");
+        ColExtension.Header = T("DOC03.Column.Extension");
+        ColSize.Header = T("DOC03.Column.Size");
+        ColUploadedBy.Header = T("DOC03.Column.UploadedBy");
+        ColUploadedAt.Header = T("DOC03.Column.UploadedAt");
+        ColChangedBy.Header = T("DOC03.Column.ChangedBy");
+        ColChangedAt.Header = T("DOC03.Column.ChangedAt");
+        ColPath.Header = T("DOC03.Column.Path");
+        ColAction.Header = T("DOC03.Column.Action");
 
-        var supportedExtensions = new HashSet<string>(
-            new[] { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".png", ".jpg", ".jpeg", ".txt", ".msg", ".eml" },
-            StringComparer.OrdinalIgnoreCase);
-
-        var files = Directory
-            .EnumerateFiles(articleFolderPath, "*.*", SearchOption.TopDirectoryOnly)
-            .Where(file => supportedExtensions.Contains(Path.GetExtension(file)))
-            .OrderBy(file => Path.GetFileName(file))
-            .ToList();
-
-        foreach (var file in files)
-        {
-            var info = new FileInfo(file);
-
-            _documents.Add(new ArticleDocumentItem
-            {
-                FileName = info.Name,
-                FilePath = info.FullName,
-                Extension = info.Extension,
-                SizeBytes = info.Length,
-                LastModified = info.LastWriteTime,
-                DocumentKind = DetectDocumentKind(info.Name)
-            });
-        }
-
-        DgvDocuments.ItemsSource = null;
-        DgvDocuments.ItemsSource = _documents;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(OpenButtonText)));
     }
 
-    private static string DetectDocumentKind(string fileName)
+    private void LoadDocuments()
     {
-        var name = fileName.ToLowerInvariant();
-
-        if (name.Contains("massblatt") || name.Contains("mas") || name.Contains("maß") || name.Contains("MB"))
+        try
         {
-            return "Massblatt";
-        }
+            var records = _indexService.LoadDisplayRecords(_articleNumber)
+                .Select(ToDisplayItem)
+                .ToList();
 
-        if (name.Contains("vykres") || name.Contains("výkres") || name.Contains("drawing") || name.Contains("zeichnung"))
+            DgvDocuments.ItemsSource = records;
+
+            TxtStatus.Text = Directory.Exists(_articleFolderPath)
+                ? TF("DOC03.Status.Loaded", records.Count)
+                : TF("DOC03.Status.FolderMissing", _articleFolderPath);
+
+            _logger?.AdminAction(
+                "DOC03",
+                "LoadArticleDocuments",
+                _currentUserName,
+                $"Article={_articleNumber}; Count={records.Count}; Folder={_articleFolderPath}");
+        }
+        catch (Exception ex)
         {
-            return "Výkres";
-        }
+            _logger?.Error($"DOC03 failed to load article documents. Article={_articleNumber}; Folder={_articleFolderPath}", ex);
 
-        if (name.Contains("tisk") || name.Contains("print"))
+            DmsConfirmDialog.ShowInfo(
+                Window.GetWindow(this),
+                T("DOC03.Dialog.LoadFailed.Title"),
+                TF("DOC03.Dialog.LoadFailed.Body", ex.Message, _articleFolderPath));
+        }
+    }
+
+    private ArticleDocumentDisplayItem ToDisplayItem(DmsArticleDocumentRecord record)
+    {
+        return new ArticleDocumentDisplayItem
         {
-            return "Tisková oblast";
-        }
+            Record = record,
+            FullPath = _indexService.GetPhysicalPath(record),
+            IsActiveText = record.IsActive ? T("Common.Yes") : T("Common.No")
+        };
+    }
 
-        if (name.Contains("bal") || name.Contains("verpack"))
-        {
-            return "Balicí předpis";
-        }
+    private void BtnOpenTec03_Click(object sender, RoutedEventArgs e)
+    {
+        TransactionRequested?.Invoke($"TEC03 {_articleNumber}");
+    }
 
-        if (name.Contains("recept") || name.Contains("rez"))
-        {
-            return "Receptura";
-        }
+    private void BtnOpenDoc02_Click(object sender, RoutedEventArgs e)
+    {
+        TransactionRequested?.Invoke($"DOC02 {_articleNumber}");
+    }
 
-        if (name.Contains("Zak") || name.Contains("Zakázka"))
-        {
-            return "Vzorovací zakázka";
-        }
-
-        if (name.Contains("obeznik") || name.Contains("Oběžník"))
-        {
-            return "Oběžník";
-        }
-
-        if (name.Contains("Check") || name.Contains("Checklist"))
-        {
-            return "Checklist";
-        }
-
-        if (name.Contains("Kalk") || name.Contains("Kalkulace"))
-        {
-            return "Kalkulace";
-        }
-
-        if (name.Contains("eml") || name.Contains("email"))
-        {
-            return "Email";
-        }
-
-        if (name.Contains("Schválení") || name.Contains("schv"))
-        {
-            return "Schválení";
-        }
-
-        if (name.Contains("Musterbegleitschein") || name.Contains("Muster"))
-        {
-            return "Musterbegleitschein";
-        }
-
-        if (name.Contains("Výr") || name.Contains("vyr"))
-        {
-            return "Schválení pro výrobu";
-        }
-
-        if (name.Contains("Podeps") || name.Contains("Podepsaný"))
-        {
-            return "Podepsaný MB";
-        }
-
-        return "Dokument";
+    private void BtnRefresh_Click(object sender, RoutedEventArgs e)
+    {
+        LoadDocuments();
     }
 
     private void BtnOpenDocument_Click(object sender, RoutedEventArgs e)
@@ -169,23 +162,22 @@ public partial class ArticleDocumentsView : UserControl
 
     private void DgvDocuments_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
-        if (DgvDocuments.SelectedItem is not ArticleDocumentItem item)
+        if (DgvDocuments.SelectedItem is not ArticleDocumentDisplayItem item)
         {
             return;
         }
 
-        OpenDocument(item.FilePath);
+        OpenDocument(item.FullPath);
     }
 
     private void OpenDocument(string filePath)
     {
         if (!File.Exists(filePath))
         {
-            MessageBox.Show(
-                $"Soubor neexistuje.\n\n{filePath}",
-                "DMS - otevření dokumentu",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            DmsConfirmDialog.ShowInfo(
+                Window.GetWindow(this),
+                T("DOC03.Dialog.FileMissing.Title"),
+                TF("DOC03.Dialog.FileMissing.Body", filePath));
 
             return;
         }
@@ -193,6 +185,7 @@ public partial class ArticleDocumentsView : UserControl
         try
         {
             _documentOpened?.Invoke(filePath);
+            _logger?.OpenDocument(filePath, _currentUserName);
 
             Process.Start(new ProcessStartInfo
             {
@@ -202,12 +195,44 @@ public partial class ArticleDocumentsView : UserControl
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                $"Soubor se nepodařilo otevřít.\n\n{filePath}\n\n{ex.Message}",
-                "DMS - otevření dokumentu",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            _logger?.Error($"DOC03 failed to open document. File={filePath}", ex);
+
+            DmsConfirmDialog.ShowInfo(
+                Window.GetWindow(this),
+                T("DOC03.Dialog.OpenFailed.Title"),
+                TF("DOC03.Dialog.OpenFailed.Body", filePath, ex.Message));
         }
     }
 
+    private string T(string key)
+    {
+        var value = _translate?.Invoke(key) ?? key;
+        return IsMissing(value, key) ? key : value;
+    }
+
+    private string TF(string key, params object[] args)
+    {
+        if (_translateFormat is not null)
+        {
+            return _translateFormat(key, args);
+        }
+
+        var pattern = T(key);
+
+        try
+        {
+            return string.Format(pattern, args);
+        }
+        catch
+        {
+            return pattern;
+        }
+    }
+
+    private static bool IsMissing(string? value, string key)
+    {
+        return string.IsNullOrWhiteSpace(value)
+               || string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase);
+    }
 }

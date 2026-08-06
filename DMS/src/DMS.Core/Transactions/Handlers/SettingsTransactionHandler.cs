@@ -20,6 +20,9 @@ public sealed class SettingsTransactionHandler : ITransactionHandler
             "Serverová konfigurace: čeká na přípravu\n" +
             "SSO: Windows login";
 
-        return TransactionResult.Ok(definition.Code, null, message);
+        return TransactionResult.Ok(
+            definition.Code,
+            (string?)null,
+            message);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace DMS.Desktop.Models;
+namespace DMS.Desktop.Models;
 
 public sealed class FavoriteTransactionItem
 {

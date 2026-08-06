@@ -1,0 +1,19 @@
+{
+  "isMonitoringEnabled": true,
+  "pingTimeoutMs": 1200,
+  "maxParallelism": 16,
+  "autoRefreshSeconds": 60,
+  "devicesFilePath": "\\\\10.131.10.5\\FISData\\devices.txt",
+  "enableStationDataPolling": true,
+  "stationPollTimeoutMs": 1500,
+  "stationAutoRefreshSeconds": 10,
+  "stationsFilePath": "mes-stations.json",
+  "stationSnapshotsFolder": "",
+  "enableMachineUnlockSignal": false,
+  "unlockProvider": "None",
+  "gatewayHost": "",
+  "gatewayPort": 0,
+  "sharedHandshakeFolder": "",
+  "requireOperatorConfirmation": true,
+  "setupOkValidMinutes": 480
+}

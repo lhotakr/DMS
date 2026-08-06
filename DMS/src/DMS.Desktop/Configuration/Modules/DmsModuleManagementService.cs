@@ -1,4 +1,5 @@
-﻿using System.IO;
+using System.IO;
+using System.Text;
 using System.Text.Json;
 
 namespace DMS.Desktop.Configuration.Modules;
@@ -27,7 +28,7 @@ public sealed class DmsModuleManagementService
             return defaults;
         }
 
-        var json = File.ReadAllText(_modulesPath);
+        var json = File.ReadAllText(_modulesPath, Encoding.UTF8);
 
         var modules = JsonSerializer.Deserialize<List<DmsModuleDefinition>>(json, JsonOptions)
                       ?? new List<DmsModuleDefinition>();
@@ -35,6 +36,11 @@ public sealed class DmsModuleManagementService
         if (modules.Count == 0)
         {
             modules = CreateDefaultModules();
+            SaveAll(modules);
+        }
+
+        if (RepairBuiltInModuleEncoding(modules))
+        {
             SaveAll(modules);
         }
 
@@ -67,13 +73,69 @@ public sealed class DmsModuleManagementService
         }
 
         var json = JsonSerializer.Serialize(normalized, JsonOptions);
-        File.WriteAllText(_modulesPath, json);
+        File.WriteAllText(_modulesPath, json, Encoding.UTF8);
+    }
+
+    private static bool RepairBuiltInModuleEncoding(
+        List<DmsModuleDefinition> modules)
+    {
+        var defaults = CreateDefaultModules()
+            .ToDictionary(
+                module => module.Code,
+                StringComparer.OrdinalIgnoreCase);
+
+        var changed = false;
+
+        foreach (var module in modules)
+        {
+            if (string.IsNullOrWhiteSpace(module.Code) ||
+                !defaults.TryGetValue(module.Code.Trim(), out var defaultModule))
+            {
+                continue;
+            }
+
+            if (LooksLikeBrokenEncoding(module.Name))
+            {
+                module.Name = defaultModule.Name;
+                changed = true;
+            }
+
+            if (LooksLikeBrokenEncoding(module.Description))
+            {
+                module.Description = defaultModule.Description;
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+
+    private static bool LooksLikeBrokenEncoding(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return value.Contains('\uFFFD') ||
+               value.Contains("Ã", StringComparison.Ordinal) ||
+               value.Contains("Â", StringComparison.Ordinal) ||
+               value.Contains("Ä", StringComparison.Ordinal) ||
+               value.Contains("Å", StringComparison.Ordinal);
     }
 
     private static List<DmsModuleDefinition> CreateDefaultModules()
     {
         return new List<DmsModuleDefinition>
         {
+            new()
+            {
+                Code = "SYSTEM",
+                Name = "Systém",
+                Description = "Základní systémové funkce a kontext uživatele.",
+                SortOrder = 5,
+                IsActive = true
+            },
             new()
             {
                 Code = "ADMIN",

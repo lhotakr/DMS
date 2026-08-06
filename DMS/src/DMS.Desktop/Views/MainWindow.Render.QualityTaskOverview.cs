@@ -8,10 +8,24 @@ public partial class MainWindow
     {
         WorkspacePanel.Children.Clear();
 
-        var view = new QualityTasksOverviewView();
+        var dmsRootPath = GetDmsDataRootPath();
+
+        var view = new QualityTasksOverviewView(
+            dmsRootPath,
+            _logger,
+            _currentUser.DisplayName,
+            translate: key => T(key),
+            translateFormat: (key, args) => T(key, args));
+
         view.TransactionRequested += ExecuteTransactionFromView;
 
         WorkspacePanel.Children.Add(view);
+
+        _logger.AdminAction(
+            "QATASK",
+            "OpenQualityTasksOverview",
+            _currentUser.DisplayName,
+            $"Root={dmsRootPath}");
 
         ResetWorkspaceScroll();
     }

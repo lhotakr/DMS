@@ -22,6 +22,9 @@ public sealed class SystemInfoTransactionHandler : ITransactionHandler
             $"DMS uživatel: {user.DisplayName}\n" +
             $"Role: {string.Join(", ", user.Roles)}";
 
-        return TransactionResult.Ok(definition.Code, null, message);
+        return TransactionResult.Ok(
+            definition.Code,
+            (string?)null,
+            message);
     }
 }

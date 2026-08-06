@@ -15,37 +15,34 @@
 
         <StackPanel Margin="18">
 
-            <!-- =================================================
-                 NADPIS A AKCE
-                 ================================================= -->
-
-            <TextBlock Text="QA02 - Změna quality dat"
+            <TextBlock x:Name="TxtPageTitle"
+                       Text="QA02 - Edit quality data"
                        Style="{StaticResource DmsTitleTextStyle}"
                        Margin="0,0,0,14"/>
 
             <StackPanel Orientation="Horizontal"
                         Margin="0,0,0,14">
 
-                <Button Content="Uložit"
+                <Button x:Name="BtnSave"
+                        Content="Save"
                         Margin="0,0,8,0"
                         Style="{StaticResource DmsPrimaryButtonStyle}"
                         Click="BtnSave_Click"/>
 
-                <Button Content="Zpět na QA03"
+                <Button x:Name="BtnBackToQa03"
+                        Content="Back to QA03"
                         Margin="0,0,8,0"
                         Style="{StaticResource DmsFormButtonStyle}"
                         Click="BtnBackToQa03_Click"/>
 
-                <Button Content="Obnovit"
+                <Button x:Name="BtnReload"
+                        Content="Reload"
                         Style="{StaticResource DmsFormButtonStyle}"
                         Click="BtnReload_Click"/>
             </StackPanel>
 
-            <!-- =================================================
-                 VÝBĚR TISKOVÉ VERZE
-                 ================================================= -->
-
-            <TextBlock Text="Vybraná tisková verze"
+            <TextBlock x:Name="LblSelectedPrintVersion"
+                       Text="Selected print version"
                        Style="{StaticResource DmsFormLabelStyle}"
                        Margin="0,0,0,5"/>
 
@@ -88,11 +85,8 @@
                 </Popup>
             </Grid>
 
-            <!-- =================================================
-                 INFORMACE O ARTIKLU
-                 ================================================= -->
-
-            <TextBlock Text="Informace o artiklu"
+            <TextBlock x:Name="TxtSectionArticleInfo"
+                       Text="Article information"
                        Style="{StaticResource DmsSectionTitleStyle}"/>
 
             <Grid Margin="0,0,0,12">
@@ -107,9 +101,10 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Row="0"
+                <TextBlock x:Name="LblImportantInfo"
+                           Grid.Row="0"
                            Grid.Column="0"
-                           Text="Důležité info"
+                           Text="Important info"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtImportantInfo"
@@ -119,9 +114,10 @@
                          Style="{StaticResource DmsMultilineTextBoxStyle}"
                          TextChanged="EditableControl_TextChanged"/>
 
-                <TextBlock Grid.Row="1"
+                <TextBlock x:Name="LblArticleNotes"
+                           Grid.Row="1"
                            Grid.Column="0"
-                           Text="Poznámky k artiklu"
+                           Text="Article notes"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtArticleNotes"
@@ -132,22 +128,20 @@
                          TextChanged="EditableControl_TextChanged"/>
             </Grid>
 
-            <!-- =================================================
-                 TISKOVÁ VERZE
-                 ================================================= -->
-
             <DockPanel Margin="0,10,0,10"
                        LastChildFill="True">
 
-                <Button DockPanel.Dock="Right"
-                        Content="Povolit změnu identifikátorů"
+                <Button x:Name="BtnEnableIdentityEdit"
+                        DockPanel.Dock="Right"
+                        Content="Allow identifier changes"
                         Margin="12,0,0,0"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
                         Style="{StaticResource DmsFormButtonStyle}"
                         Click="BtnEnableIdentityEdit_Click"/>
 
-                <TextBlock Text="Tisková verze"
+                <TextBlock x:Name="TxtSectionPrintVersion"
+                           Text="Print version"
                            Style="{StaticResource DmsSectionTitleStyle}"
                            Margin="0"/>
             </DockPanel>
@@ -173,11 +167,10 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Identifikátory -->
-
-                <TextBlock Grid.Row="0"
+                <TextBlock x:Name="LblPrintVersionNumber"
+                           Grid.Row="0"
                            Grid.Column="0"
-                           Text="Číslo tiskové verze"
+                           Text="Print version number"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtPrintVersion"
@@ -188,7 +181,8 @@
                          Style="{StaticResource DmsFormTextBoxStyle}"
                          TextChanged="IdentityField_TextChanged"/>
 
-                <TextBlock Grid.Row="0"
+                <TextBlock x:Name="LblSapMaterial"
+                           Grid.Row="0"
                            Grid.Column="2"
                            Text="SAP ID"
                            Style="{StaticResource DmsFormLabelStyle}"/>
@@ -200,11 +194,10 @@
                          Style="{StaticResource DmsFormTextBoxStyle}"
                          TextChanged="IdentityField_TextChanged"/>
 
-                <!-- Název / zákazník -->
-
-                <TextBlock Grid.Row="1"
+                <TextBlock x:Name="LblTitle"
+                           Grid.Row="1"
                            Grid.Column="0"
-                           Text="Název"
+                           Text="Title"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtTitle"
@@ -214,9 +207,10 @@
                          Style="{StaticResource DmsFormTextBoxStyle}"
                          TextChanged="EditableControl_TextChanged"/>
 
-                <TextBlock Grid.Row="1"
+                <TextBlock x:Name="LblCustomer"
+                           Grid.Row="1"
                            Grid.Column="2"
-                           Text="Zákazník"
+                           Text="Customer"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <Grid Grid.Row="1"
@@ -253,11 +247,10 @@
                     </Popup>
                 </Grid>
 
-                <!-- Dekorace / barva -->
-
-                <TextBlock Grid.Row="2"
+                <TextBlock x:Name="LblDecoration"
+                           Grid.Row="2"
                            Grid.Column="0"
-                           Text="Dekorace"
+                           Text="Decoration"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtDecoration"
@@ -265,16 +258,17 @@
                          Grid.Column="1"
                          Margin="0,4,16,4"
                          IsReadOnly="True"
-                         Style="{StaticResource DmsReadOnlyTextBoxStyle}"
-                         ToolTip="Dekorace je převzata ze SAP cache a nelze ji měnit v QA02."/>
-                <TextBlock Grid.Row="2"
-           Grid.Column="2"
-           Text="Barva"
-           Style="{StaticResource DmsFormLabelStyle}"/>
+                         Style="{StaticResource DmsReadOnlyTextBoxStyle}"/>
+
+                <TextBlock x:Name="LblColorType"
+                           Grid.Row="2"
+                           Grid.Column="2"
+                           Text="Color"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <Grid Grid.Row="2"
-      Grid.Column="3"
-      Margin="0,4,0,4">
+                      Grid.Column="3"
+                      Margin="0,4,0,4">
 
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -282,60 +276,60 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBox x:Name="TxtColorType"
-             Grid.Column="0"
-             IsReadOnly="True"
-             Style="{StaticResource DmsReadOnlyTextBoxStyle}"
-             TextChanged="EditableControl_TextChanged"
-             ToolTip="Lze vybrat více hodnot."/>
+                             Grid.Column="0"
+                             IsReadOnly="True"
+                             Style="{StaticResource DmsReadOnlyTextBoxStyle}"
+                             TextChanged="EditableControl_TextChanged"/>
 
                     <Button Grid.Column="1"
-            Style="{StaticResource DmsSelectorButtonStyle}"
-            Click="BtnOpenColorTypeSelector_Click"/>
+                            Style="{StaticResource DmsSelectorButtonStyle}"
+                            Click="BtnOpenColorTypeSelector_Click"/>
 
                     <Popup x:Name="PopupColorTypes"
-           PlacementTarget="{Binding ElementName=TxtColorType}"
-           Placement="Bottom"
-           StaysOpen="False"
-           AllowsTransparency="True">
+                           PlacementTarget="{Binding ElementName=TxtColorType}"
+                           Placement="Bottom"
+                           StaysOpen="False"
+                           AllowsTransparency="True">
 
                         <Border Style="{StaticResource DmsSelectorPopupBorderStyle}"
-                Width="460"
-                MaxHeight="380">
+                                Width="460"
+                                MaxHeight="380">
 
                             <DockPanel LastChildFill="True">
 
                                 <StackPanel DockPanel.Dock="Bottom"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            Margin="0,8,0,0">
+                                            Orientation="Horizontal"
+                                            HorizontalAlignment="Right"
+                                            Margin="0,8,0,0">
 
-                                    <Button Content="Vyčistit"
-                            Width="90"
-                            Margin="0,0,8,0"
-                            Style="{StaticResource DmsFormButtonStyle}"
-                            Click="BtnClearColorTypes_Click"/>
+                                    <Button x:Name="BtnClearColorTypes"
+                                            Content="Clear"
+                                            Width="90"
+                                            Margin="0,0,8,0"
+                                            Style="{StaticResource DmsFormButtonStyle}"
+                                            Click="BtnClearColorTypes_Click"/>
 
-                                    <Button Content="Použít"
-                            Width="90"
-                            Style="{StaticResource DmsPrimaryButtonStyle}"
-                            Click="BtnApplyColorTypes_Click"/>
+                                    <Button x:Name="BtnApplyColorTypes"
+                                            Content="Apply"
+                                            Width="90"
+                                            Style="{StaticResource DmsPrimaryButtonStyle}"
+                                            Click="BtnApplyColorTypes_Click"/>
                                 </StackPanel>
 
                                 <ListBox x:Name="ListColorTypes"
-                         Style="{StaticResource DmsSelectorListBoxStyle}"
-                         DisplayMemberPath="Name"
-                         SelectionMode="Multiple"
-                         MinWidth="430"/>
+                                         Style="{StaticResource DmsSelectorListBoxStyle}"
+                                         DisplayMemberPath="Name"
+                                         SelectionMode="Multiple"
+                                         MinWidth="430"/>
                             </DockPanel>
                         </Border>
                     </Popup>
                 </Grid>
 
-                <!-- Úprava skla / HD -->
-
-                <TextBlock Grid.Row="3"
+                <TextBlock x:Name="LblGlassTreatment"
+                           Grid.Row="3"
                            Grid.Column="0"
-                           Text="Úprava skla"
+                           Text="Glass treatment"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <Grid Grid.Row="3"
@@ -372,9 +366,10 @@
                     </Popup>
                 </Grid>
 
-                <TextBlock Grid.Row="3"
+                <TextBlock x:Name="LblHdNumber"
+                           Grid.Row="3"
                            Grid.Column="2"
-                           Text="HD číslo"
+                           Text="HD number"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtHdNumber"
@@ -383,11 +378,10 @@
                          Style="{StaticResource DmsFormTextBoxStyle}"
                          TextChanged="EditableControl_TextChanged"/>
 
-                <!-- Vzorky / prkno -->
-
-                <TextBlock Grid.Row="4"
+                <TextBlock x:Name="LblSampleLocation"
+                           Grid.Row="4"
                            Grid.Column="0"
-                           Text="Umístění vzorků"
+                           Text="Sample location"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtSampleLocation"
@@ -397,9 +391,10 @@
                          Style="{StaticResource DmsFormTextBoxStyle}"
                          TextChanged="EditableControl_TextChanged"/>
 
-                <TextBlock Grid.Row="4"
+                <TextBlock x:Name="LblBoardLocation"
+                           Grid.Row="4"
                            Grid.Column="2"
-                           Text="Umístění prkna"
+                           Text="Board location"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtBoardLocation"
@@ -408,11 +403,10 @@
                          Style="{StaticResource DmsFormTextBoxStyle}"
                          TextChanged="EditableControl_TextChanged"/>
 
-                <!-- Měrka / třída kvality -->
-
-                <TextBlock Grid.Row="5"
+                <TextBlock x:Name="LblGaugeLocation"
+                           Grid.Row="5"
                            Grid.Column="0"
-                           Text="Umístění měrky"
+                           Text="Gauge location"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtGaugeLocation"
@@ -422,9 +416,10 @@
                          Style="{StaticResource DmsFormTextBoxStyle}"
                          TextChanged="EditableControl_TextChanged"/>
 
-                <TextBlock Grid.Row="5"
+                <TextBlock x:Name="LblQualityClass"
+                           Grid.Row="5"
                            Grid.Column="2"
-                           Text="Třída kvality"
+                           Text="Quality class"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <Grid Grid.Row="5"
@@ -461,8 +456,6 @@
                     </Popup>
                 </Grid>
 
-                <!-- Příznaky -->
-
                 <StackPanel Grid.Row="6"
                             Grid.Column="1"
                             Grid.ColumnSpan="3"
@@ -471,28 +464,27 @@
                             Margin="0,8,0,8">
 
                     <CheckBox x:Name="ChkHasGauge"
-                              Content="Měrka"
+                              Content="Gauge"
                               Margin="0,0,18,0"
                               Checked="EditableControl_Changed"
                               Unchecked="EditableControl_Changed"/>
 
                     <CheckBox x:Name="ChkComplaint"
-                              Content="Reklamace"
+                              Content="Complaint"
                               Margin="0,0,18,0"
                               Checked="EditableControl_Changed"
                               Unchecked="EditableControl_Changed"/>
 
                     <CheckBox x:Name="ChkSamplesOnCamera"
-                              Content="Vzorky na kameru"
+                              Content="Samples on camera"
                               Checked="EditableControl_Changed"
                               Unchecked="EditableControl_Changed"/>
                 </StackPanel>
 
-                <!-- Poznámky -->
-
-                <TextBlock Grid.Row="7"
+                <TextBlock x:Name="LblPrintVersionNotes"
+                           Grid.Row="7"
                            Grid.Column="0"
-                           Text="Poznámky"
+                           Text="Notes"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtPrintVersionNotes"
@@ -504,11 +496,8 @@
                          TextChanged="EditableControl_TextChanged"/>
             </Grid>
 
-            <!-- =================================================
-                 QUALITY ÚKOLY
-                 ================================================= -->
-
-            <TextBlock Text="Quality úkoly"
+            <TextBlock x:Name="TxtSectionTasks"
+                       Text="Quality tasks"
                        Style="{StaticResource DmsSectionTitleStyle}"/>
 
             <Border x:Name="TaskStatusBorder"
@@ -520,13 +509,14 @@
                     BorderBrush="{DynamicResource DmsBorderBrush}">
 
                 <TextBlock x:Name="TxtTaskStatus"
-                           Text="Bez úkolů"
+                           Text="No tasks"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource DmsForegroundBrush}"/>
             </Border>
 
             <DataGrid x:Name="GridTasks"
                       Style="{StaticResource DmsDataGridStyle}"
+                      RowStyle="{StaticResource DmsEditableGridRowStyle}"
                       AutoGenerateColumns="False"
                       IsReadOnly="False"
                       Height="300"
@@ -537,18 +527,21 @@
 
                 <DataGrid.Columns>
 
-                    <DataGridTextColumn Header="Číslo"
+                    <DataGridTextColumn x:Name="ColTaskNumber"
+                                        Header="Number"
                                         Binding="{Binding Number}"
                                         Width="75"
                                         MinWidth="75"
                                         IsReadOnly="True"/>
 
-                    <DataGridTextColumn Header="Úkol"
+                    <DataGridTextColumn x:Name="ColTaskText"
+                                        Header="Task"
                                         Binding="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
                                         Width="*"
                                         MinWidth="420"/>
 
-                    <DataGridTextColumn Header="Termín"
+                    <DataGridTextColumn x:Name="ColTaskDueDate"
+                                        Header="Due date"
                                         Width="130"
                                         MinWidth="120">
                         <DataGridTextColumn.Binding>
@@ -558,14 +551,16 @@
                         </DataGridTextColumn.Binding>
                     </DataGridTextColumn>
 
-                    <DataGridCheckBoxColumn Header="Splněno"
+                    <DataGridCheckBoxColumn x:Name="ColTaskCompleted"
+                                            Header="Completed"
                                             Binding="{Binding IsCompleted, UpdateSourceTrigger=PropertyChanged}"
                                             ElementStyle="{StaticResource DmsCenteredCheckBoxStyle}"
                                             EditingElementStyle="{StaticResource DmsCenteredCheckBoxStyle}"
                                             Width="110"
                                             MinWidth="100"/>
 
-                    <DataGridTextColumn Header="Datum splnění"
+                    <DataGridTextColumn x:Name="ColTaskCompletedAt"
+                                        Header="Completed at"
                                         Width="155"
                                         MinWidth="145">
                         <DataGridTextColumn.Binding>

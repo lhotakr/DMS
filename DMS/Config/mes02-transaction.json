@@ -1,0 +1,10 @@
+{
+  "code": "MES02",
+  "name": "Editace zařízení",
+  "module": "MES",
+  "description": "Edituje seznam MES zařízení v prostém TXT souboru Config/devices.txt.",
+  "handlerKey": "MesDeviceEditor",
+  "requiresArticleNumber": false,
+  "isActive": true,
+  "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE" ]
+}

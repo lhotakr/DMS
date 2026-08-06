@@ -1,0 +1,13 @@
+{
+  "code": "MESDPM",
+  "name": "Data Point Monitor",
+  "module": "MES",
+  "description": "Read-only monitor of MES station counters, digital inputs and status outputs.",
+  "handlerKey": "MesDataPointMonitor",
+  "requiresArticleNumber": false,
+  "isActive": true,
+  "roles": [
+    "DMS_ADMIN",
+    "DMS_TECHNOLOGIE"
+  ]
+}

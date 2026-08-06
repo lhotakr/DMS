@@ -1,0 +1,110 @@
+<UserControl x:Class="DMS.Desktop.Views.MasterData.PeopleView"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+ <Grid Margin="12">
+  <Grid.RowDefinitions>
+   <RowDefinition Height="Auto"/>
+   <RowDefinition Height="*"/>
+   <RowDefinition Height="Auto"/>
+  </Grid.RowDefinitions>
+
+  <Border Grid.Row="0" Padding="10" Margin="0,0,0,10" CornerRadius="6"
+          BorderThickness="1" BorderBrush="{DynamicResource DmsBorderBrush}"
+          Background="{DynamicResource DmsPanelBrush}">
+   <Grid>
+    <Grid.ColumnDefinitions>
+     <ColumnDefinition Width="Auto"/>
+     <ColumnDefinition Width="260"/>
+     <ColumnDefinition Width="20"/>
+     <ColumnDefinition Width="Auto"/>
+     <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <TextBlock x:Name="TxtFilterLabel" Grid.Column="0" VerticalAlignment="Center"
+               FontWeight="SemiBold" Foreground="{DynamicResource DmsForegroundBrush}"/>
+    <TextBox x:Name="TxtFilter" Grid.Column="1" Margin="8,0,0,0" TextChanged="FilterChanged"/>
+    <CheckBox x:Name="ChkShowInactive" Grid.Column="3" VerticalAlignment="Center"
+              Foreground="{DynamicResource DmsForegroundBrush}"
+              Checked="FilterChanged" Unchecked="FilterChanged"/>
+   </Grid>
+  </Border>
+
+  <DataGrid x:Name="GridPeople" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True"
+            SelectionChanged="GridPeople_SelectionChanged" CanUserAddRows="False"
+            FrozenColumnCount="3" HorizontalScrollBarVisibility="Auto"
+            Background="{DynamicResource DmsBackgroundBrush}"
+            Foreground="{DynamicResource DmsForegroundBrush}">
+   <DataGrid.Columns>
+    <DataGridTextColumn x:Name="ColPersonnelNumber" Binding="{Binding PersonnelNumber}" Width="130" MinWidth="110"/>
+    <DataGridTextColumn x:Name="ColLastName" Binding="{Binding LastName}" Width="180" MinWidth="140"/>
+    <DataGridTextColumn x:Name="ColFirstName" Binding="{Binding FirstName}" Width="180" MinWidth="140"/>
+    <DataGridTextColumn x:Name="ColOrganizationUnit" Binding="{Binding OrganizationUnitName}" Width="260" MinWidth="200"/>
+    <DataGridTextColumn x:Name="ColPersonType" Binding="{Binding PersonTypeText}" Width="280" MinWidth="220"/>
+    <DataGridCheckBoxColumn x:Name="ColActive" Binding="{Binding Person.IsActive}" Width="90"/>
+   </DataGrid.Columns>
+  </DataGrid>
+
+  <Border Grid.Row="2" Margin="0,12,0,0" Padding="14" BorderThickness="1"
+          BorderBrush="{DynamicResource DmsBorderBrush}" Background="{DynamicResource DmsPanelBrush}"
+          CornerRadius="8">
+   <Grid>
+    <Grid.ColumnDefinitions>
+     <ColumnDefinition Width="*"/>
+     <ColumnDefinition Width="16"/>
+     <ColumnDefinition Width="*"/>
+     <ColumnDefinition Width="16"/>
+     <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <Grid.RowDefinitions>
+     <RowDefinition Height="Auto"/>
+     <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <StackPanel Grid.Column="0">
+     <TextBlock x:Name="TxtPersonnelNumberLabel" FontWeight="SemiBold"/>
+     <TextBox x:Name="TxtPersonnelNumber" Margin="0,4,0,10"/>
+     <TextBlock x:Name="TxtFirstNameLabel" FontWeight="SemiBold"/>
+     <TextBox x:Name="TxtFirstName" Margin="0,4,0,0"/>
+    </StackPanel>
+
+    <StackPanel Grid.Column="2">
+     <TextBlock x:Name="TxtLastNameLabel" FontWeight="SemiBold"/>
+     <TextBox x:Name="TxtLastName" Margin="0,4,0,10"/>
+     <TextBlock x:Name="TxtOrganizationUnitLabel" FontWeight="SemiBold"/>
+     <ComboBox x:Name="CmbOrganizationUnit" Margin="0,4,0,0">
+      <ComboBox.ItemTemplate>
+       <DataTemplate>
+        <TextBlock Text="{Binding DisplayText}"/>
+       </DataTemplate>
+      </ComboBox.ItemTemplate>
+     </ComboBox>
+    </StackPanel>
+
+    <StackPanel Grid.Column="4">
+     <TextBlock x:Name="TxtPersonTypeLabel" FontWeight="SemiBold"/>
+     <ComboBox x:Name="CmbPersonType" Margin="0,4,0,10">
+      <ComboBox.ItemTemplate>
+       <DataTemplate>
+        <TextBlock Text="{Binding DisplayText}"/>
+       </DataTemplate>
+      </ComboBox.ItemTemplate>
+     </ComboBox>
+     <CheckBox x:Name="ChkActive" Margin="0,5,0,0" Foreground="{DynamicResource DmsForegroundBrush}"/>
+    </StackPanel>
+
+    <Grid Grid.Row="1" Grid.ColumnSpan="5" Margin="0,14,0,0">
+     <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+     </Grid.ColumnDefinitions>
+     <Button x:Name="BtnNew" Grid.Column="0" Click="New_Click" Margin="0,0,8,0" MinWidth="115"/>
+     <Button x:Name="BtnSave" Grid.Column="1" Click="Save_Click" Margin="0,0,8,0" MinWidth="100"/>
+     <Button x:Name="BtnToggle" Grid.Column="2" Click="Toggle_Click" MinWidth="165"/>
+     <TextBlock x:Name="TxtStatus" Grid.Column="3" Margin="16,5,0,0" TextWrapping="Wrap"
+                Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+    </Grid>
+   </Grid>
+  </Border>
+ </Grid>
+</UserControl>

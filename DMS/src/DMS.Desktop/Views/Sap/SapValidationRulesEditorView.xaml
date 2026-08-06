@@ -28,41 +28,20 @@
             <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
             <Setter Property="Padding" Value="8,5"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
                     <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
                 </Trigger>
-
                 <Trigger Property="IsHighlighted" Value="True">
                     <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
                     <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
                 </Trigger>
-
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
                     <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
                 </Trigger>
             </Style.Triggers>
-        </Style>
-
-        <Style x:Key="DarkComboBoxStyle" TargetType="{x:Type ComboBox}">
-            <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
-            <Setter Property="ItemContainerStyle" Value="{StaticResource DarkComboBoxItemStyle}"/>
-            <Setter Property="Padding" Value="4"/>
-            <Setter Property="MinHeight" Value="26"/>
-
-            <Style.Resources>
-                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#0F355A"/>
-                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="White"/>
-                <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="#202226"/>
-                <SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="White"/>
-                <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#202226"/>
-                <SolidColorBrush x:Key="{x:Static SystemColors.WindowTextBrushKey}" Color="White"/>
-            </Style.Resources>
         </Style>
 
         <Style x:Key="ValidationGridTextBlockStyle" TargetType="TextBlock">
@@ -79,19 +58,6 @@
             <Setter Property="Padding" Value="4"/>
         </Style>
 
-        <x:Array x:Key="ValidationScopes" Type="{x:Type sys:String}">
-            <sys:String>BOM_HEADER</sys:String>
-            <sys:String>BOM_ITEM</sys:String>
-            <sys:String>ROUTING_OPERATION</sys:String>
-            <sys:String>CROSS_PLANT</sys:String>
-        </x:Array>
-
-        <x:Array x:Key="ValidationSeverities" Type="{x:Type sys:String}">
-            <sys:String>Info</sys:String>
-            <sys:String>Warning</sys:String>
-            <sys:String>Error</sys:String>
-        </x:Array>
-
     </UserControl.Resources>
 
     <Grid Margin="16">
@@ -101,8 +67,10 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Hlavička -->
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
-            <TextBlock Text="Pravidla validací SAP dat"
+            <TextBlock x:Name="TxtValidationTitle"
+                       Text="SAP validation rules"
                        FontSize="22"
                        FontWeight="Bold"
                        Foreground="{DynamicResource DmsForegroundBrush}"/>
@@ -113,6 +81,7 @@
                        Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
         </StackPanel>
 
+        <!-- Hlavní obsah: seznam + detail -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="440"/>
@@ -120,6 +89,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
+            <!-- Seznam pravidel -->
             <DataGrid x:Name="DgvRules"
                       Grid.Column="0"
                       AutoGenerateColumns="False"
@@ -132,25 +102,50 @@
                       Foreground="{DynamicResource DmsForegroundBrush}"
                       BorderBrush="{DynamicResource DmsBorderBrush}">
 
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Padding" Value="8,6"/>
+                        <Setter Property="FontWeight" Value="Bold"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                        <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+                    </Style>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="Padding" Value="4"/>
+                        <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.Resources>
+
                 <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header="Zap."
+                    <DataGridCheckBoxColumn x:Name="ColEnabled"
+                                            Header="On"
                                             Binding="{Binding Enabled}"
                                             Width="50"/>
-
-                    <DataGridTextColumn Header="Typ"
+                    <DataGridTextColumn x:Name="ColSeverity"
+                                        Header="Type"
                                         Binding="{Binding Severity}"
                                         Width="80"/>
-
-                    <DataGridTextColumn Header="Scope"
+                    <DataGridTextColumn x:Name="ColScope"
+                                        Header="Scope"
                                         Binding="{Binding Scope}"
                                         Width="130"/>
-
-                    <DataGridTextColumn Header="Název"
+                    <DataGridTextColumn x:Name="ColName"
+                                        Header="Name"
                                         Binding="{Binding Name}"
                                         Width="*"/>
                 </DataGrid.Columns>
             </DataGrid>
 
+            <!-- Detail pravidla -->
             <Border Grid.Column="2"
                     Padding="14"
                     CornerRadius="8"
@@ -167,22 +162,23 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="Detail pravidla"
+                    <TextBlock x:Name="TxtDetailTitle"
+                               Text="Rule detail"
                                FontSize="18"
                                FontWeight="Bold"
                                Foreground="{DynamicResource DmsForegroundBrush}"
                                Margin="0,0,0,12"/>
 
+                    <!-- ID -->
                     <Grid Grid.Row="1" Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-
-                        <TextBlock Text="ID:"
+                        <TextBlock x:Name="LblId"
+                                   Text="ID:"
                                    VerticalAlignment="Center"
                                    Foreground="{DynamicResource DmsForegroundBrush}"/>
-
                         <TextBox x:Name="TxtId"
                                  Grid.Column="1"
                                  TextChanged="DetailChanged"
@@ -191,16 +187,16 @@
                                  BorderBrush="{DynamicResource DmsBorderBrush}"/>
                     </Grid>
 
+                    <!-- Název -->
                     <Grid Grid.Row="2" Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-
-                        <TextBlock Text="Název:"
+                        <TextBlock x:Name="LblName"
+                                   Text="Name:"
                                    VerticalAlignment="Center"
                                    Foreground="{DynamicResource DmsForegroundBrush}"/>
-
                         <TextBox x:Name="TxtName"
                                  Grid.Column="1"
                                  TextChanged="DetailChanged"
@@ -209,49 +205,48 @@
                                  BorderBrush="{DynamicResource DmsBorderBrush}"/>
                     </Grid>
 
+                    <!-- Scope + Severity + Active -->
                     <Grid Grid.Row="3" Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="180"/>
-                            <ColumnDefinition Width="90"/>
-                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="150"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-
-                        <TextBlock Text="Scope:"
-               VerticalAlignment="Center"
-               Foreground="{DynamicResource DmsForegroundBrush}"/>
-
+                        <TextBlock x:Name="LblScope"
+                                   Text="Scope:"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
                         <TextBox x:Name="TxtScope"
-             Grid.Column="1"
-             TextChanged="DetailChanged"
-             Background="{DynamicResource DmsPanelBrush}"
-             Foreground="{DynamicResource DmsForegroundBrush}"
-             BorderBrush="{DynamicResource DmsBorderBrush}"/>
-
-                        <TextBlock Grid.Column="2"
-               Text="Typ:"
-               Margin="12,0,0,0"
-               VerticalAlignment="Center"
-               Foreground="{DynamicResource DmsForegroundBrush}"/>
-
+                                 Grid.Column="1"
+                                 TextChanged="DetailChanged"
+                                 Background="{DynamicResource DmsPanelBrush}"
+                                 Foreground="{DynamicResource DmsForegroundBrush}"
+                                 BorderBrush="{DynamicResource DmsBorderBrush}"/>
+                        <TextBlock x:Name="LblSeverity"
+                                   Grid.Column="2"
+                                   Text="Type:"
+                                   Margin="12,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
                         <TextBox x:Name="TxtSeverity"
-             Grid.Column="3"
-             TextChanged="DetailChanged"
-             Background="{DynamicResource DmsPanelBrush}"
-             Foreground="{DynamicResource DmsForegroundBrush}"
-             BorderBrush="{DynamicResource DmsBorderBrush}"/>
-
+                                 Grid.Column="3"
+                                 TextChanged="DetailChanged"
+                                 Background="{DynamicResource DmsPanelBrush}"
+                                 Foreground="{DynamicResource DmsForegroundBrush}"
+                                 BorderBrush="{DynamicResource DmsBorderBrush}"/>
                         <CheckBox x:Name="ChkEnabled"
-              Grid.Column="4"
-              Content="Aktivní"
-              Margin="16,0,0,0"
-              VerticalAlignment="Center"
-              Foreground="{DynamicResource DmsForegroundBrush}"
-              Checked="DetailChanged"
-              Unchecked="DetailChanged"/>
+                                  Grid.Column="4"
+                                  Content="Active"
+                                  Margin="16,0,0,0"
+                                  VerticalAlignment="Center"
+                                  Foreground="{DynamicResource DmsForegroundBrush}"
+                                  Checked="DetailChanged"
+                                  Unchecked="DetailChanged"/>
                     </Grid>
 
+                    <!-- Zpráva + podmínky + pole -->
                     <Grid Grid.Row="4">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -262,7 +257,8 @@
                             <RowDefinition Height="120"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Text="Zpráva při splnění pravidla:"
+                        <TextBlock x:Name="TxtMessageLabel"
+                                   Text="Message on rule match:"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource DmsForegroundBrush}"/>
 
@@ -276,29 +272,30 @@
                                  Foreground="{DynamicResource DmsForegroundBrush}"
                                  BorderBrush="{DynamicResource DmsBorderBrush}"/>
 
-                        <TextBlock Grid.Row="2"
-                                   Text="Podmínky:"
+                        <TextBlock x:Name="TxtConditionsLabel"
+                                   Grid.Row="2"
+                                   Text="Conditions:"
                                    FontWeight="Bold"
                                    Margin="0,10,0,4"
                                    Foreground="{DynamicResource DmsForegroundBrush}"/>
 
                         <DataGrid x:Name="DgvConditions"
-          Grid.Row="3"
-          AutoGenerateColumns="False"
-          IsReadOnly="False"
-          CanUserAddRows="True"
-          CellEditEnding="DgvConditions_CellEditEnding"
-          HeadersVisibility="Column"
-          GridLinesVisibility="Horizontal"
-          Background="{DynamicResource DmsPanelBrush}"
-          Foreground="{DynamicResource DmsForegroundBrush}"
-          BorderBrush="{DynamicResource DmsBorderBrush}"
-          ScrollViewer.VerticalScrollBarVisibility="Auto"
-          ScrollViewer.HorizontalScrollBarVisibility="Auto"
-          EnableRowVirtualization="True"
-          EnableColumnVirtualization="True"
-          MinRowHeight="30"
-          MinHeight="150">
+                                  Grid.Row="3"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="False"
+                                  CanUserAddRows="True"
+                                  CellEditEnding="DgvConditions_CellEditEnding"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  Background="{DynamicResource DmsPanelBrush}"
+                                  Foreground="{DynamicResource DmsForegroundBrush}"
+                                  BorderBrush="{DynamicResource DmsBorderBrush}"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  EnableRowVirtualization="True"
+                                  EnableColumnVirtualization="True"
+                                  MinRowHeight="30"
+                                  MinHeight="150">
 
                             <DataGrid.Resources>
                                 <Style TargetType="DataGridColumnHeader">
@@ -309,7 +306,6 @@
                                     <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
                                     <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
                                 </Style>
-
                                 <Style TargetType="DataGridCell">
                                     <Setter Property="Padding" Value="2"/>
                                     <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
@@ -319,58 +315,62 @@
                             </DataGrid.Resources>
 
                             <DataGrid.Columns>
-
-                                <DataGridTemplateColumn Header="Pole" Width="220" MinWidth="180">
+                                <DataGridTemplateColumn x:Name="ColCondField"
+                                                        Header="Field"
+                                                        Width="220" MinWidth="180">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Field}"
-                               Style="{StaticResource ValidationGridTextBlockStyle}"/>
+                                                       Style="{StaticResource ValidationGridTextBlockStyle}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                     <DataGridTemplateColumn.CellEditingTemplate>
                                         <DataTemplate>
                                             <TextBox Text="{Binding Field, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource ValidationGridTextBoxStyle}"/>
+                                                     Style="{StaticResource ValidationGridTextBoxStyle}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellEditingTemplate>
                                 </DataGridTemplateColumn>
 
-                                <DataGridTemplateColumn Header="Operátor" Width="190" MinWidth="170">
+                                <DataGridTemplateColumn x:Name="ColCondOperator"
+                                                        Header="Operator"
+                                                        Width="190" MinWidth="170">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Operator}"
-                       Style="{StaticResource ValidationGridTextBlockStyle}"/>
+                                                       Style="{StaticResource ValidationGridTextBlockStyle}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
-
                                     <DataGridTemplateColumn.CellEditingTemplate>
                                         <DataTemplate>
                                             <TextBox Text="{Binding Operator, UpdateSourceTrigger=PropertyChanged}"
-                     Style="{StaticResource ValidationGridTextBoxStyle}"/>
+                                                     Style="{StaticResource ValidationGridTextBoxStyle}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellEditingTemplate>
                                 </DataGridTemplateColumn>
 
-                                <DataGridTemplateColumn Header="Hodnota" Width="*" MinWidth="220">
+                                <DataGridTemplateColumn x:Name="ColCondValue"
+                                                        Header="Value"
+                                                        Width="*" MinWidth="220">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Value}"
-                               Style="{StaticResource ValidationGridTextBlockStyle}"/>
+                                                       Style="{StaticResource ValidationGridTextBlockStyle}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                     <DataGridTemplateColumn.CellEditingTemplate>
                                         <DataTemplate>
                                             <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource ValidationGridTextBoxStyle}"/>
+                                                     Style="{StaticResource ValidationGridTextBoxStyle}"/>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellEditingTemplate>
                                 </DataGridTemplateColumn>
-
                             </DataGrid.Columns>
                         </DataGrid>
-                        
-                        <TextBlock Grid.Row="4"
-                                   Text="Dostupná pole pro zvolený scope:"
+
+                        <TextBlock x:Name="TxtAvailableFieldsLabel"
+                                   Grid.Row="4"
+                                   Text="Available fields for selected scope:"
                                    FontWeight="Bold"
                                    Margin="0,10,0,4"
                                    Foreground="{DynamicResource DmsForegroundBrush}"/>
@@ -388,40 +388,40 @@
             </Border>
         </Grid>
 
+        <!-- Tlačítka + status -->
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
                     Margin="0,12,0,0">
-
-            <Button Content="Načíst"
+            <Button x:Name="BtnLoad"
+                    Content="Load"
                     Width="110"
                     Margin="0,0,8,0"
                     Click="BtnLoad_Click"/>
-
-            <Button Content="Uložit"
+            <Button x:Name="BtnSave"
+                    Content="Save"
                     Width="110"
                     Margin="0,0,8,0"
                     Click="BtnSave_Click"/>
-
-            <Button Content="Přidat"
+            <Button x:Name="BtnAdd"
+                    Content="Add"
                     Width="110"
                     Margin="0,0,8,0"
                     Click="BtnAdd_Click"/>
-
-            <Button Content="Duplikovat"
+            <Button x:Name="BtnDuplicate"
+                    Content="Duplicate"
                     Width="120"
                     Margin="0,0,8,0"
                     Click="BtnDuplicate_Click"/>
-
-            <Button Content="Smazat"
+            <Button x:Name="BtnDelete"
+                    Content="Delete"
                     Width="110"
                     Margin="0,0,8,0"
                     Click="BtnDelete_Click"/>
-
-            <Button Content="Validovat"
+            <Button x:Name="BtnValidate"
+                    Content="Validate"
                     Width="120"
                     Margin="0,0,8,0"
                     Click="BtnValidate_Click"/>
-
             <TextBlock x:Name="TxtStatus"
                        Margin="16,0,0,0"
                        VerticalAlignment="Center"

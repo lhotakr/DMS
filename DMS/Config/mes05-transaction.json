@@ -1,0 +1,10 @@
+{
+  "code": "MES05",
+  "name": "Soupis pracovišť",
+  "module": "MES",
+  "description": "Náhled dostupnosti MES serverů, terminálů, monitorů a strojů podle devices.txt.",
+  "handlerKey": "MesWorkplaceOverview",
+  "requiresArticleNumber": false,
+  "isActive": true,
+  "roles": [ "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" ]
+}

@@ -1,0 +1,28 @@
+﻿using DMS.Core.Domain.Organization;
+using DMS.Core.Domain.People;
+using DMS.Desktop.Logging;
+using DMS.Desktop.Services.MasterData;
+using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace DMS.Desktop.Views.MasterData;
+
+public sealed class OrganizationChoice { public Guid Id {get;init;} public string DisplayText {get;init;}=string.Empty; }
+public sealed class PersonGridRow { public required DmsPerson Person {get;init;} public string PersonnelNumber=>Person.PersonnelNumber; public string FirstName=>Person.FirstName; public string LastName=>Person.LastName; public string OrganizationUnitName{get;init;}=string.Empty; public string PersonTypeText=>Person.PersonType==DmsPersonType.InternalEmployee?"Interní zaměstnanec":"Zaměstnanec mateřské firmy v Německu"; }
+
+public partial class PeopleView : UserControl
+{
+ private readonly DmsMasterDataService _service; private readonly DmsLogger _logger; private readonly string _user; private List<DmsPerson> _people=new(); private List<DmsOrganizationUnit> _units=new(); private DmsPerson? _selected;
+ public PeopleView(DmsMasterDataService service,DmsLogger logger,string user){InitializeComponent();_service=service;_logger=logger;_user=user;CmbPersonType.ItemsSource=Enum.GetValues<DmsPersonType>();LoadData();}
+ private void LoadData(){_people=_service.LoadPeople();_units=_service.LoadOrganizationUnits();CmbOrganizationUnit.ItemsSource=_units.Where(x=>x.IsActive).OrderBy(x=>x.Name).Select(x=>new OrganizationChoice{Id=x.OrganizationUnitId,DisplayText=$"{x.Code}  {x.Name}"}).ToList();ApplyFilter();TxtStatus.Text=$"Soubor: {_service.PeoplePath}";}
+ private void ApplyFilter(){var q=TxtFilter.Text?.Trim()??string.Empty;var rows=_people.Where(x=>ChkShowInactive.IsChecked==true||x.IsActive).Where(x=>string.IsNullOrWhiteSpace(q)||x.PersonnelNumber.Contains(q,StringComparison.OrdinalIgnoreCase)||x.FirstName.Contains(q,StringComparison.OrdinalIgnoreCase)||x.LastName.Contains(q,StringComparison.OrdinalIgnoreCase)).OrderBy(x=>x.LastName).ThenBy(x=>x.FirstName).Select(x=>new PersonGridRow{Person=x,OrganizationUnitName=_units.FirstOrDefault(u=>u.OrganizationUnitId==x.OrganizationUnitId)?.Name??"?"}).ToList();GridPeople.ItemsSource=rows;}
+ private void FilterChanged(object sender,RoutedEventArgs e){if(IsLoaded)ApplyFilter();}
+ private void FilterChanged(object sender,TextChangedEventArgs e){if(IsLoaded)ApplyFilter();}
+ private void GridPeople_SelectionChanged(object sender,SelectionChangedEventArgs e){if(GridPeople.SelectedItem is PersonGridRow row){_selected=row.Person;ShowSelected();}}
+ private void ShowSelected(){if(_selected is null)return;TxtPersonnelNumber.Text=_selected.PersonnelNumber;TxtFirstName.Text=_selected.FirstName;TxtLastName.Text=_selected.LastName;CmbOrganizationUnit.SelectedItem=(CmbOrganizationUnit.ItemsSource as IEnumerable<OrganizationChoice>)?.FirstOrDefault(x=>x.Id==_selected.OrganizationUnitId);CmbPersonType.SelectedItem=_selected.PersonType;ChkActive.IsChecked=_selected.IsActive;}
+ private void New_Click(object sender,RoutedEventArgs e){_selected=new DmsPerson{IsActive=true,PersonType=DmsPersonType.InternalEmployee};ShowSelected();TxtPersonnelNumber.Focus();}
+ private void Save_Click(object sender,RoutedEventArgs e){if(_selected is null)New_Click(sender,e);if(_selected is null)return;var existing=_people.FirstOrDefault(x=>x.PersonId==_selected.PersonId);var before=existing is null?null:new DmsPerson{PersonId=existing.PersonId,PersonnelNumber=existing.PersonnelNumber,FirstName=existing.FirstName,LastName=existing.LastName,OrganizationUnitId=existing.OrganizationUnitId,PersonType=existing.PersonType,IsActive=existing.IsActive};_selected.PersonnelNumber=TxtPersonnelNumber.Text.Trim();_selected.FirstName=TxtFirstName.Text.Trim();_selected.LastName=TxtLastName.Text.Trim();_selected.OrganizationUnitId=(CmbOrganizationUnit.SelectedItem as OrganizationChoice)?.Id??Guid.Empty;_selected.PersonType=CmbPersonType.SelectedItem is DmsPersonType t?t:DmsPersonType.InternalEmployee;_selected.IsActive=ChkActive.IsChecked==true;if(string.IsNullOrWhiteSpace(_selected.PersonnelNumber)||string.IsNullOrWhiteSpace(_selected.FirstName)||string.IsNullOrWhiteSpace(_selected.LastName)||_selected.OrganizationUnitId==Guid.Empty){MessageBox.Show("Vyplň osobní číslo, jméno, příjmení a organizační jednotku.","Osoby",MessageBoxButton.OK,MessageBoxImage.Warning);return;}if(existing is null){_people.Add(_selected);_logger.AuditCreated("SYS01","Person",_selected.PersonId.ToString(),_user,$"PersonnelNumber={_selected.PersonnelNumber}; Name={_selected.DisplayName}; OrganizationUnitId={_selected.OrganizationUnitId}; Type={_selected.PersonType}");}else if(before is not null)LogChanges(before,_selected);try{_service.SavePeople(_people,_units);LoadData();}catch(Exception ex){MessageBox.Show(ex.Message,"Uložení osoby",MessageBoxButton.OK,MessageBoxImage.Error);}}
+ private void Toggle_Click(object sender,RoutedEventArgs e){if(_selected is null)return;_selected.IsActive=!_selected.IsActive;ChkActive.IsChecked=_selected.IsActive;Save_Click(sender,e);}
+ private void LogChanges(DmsPerson old,DmsPerson current){void A(string f,object? a,object? b){if(!Equals(a,b))_logger.AuditChange("SYS01","Person",current.PersonId.ToString(),f,a?.ToString(),b?.ToString(),_user);}A("PersonnelNumber",old.PersonnelNumber,current.PersonnelNumber);A("FirstName",old.FirstName,current.FirstName);A("LastName",old.LastName,current.LastName);A("OrganizationUnitId",old.OrganizationUnitId,current.OrganizationUnitId);A("PersonType",old.PersonType,current.PersonType);A("IsActive",old.IsActive,current.IsActive);}
+}

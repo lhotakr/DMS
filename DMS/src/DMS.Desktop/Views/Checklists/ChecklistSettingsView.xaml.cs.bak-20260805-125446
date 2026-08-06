@@ -1,0 +1,160 @@
+﻿using DMS.Core.Checklists;
+using DMS.Desktop.Services.Checklists;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace DMS.Desktop.Views.Checklists;
+
+public partial class ChecklistSettingsView : UserControl
+{
+    private readonly ChecklistCatalogService _service;
+    private readonly Action<string, string> _audit;
+    private ObservableCollection<ChecklistCatalog> _catalogs = new();
+    private ObservableCollection<ChecklistCatalogItem> _items = new();
+    private ChecklistCatalog? _selected;
+
+    public ChecklistSettingsView(
+        string dmsDataRootPath,
+        Action<string, string> audit)
+    {
+        InitializeComponent();
+
+        var checklistRoot = Path.Combine(
+            dmsDataRootPath,
+            "Data",
+            "Checklists");
+
+        _service = new ChecklistCatalogService(checklistRoot);
+        _audit = audit;
+
+        Loaded += (_, _) => Reload();
+    }
+
+    private void Reload()
+    {
+        _catalogs = new ObservableCollection<ChecklistCatalog>(
+            _service.LoadAll()
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.Code));
+
+        CatalogGrid.ItemsSource = _catalogs;
+        StatusText.Text = $"Soubor: {_service.FilePath}";
+    }
+
+    private void CatalogGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        _selected = CatalogGrid.SelectedItem as ChecklistCatalog;
+        if (_selected is null)
+            return;
+
+        CodeBox.Text = _selected.Code;
+        NameBox.Text = _selected.Name;
+        ActiveCheck.IsChecked = _selected.IsActive;
+
+        _items = new ObservableCollection<ChecklistCatalogItem>(
+            _selected.Items
+                .OrderBy(x => x.SortOrder)
+                .ThenBy(x => x.DisplayText));
+
+        ItemsGrid.ItemsSource = _items;
+    }
+
+    private void NewCatalog_Click(object sender, RoutedEventArgs e)
+    {
+        _selected = new ChecklistCatalog
+        {
+            Code = "NEW_CATALOG",
+            Name = "Nový katalog",
+            IsActive = true,
+            SortOrder = _catalogs.Count == 0
+                ? 10
+                : _catalogs.Max(x => x.SortOrder) + 10
+        };
+
+        _catalogs.Add(_selected);
+        CatalogGrid.SelectedItem = _selected;
+        CatalogGrid.ScrollIntoView(_selected);
+    }
+
+    private void AddItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected is null)
+            return;
+
+        var item = new ChecklistCatalogItem
+        {
+            Code = "NEW_VALUE",
+            DisplayText = "Nová hodnota",
+            IsActive = true,
+            SortOrder = _items.Count == 0
+                ? 10
+                : _items.Max(x => x.SortOrder) + 10
+        };
+
+        _items.Add(item);
+        ItemsGrid.SelectedItem = item;
+        ItemsGrid.ScrollIntoView(item);
+    }
+
+    private void RemoveItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (ItemsGrid.SelectedItem is ChecklistCatalogItem item)
+            _items.Remove(item);
+    }
+
+    private void SaveCatalog_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected is null)
+            return;
+
+        var oldCode = _selected.Code;
+        var oldName = _selected.Name;
+        var oldItems = _selected.Items
+            .ToDictionary(x => x.Code, x => x.DisplayText, StringComparer.OrdinalIgnoreCase);
+
+        _selected.Code = CodeBox.Text.Trim().ToUpperInvariant();
+        _selected.Name = NameBox.Text.Trim();
+        _selected.IsActive = ActiveCheck.IsChecked == true;
+        _selected.Items = _items
+            .OrderBy(x => x.SortOrder)
+            .ToList();
+
+        _service.Save(_selected);
+
+        if (!string.Equals(oldCode, _selected.Code, StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(oldName, _selected.Name, StringComparison.Ordinal))
+        {
+            _audit(
+                "AUDIT",
+                $"Entity=ChecklistCatalog; OldCode={oldCode}; NewCode={_selected.Code}; OldName={oldName}; NewName={_selected.Name}");
+        }
+
+        foreach (var item in _selected.Items)
+        {
+            if (!oldItems.TryGetValue(item.Code, out var oldText))
+            {
+                _audit(
+                    "AUDIT_CREATE",
+                    $"Entity=ChecklistCatalogItem; Catalog={_selected.Code}; Item={item.Code}; Text={item.DisplayText}");
+            }
+            else if (!string.Equals(oldText, item.DisplayText, StringComparison.Ordinal))
+            {
+                _audit(
+                    "AUDIT",
+                    $"Entity=ChecklistCatalogItem; Catalog={_selected.Code}; Item={item.Code}; OldValue={oldText}; NewValue={item.DisplayText}");
+            }
+        }
+
+        MessageBox.Show(
+            $"Katalog {_selected.Code} byl uložen.",
+            "DMS",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+
+        Reload();
+        CatalogGrid.SelectedItem = _catalogs.FirstOrDefault(x =>
+            string.Equals(x.Code, _selected.Code, StringComparison.OrdinalIgnoreCase));
+    }
+}

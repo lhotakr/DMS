@@ -1,0 +1,140 @@
+using DMS.Core.Checklists;
+using DMS.Core.Sap;
+
+namespace DMS.Desktop.Services.Checklists;
+
+public sealed class ChecklistService
+{
+    private readonly ChecklistDefinitionRepository _definitions;
+    private readonly ChecklistInstanceRepository _instances;
+    private readonly JsonSapMaterialRepository _sapMaterials;
+
+    public ChecklistService(
+        ChecklistDefinitionRepository definitions,
+        ChecklistInstanceRepository instances,
+        JsonSapMaterialRepository sapMaterials)
+    {
+        _definitions = definitions;
+        _instances = instances;
+        _sapMaterials = sapMaterials;
+    }
+
+    public IReadOnlyList<ChecklistDefinition> LoadDefinitions() => _definitions.LoadAll();
+    public ChecklistDefinition? FindDefinition(string code) => _definitions.Find(code);
+    public IReadOnlyList<ChecklistInstance> LoadInstances() => _instances.LoadAll();
+    public ChecklistInstance? FindInstance(string number) => _instances.Find(number);
+
+    public IReadOnlyList<SapMaterial> LoadSubjects(ChecklistDefinition definition)
+    {
+        if (definition.SubjectType is not (ChecklistSubjectType.SapArticle or ChecklistSubjectType.SapMaterial))
+            return Array.Empty<SapMaterial>();
+
+        var query = _sapMaterials.LoadAll().AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(definition.SubjectMaterialKind))
+        {
+            query = query.Where(x => string.Equals(
+                x.MaterialKind,
+                definition.SubjectMaterialKind,
+                StringComparison.OrdinalIgnoreCase));
+        }
+
+        return query.OrderBy(x => x.MaterialNumber).ToList();
+    }
+
+    public ChecklistInstance CreateDraft(
+        ChecklistDefinition definition,
+        string subjectReference,
+        string windowsLogin,
+        string displayName)
+    {
+        var material = _sapMaterials.FindByMaterialNumber(subjectReference)
+            ?? throw new InvalidOperationException($"SAP material {subjectReference} was not found in cache.");
+
+        if (!string.IsNullOrWhiteSpace(definition.SubjectMaterialKind) &&
+            !string.Equals(material.MaterialKind, definition.SubjectMaterialKind, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"SAP material {subjectReference} has type {material.MaterialKind}, expected {definition.SubjectMaterialKind}.");
+        }
+
+        var instance = new ChecklistInstance
+        {
+            ChecklistDefinitionId = definition.ChecklistDefinitionId,
+            DefinitionCode = definition.Code,
+            DefinitionVersion = definition.Version,
+            SubjectReference = material.MaterialNumber,
+            SubjectDisplayName = material.Description,
+            CreatedByLogin = windowsLogin,
+            CreatedByDisplayName = displayName,
+            ModifiedByDisplayName = displayName
+        };
+
+        SetText(instance, "SAP_ARTICLE", material.MaterialNumber);
+        SetText(instance, "BOTTLE_NUMBER", material.GlassInfo?.MoldNumber);
+        SetInteger(instance, "SAMPLING_SEQUENCE", 1);
+        SetMeasurement(instance, "VOLUME", material.GlassInfo?.VolumeMl, "ML");
+        return instance;
+    }
+
+    public void SaveDraft(ChecklistInstance instance, string displayName)
+    {
+        instance.ModifiedByDisplayName = displayName;
+        instance.Status = instance.Status == ChecklistStatus.Draft
+            ? ChecklistStatus.InProgress
+            : instance.Status;
+        _instances.Save(instance);
+    }
+
+    public ChecklistInstance CopyAsDraft(ChecklistInstance source, string windowsLogin, string displayName)
+    {
+        var copy = new ChecklistInstance
+        {
+            ChecklistDefinitionId = source.ChecklistDefinitionId,
+            DefinitionCode = source.DefinitionCode,
+            DefinitionVersion = source.DefinitionVersion,
+            SubjectReference = source.SubjectReference,
+            SubjectDisplayName = source.SubjectDisplayName,
+            CreatedByLogin = windowsLogin,
+            CreatedByDisplayName = displayName,
+            ModifiedByDisplayName = displayName,
+            Values = source.Values.ToDictionary(
+                x => x.Key,
+                x => Clone(x.Value),
+                StringComparer.OrdinalIgnoreCase)
+        };
+        return copy;
+    }
+
+    private static ChecklistFieldValue Clone(ChecklistFieldValue value) => new()
+    {
+        TextValue = value.TextValue,
+        DecimalValue = value.DecimalValue,
+        IntegerValue = value.IntegerValue,
+        BooleanValue = value.BooleanValue,
+        DateTimeValue = value.DateTimeValue,
+        PersonId = value.PersonId,
+        OrganizationUnitId = value.OrganizationUnitId,
+        EnteredUnitCode = value.EnteredUnitCode,
+        NormalizedValue = value.NormalizedValue,
+        NormalizedUnitCode = value.NormalizedUnitCode
+    };
+
+    private static ChecklistFieldValue Get(ChecklistInstance instance, string code)
+    {
+        if (!instance.Values.TryGetValue(code, out var value))
+        {
+            value = new ChecklistFieldValue();
+            instance.Values[code] = value;
+        }
+        return value;
+    }
+
+    private static void SetText(ChecklistInstance instance, string code, string? value) => Get(instance, code).TextValue = value;
+    private static void SetInteger(ChecklistInstance instance, string code, int value) => Get(instance, code).IntegerValue = value;
+    private static void SetMeasurement(ChecklistInstance instance, string code, int? value, string unit)
+    {
+        if (!value.HasValue) return;
+        var target = Get(instance, code);
+        target.DecimalValue = value.Value;
+        target.EnteredUnitCode = unit;
+    }
+}

@@ -1,0 +1,7 @@
+{
+  "code": "MES",
+  "name": "MES",
+  "description": "MES návaznosti, terminály, stroje, síťová dostupnost, datové body stanic a budoucí DMS/stroj komunikace.",
+  "sortOrder": 80,
+  "isActive": true
+}

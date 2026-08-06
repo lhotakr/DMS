@@ -1,0 +1,289 @@
+<UserControl x:Class="DMS.Desktop.Views.QualityOrders.QualityOrderListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+    <UserControl.Resources>
+        <Style x:Key="QO05FilterLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,3"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsMutedForegroundBrush}"/>
+        </Style>
+
+        <Style x:Key="QO05FilterTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="QO05ColumnHeaderStyle" TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="6,0,6,0"/>
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="ToolTip" Value="{Binding Content, RelativeSource={RelativeSource Self}}"/>
+            <Setter Property="ContentTemplate">
+                <Setter.Value>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextWrapping="NoWrap"/>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="QO05CellTextBlockStyle" TargetType="TextBlock">
+            <Setter Property="Margin" Value="6,0,6,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock x:Name="TxtTitle"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Margin="0,0,0,4"
+                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+            <TextBlock x:Name="TxtHint"
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,8"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+            <TextBlock x:Name="TxtFilterHelp"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                CornerRadius="8"
+                Padding="10"
+                Margin="0,0,0,10"
+                BorderThickness="1"
+                Background="{DynamicResource DmsBackgroundBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}">
+            <StackPanel>
+                <WrapPanel>
+                    <StackPanel Width="150" Margin="0,0,8,8">
+                        <TextBlock x:Name="LblFilterOrder" Style="{StaticResource QO05FilterLabelStyle}"/>
+                        <TextBox x:Name="TxtFilterOrder"
+                                 Style="{StaticResource QO05FilterTextBoxStyle}"
+                                 TextChanged="FilterChanged"/>
+                    </StackPanel>
+
+                    <StackPanel Width="210" Margin="0,0,8,8">
+                        <TextBlock x:Name="LblFilterPrintVersion" Style="{StaticResource QO05FilterLabelStyle}"/>
+                        <TextBox x:Name="TxtFilterPrintVersion"
+                                 Style="{StaticResource QO05FilterTextBoxStyle}"
+                                 TextChanged="FilterChanged"/>
+                    </StackPanel>
+
+                    <StackPanel Width="140" Margin="0,0,8,8">
+                        <TextBlock x:Name="LblFilterSap" Style="{StaticResource QO05FilterLabelStyle}"/>
+                        <TextBox x:Name="TxtFilterSap"
+                                 Style="{StaticResource QO05FilterTextBoxStyle}"
+                                 TextChanged="FilterChanged"/>
+                    </StackPanel>
+
+                    <StackPanel Width="260" Margin="0,0,8,8">
+                        <TextBlock x:Name="LblFilterText" Style="{StaticResource QO05FilterLabelStyle}"/>
+                        <TextBox x:Name="TxtFilterText"
+                                 Style="{StaticResource QO05FilterTextBoxStyle}"
+                                 TextChanged="FilterChanged"/>
+                    </StackPanel>
+
+                    <StackPanel Width="135" Margin="4,0,8,8">
+                        <TextBlock x:Name="LblCreatedFrom" Style="{StaticResource QO05FilterLabelStyle}"/>
+                        <TextBox x:Name="TxtCreatedFrom"
+                                 Style="{StaticResource QO05FilterTextBoxStyle}"
+                                 TextChanged="FilterChanged"/>
+                    </StackPanel>
+
+                    <StackPanel Width="135" Margin="0,0,8,8">
+                        <TextBlock x:Name="LblCreatedTo" Style="{StaticResource QO05FilterLabelStyle}"/>
+                        <TextBox x:Name="TxtCreatedTo"
+                                 Style="{StaticResource QO05FilterTextBoxStyle}"
+                                 TextChanged="FilterChanged"/>
+                    </StackPanel>
+
+                    <Button x:Name="BtnRefresh"
+                            Margin="12,18,0,8"
+                            MinWidth="110"
+                            Height="32"
+                            Click="BtnRefresh_Click"
+                            Style="{StaticResource DmsFormButtonStyle}"/>
+                </WrapPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                    <TextBlock x:Name="LblStatusFilter"
+                               Style="{StaticResource QO05FilterLabelStyle}"
+                               Margin="0,1,12,0"/>
+                    <RadioButton x:Name="RbStatusAll"
+                                 GroupName="QO05ScheduleStatus"
+                                 IsChecked="True"
+                                 Margin="0,0,18,0"
+                                 VerticalAlignment="Center"
+                                 Checked="FilterChanged"/>
+                    <RadioButton x:Name="RbStatusUnplanned"
+                                 GroupName="QO05ScheduleStatus"
+                                 Margin="0,0,18,0"
+                                 VerticalAlignment="Center"
+                                 Checked="FilterChanged"/>
+                    <RadioButton x:Name="RbStatusScheduled"
+                                 GroupName="QO05ScheduleStatus"
+                                 Margin="0,0,18,0"
+                                 VerticalAlignment="Center"
+                                 Checked="FilterChanged"/>
+                    <RadioButton x:Name="RbStatusFinished"
+                                 GroupName="QO05ScheduleStatus"
+                                 VerticalAlignment="Center"
+                                 Checked="FilterChanged"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <TextBlock x:Name="LblReleaseFilter"
+                               Style="{StaticResource QO05FilterLabelStyle}"
+                               Margin="0,1,12,0"/>
+                    <RadioButton x:Name="RbReleaseAll"
+                                 GroupName="QO05ReleaseState"
+                                 IsChecked="True"
+                                 Margin="0,0,18,0"
+                                 VerticalAlignment="Center"
+                                 Checked="FilterChanged"/>
+                    <RadioButton x:Name="RbReleaseBlocked"
+                                 GroupName="QO05ReleaseState"
+                                 Margin="0,0,18,0"
+                                 VerticalAlignment="Center"
+                                 Checked="FilterChanged"/>
+                    <RadioButton x:Name="RbReleaseReleased"
+                                 GroupName="QO05ReleaseState"
+                                 VerticalAlignment="Center"
+                                 Checked="FilterChanged"/>
+                </StackPanel>
+
+                <TextBlock x:Name="TxtDateWarning"
+                           Visibility="Collapsed"
+                           Margin="0,8,0,0"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           Foreground="#FFE1BE"/>
+            </StackPanel>
+        </Border>
+
+        <DataGrid x:Name="GridOrders"
+                  Grid.Row="2"
+                  Style="{StaticResource DmsDataGridStyle}"
+                  RowStyle="{StaticResource DmsDataGridRowStyle}"
+                  ColumnHeaderStyle="{StaticResource QO05ColumnHeaderStyle}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  CanUserSortColumns="False"
+                  EnableRowVirtualization="True"
+                  EnableColumnVirtualization="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  ScrollViewer.CanContentScroll="True"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  MinColumnWidth="48"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  HeadersVisibility="Column"
+                  MouseDoubleClick="GridOrders_MouseDoubleClick">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn x:Name="ColScheduleLight" Width="44" MinWidth="44" MaxWidth="44">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Ellipse Width="16"
+                                     Height="16"
+                                     Stroke="{DynamicResource DmsBorderBrush}"
+                                     StrokeThickness="1"
+                                     HorizontalAlignment="Center">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="#E53935"/>
+                                        <Setter Property="ToolTip" Value="{Binding ScheduleStatusText}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ScheduleStatusCode}" Value="Scheduled">
+                                                <Setter Property="Fill" Value="#F5A623"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ScheduleStatusCode}" Value="Finished">
+                                                <Setter Property="Fill" Value="#2ECC71"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn x:Name="ColReleaseIcon" Width="48" MinWidth="48" MaxWidth="48">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock FontSize="18"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="⊘"/>
+                                        <Setter Property="Foreground" Value="#E53935"/>
+                                        <Setter Property="ToolTip" Value="{Binding ReleasedText}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ReleaseStatusCode}" Value="Released">
+                                                <Setter Property="Text" Value="✓"/>
+                                                <Setter Property="Foreground" Value="#2ECC71"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn x:Name="ColOrder" Binding="{Binding OrderNumber}" Width="90" MinWidth="90" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColPrintVersion" Binding="{Binding PrintVersionNumber}" Width="170" MinWidth="160" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColSap" Binding="{Binding SapMaterialNumber}" Width="110" MinWidth="105" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColCustomer" Binding="{Binding Customer}" Width="145" MinWidth="130" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColArticleTitle" Binding="{Binding ArticleTitle}" Width="220" MinWidth="180" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColMachine" Binding="{Binding Machine}" Width="130" MinWidth="110" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColStart" Binding="{Binding ProductionStartText}" Width="95" MinWidth="90" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColEnd" Binding="{Binding ProductionEndText}" Width="95" MinWidth="90" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColCreatedAt" Binding="{Binding CreatedAtText}" Width="135" MinWidth="125" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColOrdered" Binding="{Binding OrderedQuantity}" Width="95" MinWidth="90" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColProduced" Binding="{Binding ProducedQuantity}" Width="95" MinWidth="90" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColColor" Binding="{Binding ColorType}" Width="135" MinWidth="115" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColQualityClass" Binding="{Binding QualityClass}" Width="85" MinWidth="80" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColLoreal" Binding="{Binding LorealText}" Width="80" MinWidth="75" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColRelease" Binding="{Binding ReleasedText}" Width="100" MinWidth="95" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColStatus" Binding="{Binding ScheduleStatusText}" Width="120" MinWidth="110" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColOpenTasks" Binding="{Binding OpenTasksText}" Width="300" MinWidth="220" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+                <DataGridTextColumn x:Name="ColNotes" Binding="{Binding Notes}" Width="360" MinWidth="260" ElementStyle="{StaticResource QO05CellTextBlockStyle}"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock x:Name="TxtCount"
+                   Grid.Row="3"
+                   Margin="0,8,0,0"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+    </Grid>
+</UserControl>

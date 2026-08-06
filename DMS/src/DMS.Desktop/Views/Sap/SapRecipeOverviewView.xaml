@@ -13,12 +13,14 @@
 
         <!-- Nadpis -->
         <StackPanel Grid.Row="0" Margin="0,0,0,14">
-            <TextBlock Text="REC03 - Přehled receptur"
+            <TextBlock x:Name="TxtTitle"
+                       Text="REC03 - Recipe overview"
                        FontSize="24"
                        FontWeight="Bold"
                        Foreground="{DynamicResource DmsForegroundBrush}"/>
 
-            <TextBlock Text="Přehled receptur, jejich kusovníků, použití v artiklech a návazností komponent v dalších recepturách."
+            <TextBlock x:Name="TxtSubtitle"
+                       Text="Overview of recipes, their BOMs, usage in articles and component cross-references."
                        Margin="0,6,0,0"
                        TextWrapping="Wrap"
                        Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
@@ -35,7 +37,7 @@
 
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="130"/>
                     <ColumnDefinition Width="260"/>
                     <ColumnDefinition Width="140"/>
                     <ColumnDefinition Width="260"/>
@@ -43,8 +45,9 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0"
-                           Text="Receptura/text:"
+                <TextBlock x:Name="LblRecipeFilter"
+                           Grid.Column="0"
+                           Text="Recipe / text:"
                            VerticalAlignment="Center"
                            FontWeight="Bold"
                            Foreground="{DynamicResource DmsForegroundBrush}"/>
@@ -56,8 +59,9 @@
                          Foreground="{DynamicResource DmsForegroundBrush}"
                          BorderBrush="{DynamicResource DmsBorderBrush}"/>
 
-                <TextBlock Grid.Column="2"
-                           Text="Použita v artiklu:"
+                <TextBlock x:Name="LblArticleFilter"
+                           Grid.Column="2"
+                           Text="Used in article:"
                            VerticalAlignment="Center"
                            FontWeight="Bold"
                            Foreground="{DynamicResource DmsForegroundBrush}"/>
@@ -69,8 +73,9 @@
                          Foreground="{DynamicResource DmsForegroundBrush}"
                          BorderBrush="{DynamicResource DmsBorderBrush}"/>
 
-                <Button Grid.Column="4"
-                        Content="Hledat"
+                <Button x:Name="BtnSearch"
+                        Grid.Column="4"
+                        Content="Search"
                         Width="110"
                         Padding="12,6"
                         Click="BtnSearch_Click"
@@ -101,7 +106,8 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="Nalezené receptury"
+                    <TextBlock x:Name="TxtResultsTitle"
+                               Text="Results"
                                FontSize="16"
                                FontWeight="Bold"
                                Margin="0,0,0,8"
@@ -122,20 +128,41 @@
                               ScrollViewer.HorizontalScrollBarVisibility="Auto"
                               EnableRowVirtualization="True">
 
+                        <DataGrid.Resources>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Padding" Value="6,4"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                                <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+                            </Style>
+                            <Style TargetType="DataGridCell">
+                                <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.Resources>
+
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Receptura"
+                            <DataGridTextColumn x:Name="ColRecipeNumber"
+                                                Header="Recipe"
                                                 Binding="{Binding RecipeNumber}"
                                                 Width="110"/>
-
-                            <DataGridTextColumn Header="Popis"
+                            <DataGridTextColumn x:Name="ColDescription"
+                                                Header="Description"
                                                 Binding="{Binding Description}"
                                                 Width="*"/>
-
-                            <DataGridTextColumn Header="Použití"
+                            <DataGridTextColumn x:Name="ColUsage"
+                                                Header="Usage"
                                                 Binding="{Binding UsedInArticleCount}"
                                                 Width="70"/>
-
-                            <DataGridTextColumn Header="Pol."
+                            <DataGridTextColumn x:Name="ColItems"
+                                                Header="Items"
                                                 Binding="{Binding BomItemCount}"
                                                 Width="55"/>
                         </DataGrid.Columns>

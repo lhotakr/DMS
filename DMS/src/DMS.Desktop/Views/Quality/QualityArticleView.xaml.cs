@@ -1,5 +1,6 @@
 ﻿using DMS.Core.Quality;
 using DMS.Core.Sap;
+using DMS.Desktop.Logging;
 using DMS.Desktop.UI;
 using System.IO;
 using System.Windows;
@@ -11,14 +12,38 @@ namespace DMS.Desktop.Views.Quality;
 public partial class QualityArticleView : UserControl
 {
     private readonly QualityArticleOverviewService _service;
+    private readonly DmsLogger? _logger;
+    private readonly string _currentUserName;
+    private readonly Func<string, string>? _translate;
+    private readonly Func<string, object[], string>? _translateFormat;
 
     public event Action<string>? TransactionRequested;
 
     public QualityArticleView(string query)
+        : this(
+            query,
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..")))
+    {
+    }
+
+    public QualityArticleView(
+        string query,
+        string dmsRootPath,
+        DmsLogger? logger = null,
+        string? currentUserName = null,
+        Func<string, string>? translate = null,
+        Func<string, object[], string>? translateFormat = null)
     {
         InitializeComponent();
 
-        const string basePath = @"Z:\SAP\DMS-db\DEV";
+        _logger = logger;
+        _currentUserName = string.IsNullOrWhiteSpace(currentUserName)
+            ? "UNKNOWN"
+            : currentUserName;
+        _translate = translate;
+        _translateFormat = translateFormat;
+
+        var basePath = Path.GetFullPath(dmsRootPath);
 
         var sapStoragePaths = new SapStoragePaths(basePath);
         sapStoragePaths.EnsureDirectories();
@@ -46,12 +71,22 @@ public partial class QualityArticleView : UserControl
         var statusRuleService =
             new SapMaterialStatusRuleService(statusRules);
 
+        var qualityArticles = qualityRepository.LoadArticles();
+        var printVersions = qualityRepository.LoadPrintVersions();
+        var orders = qualityRepository.LoadOrders();
+
         _service = new QualityArticleOverviewService(
             sapMaterials,
-            qualityRepository.LoadArticles(),
-            qualityRepository.LoadPrintVersions(),
-            qualityRepository.LoadOrders(),
+            qualityArticles,
+            printVersions,
+            orders,
             statusRuleService);
+
+        _logger?.AdminAction(
+            "QA03",
+            "OpenQualityArticle",
+            _currentUserName,
+            $"Query={query}; Root={basePath}; SapMaterials={sapMaterials.Count}; QualityArticles={qualityArticles.Count}; PrintVersions={printVersions.Count}; Orders={orders.Count}");
 
         Render(query);
     }
@@ -62,57 +97,51 @@ public partial class QualityArticleView : UserControl
 
         var overview = _service.BuildOverview(query);
 
+        _logger?.AdminAction(
+            "QA03",
+            "RenderQualityArticle",
+            _currentUserName,
+            $"Query={query}; HasData={overview.HasData}; SapMaterial={overview.SapMaterialNumber}; PrintVersions={overview.PrintVersions.Count}; Tasks={overview.Tasks.Count}; Orders={overview.Orders.Count}");
+
         RootPanel.Children.Add(
             DmsUiFactory.CreateTitle(
-                $"QA03 - Quality karta {overview.Query}"));
+                TF("QA03.Title", "QA03 - Quality card {0}", overview.Query)));
 
         if (!overview.HasData)
         {
+            _logger?.AdminAction(
+                "QA03",
+                "QualityArticleNotFound",
+                _currentUserName,
+                $"Query={query}");
+
             RootPanel.Children.Add(
                 DmsUiFactory.CreateWarning(
-                    "Nenalezena žádná quality data",
-                    "Pro zadaný dotaz nebyla nalezena SAP ani quality data.\n\n" +
-                    "Zkus SAP číslo, celé číslo tiskové verze " +
-                    "nebo historické sedmimístné číslo artiklu."));
+                    T("QA03.NotFound.Title", "No quality data found"),
+                    T("QA03.NotFound.Body", "No SAP or quality data was found for the entered query.\n\nTry the SAP number, full print version number, or historical seven-digit article number.")));
 
             return;
         }
 
-        RootPanel.Children.Add(
-            CreateActionBar(overview));
-
-        RootPanel.Children.Add(
-            CreateSapSection(overview));
-
-        RootPanel.Children.Add(
-            CreateQualityArticleSection(overview));
-
-        RootPanel.Children.Add(
-            CreatePrintVersionsSection(overview));
-
-        RootPanel.Children.Add(
-            CreateTasksSection(overview));
-
-        RootPanel.Children.Add(
-            CreateOrdersSection(overview));
+        RootPanel.Children.Add(CreateActionBar(overview));
+        RootPanel.Children.Add(CreateSapSection(overview));
+        RootPanel.Children.Add(CreateQualityArticleSection(overview));
+        RootPanel.Children.Add(CreatePrintVersionsSection(overview));
+        RootPanel.Children.Add(CreateTasksSection(overview));
+        RootPanel.Children.Add(CreateOrdersSection(overview));
 
         if (overview.Messages.Count > 0)
         {
             RootPanel.Children.Add(
                 DmsUiFactory.CreateInfoCard(
-                    "Hlášky",
+                    T("QA03.Section.Messages", "Messages"),
                     string.Join(
                         Environment.NewLine,
                         overview.Messages)));
         }
     }
 
-    // ============================================================
-    // ACTION BAR
-    // ============================================================
-
-    private UIElement CreateActionBar(
-        QualityArticleOverview overview)
+    private UIElement CreateActionBar(QualityArticleOverview overview)
     {
         var panel = new StackPanel
         {
@@ -120,49 +149,127 @@ public partial class QualityArticleView : UserControl
             Margin = new Thickness(0, 0, 0, 14)
         };
 
-        if (!string.IsNullOrWhiteSpace(
-                overview.SapMaterialNumber))
+        if (!string.IsNullOrWhiteSpace(overview.SapMaterialNumber))
         {
             panel.Children.Add(
-                DmsUiFactory.CreateActionButton(
-                    "QA02",
-                    () => RequestTransaction(
-                        "QA02",
-                        overview.SapMaterialNumber)));
+                CreatePrimaryActionButton(
+                    T("QA03.Action.Edit", "Edit quality data"),
+                    () => RequestTransaction("QA02", overview.SapMaterialNumber)));
+
+            var orderCreateParameter = SelectOrderCreateParameter(overview);
+            if (!string.IsNullOrWhiteSpace(orderCreateParameter))
+            {
+                panel.Children.Add(
+                    CreatePrimaryActionButton(
+                        T("QA03.Action.OpenQO01", "Create quality order"),
+                        () => RequestTransaction("QO01", orderCreateParameter)));
+            }
 
             panel.Children.Add(
-                DmsUiFactory.CreateActionButton(
-                    "SAP03",
-                    () => RequestTransaction(
-                        "SAP03",
-                        overview.SapMaterialNumber)));
+                CreatePrimaryActionButton(
+                    T("QA03.Action.OpenSap03", "Open SAP material"),
+                    () => RequestTransaction("SAP03", overview.SapMaterialNumber)));
 
             panel.Children.Add(
-                DmsUiFactory.CreateActionButton(
-                    "TEC03",
-                    () => RequestTransaction(
-                        "TEC03",
-                        overview.SapMaterialNumber)));
+                CreatePrimaryActionButton(
+                    T("QA03.Action.OpenTec03", "Open technical summary"),
+                    () => RequestTransaction("TEC03", overview.SapMaterialNumber)));
 
             panel.Children.Add(
-                DmsUiFactory.CreateActionButton(
-                    "DOC03",
-                    () => RequestTransaction(
-                        "DOC03",
-                        overview.SapMaterialNumber)));
+                CreatePrimaryActionButton(
+                    T("QA03.Action.OpenDoc03", "Open documents"),
+                    () => RequestTransaction("DOC03", overview.SapMaterialNumber)));
         }
 
         panel.Children.Add(
-            DmsUiFactory.CreateActionButton(
-                "Aktualizovat",
-                () => Render(overview.Query)));
+            CreatePrimaryActionButton(
+                T("QA03.Action.Refresh", "Refresh"),
+                () =>
+                {
+                    _logger?.AdminAction(
+                        "QA03",
+                        "RefreshQualityArticle",
+                        _currentUserName,
+                        $"Query={overview.Query}");
+
+                    Render(overview.Query);
+                }));
 
         return panel;
     }
 
-    private void RequestTransaction(
-        string transactionCode,
-        string parameter)
+    private static string SelectOrderCreateParameter(QualityArticleOverview overview)
+    {
+        if (overview is null)
+        {
+            return string.Empty;
+        }
+
+        var query = overview.Query?.Trim() ?? string.Empty;
+        string? firstPrintVersionNumber = null;
+        var printVersionCount = 0;
+
+        foreach (var printVersion in overview.PrintVersions)
+        {
+            var number = printVersion.FullPrintVersionNumber?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(number))
+            {
+                continue;
+            }
+
+            firstPrintVersionNumber ??= number;
+            printVersionCount++;
+
+            if (!string.IsNullOrWhiteSpace(query) &&
+                string.Equals(number, query, StringComparison.OrdinalIgnoreCase))
+            {
+                return number;
+            }
+        }
+
+        if (printVersionCount == 1 && !string.IsNullOrWhiteSpace(firstPrintVersionNumber))
+        {
+            return firstPrintVersionNumber;
+        }
+
+        if (!string.IsNullOrWhiteSpace(overview.SapMaterialNumber))
+        {
+            return overview.SapMaterialNumber.Trim();
+        }
+
+        return query;
+    }
+    private UIElement CreatePrimaryActionButton(string text, Action action)
+    {
+        var button = new Button
+        {
+            Content = text,
+            Padding = new Thickness(12, 6, 12, 6),
+            Margin = new Thickness(0, 0, 8, 0),
+            MinWidth = 90
+        };
+
+        var style = TryFindResource("DmsPrimaryButtonStyle") as Style
+                    ?? TryFindResource("DmsAccentButtonStyle") as Style;
+
+        if (style is not null)
+        {
+            button.Style = style;
+        }
+
+        // Important for the HG theme: yellow accent buttons must use dark text.
+        // Do not hardcode White here; DmsOnAccentBrush is black in HG and white in dark/light DMS themes.
+        button.SetResourceReference(Control.BackgroundProperty, "DmsAccentBrush");
+        button.SetResourceReference(Control.BorderBrushProperty, "DmsAccentBrush");
+        button.SetResourceReference(Control.ForegroundProperty, "DmsOnAccentBrush");
+
+        button.Click += (_, _) => action();
+
+        return button;
+    }
+
+    private void RequestTransaction(string transactionCode, string parameter)
     {
         if (string.IsNullOrWhiteSpace(transactionCode) ||
             string.IsNullOrWhiteSpace(parameter))
@@ -170,25 +277,25 @@ public partial class QualityArticleView : UserControl
             return;
         }
 
-        TransactionRequested?.Invoke(
-            $"{transactionCode} {parameter.Trim()}");
+        _logger?.AdminAction(
+            "QA03",
+            "OpenRelatedTransaction",
+            _currentUserName,
+            $"Transaction={transactionCode}; Parameter={parameter.Trim()}");
+
+        TransactionRequested?.Invoke($"{transactionCode} {parameter.Trim()}");
     }
 
-    // ============================================================
-    // SAP ZÁKLAD
-    // ============================================================
-
-    private UIElement CreateSapSection(
-        QualityArticleOverview overview)
+    private UIElement CreateSapSection(QualityArticleOverview overview)
     {
-        var section =
-            DmsDisplayFactory.CreateSection("SAP základ");
+        var section = DmsDisplayFactory.CreateSection(
+            T("QA03.Section.Sap", "SAP base data"));
 
         if (overview.SapMaterial is null)
         {
             section.Children.Add(
                 DmsUiFactory.CreateMutedText(
-                    "SAP materiál nebyl nalezen."));
+                    T("QA03.Sap.NotFound", "SAP material was not found.")));
 
             return section;
         }
@@ -201,37 +308,31 @@ public partial class QualityArticleView : UserControl
                 new[]
                 {
                     new DmsDisplayField(
-                        "Staré číslo materiálu",
+                        T("QA03.Field.OldMaterialNumber", "Old material number"),
                         material.OldMaterialNumber),
 
                     new DmsDisplayField(
-                        "Status",
+                        T("QA03.Field.Status", "Status"),
                         overview.FormattedMaterialStatus),
 
                     new DmsDisplayField(
-                        "Popisek (KTEXT)",
+                        T("QA03.Field.Ktext", "Description (KTEXT)"),
                         material.Description)
                 }));
 
         return section;
     }
 
-    // ============================================================
-    // INFORMACE O ARTIKLU
-    // ============================================================
-
-    private UIElement CreateQualityArticleSection(
-        QualityArticleOverview overview)
+    private UIElement CreateQualityArticleSection(QualityArticleOverview overview)
     {
-        var section =
-            DmsDisplayFactory.CreateSection(
-                "Informace o artiklu");
+        var section = DmsDisplayFactory.CreateSection(
+            T("QA03.Section.ArticleInfo", "Article information"));
 
         if (overview.QualityArticle is null)
         {
             section.Children.Add(
                 DmsUiFactory.CreateMutedText(
-                    "K artiklu nejsou uložené lokální quality informace."));
+                    T("QA03.ArticleInfo.Empty", "No local quality information is stored for this article.")));
 
             return section;
         }
@@ -242,50 +343,41 @@ public partial class QualityArticleView : UserControl
                 new[]
                 {
                     new DmsDisplayField(
-                        "Důležité info",
+                        T("QA03.Field.ImportantInfo", "Important information"),
                         overview.QualityArticle.ImportantInfo),
 
                     new DmsDisplayField(
-                        "Poznámky",
+                        T("QA03.Field.Notes", "Notes"),
                         overview.QualityArticle.Notes)
                 }));
 
         return section;
     }
 
-    // ============================================================
-    // TISKOVÉ VERZE
-    // ============================================================
-
-    private UIElement CreatePrintVersionsSection(
-        QualityArticleOverview overview)
+    private UIElement CreatePrintVersionsSection(QualityArticleOverview overview)
     {
-        var section =
-            DmsDisplayFactory.CreateSection(
-                $"Tiskové verze ({overview.PrintVersions.Count})");
+        var section = DmsDisplayFactory.CreateSection(
+            TF("QA03.Section.PrintVersions", "Print versions ({0})", overview.PrintVersions.Count));
 
         if (overview.PrintVersions.Count == 0)
         {
             section.Children.Add(
                 DmsUiFactory.CreateMutedText(
-                    "Nejsou evidované žádné tiskové verze."));
+                    T("QA03.PrintVersions.Empty", "No print versions are recorded.")));
 
             return section;
         }
 
         foreach (var printVersion in overview.PrintVersions
-                     .OrderByDescending(
-                         item => item.FullPrintVersionNumber))
+                     .OrderByDescending(item => item.FullPrintVersionNumber))
         {
-            section.Children.Add(
-                CreatePrintVersionCard(printVersion));
+            section.Children.Add(CreatePrintVersionCard(printVersion));
         }
 
         return section;
     }
 
-    private UIElement CreatePrintVersionCard(
-        QualityPrintVersion item)
+    private UIElement CreatePrintVersionCard(QualityPrintVersion item)
     {
         var root = new StackPanel();
 
@@ -294,25 +386,11 @@ public partial class QualityArticleView : UserControl
                 5,
                 new[]
                 {
-                    new DmsDisplayField(
-                        "Název",
-                        item.Title),
-
-                    new DmsDisplayField(
-                        "Zákazník",
-                        item.Customer),
-
-                    new DmsDisplayField(
-                        "HD číslo",
-                        item.HdNumber),
-
-                    new DmsDisplayField(
-                        "Umístění vzorků",
-                        item.SampleLocation),
-
-                    new DmsDisplayField(
-                        "Měrka",
-                        BuildGaugeText(item))
+                    new DmsDisplayField(T("QA03.Field.Title", "Title"), item.Title),
+                    new DmsDisplayField(T("QA03.Field.Customer", "Customer"), item.Customer),
+                    new DmsDisplayField(T("QA03.Field.HdNumber", "HD number"), item.HdNumber),
+                    new DmsDisplayField(T("QA03.Field.SampleLocation", "Sample location"), item.SampleLocation),
+                    new DmsDisplayField(T("QA03.Field.Gauge", "Gauge"), BuildGaugeText(item))
                 }));
 
         root.Children.Add(
@@ -320,34 +398,13 @@ public partial class QualityArticleView : UserControl
                 7,
                 new[]
                 {
-                    new DmsDisplayField(
-                        "Dekorace",
-                        item.DecorationCode),
-
-                    new DmsDisplayField(
-                        "Úprava skla",
-                        item.GlassTreatment),
-
-                    new DmsDisplayField(
-                        "Barva",
-                        item.ColorType),
-
-                    new DmsDisplayField(
-                        "Reklamace",
-                        ToYesNo(item.HasComplaint)),
-
-                    new DmsDisplayField(
-                        "Úkoly splněny",
-                        ToYesNo(
-                            ArePrintVersionTasksCompleted(item))),
-
-                    new DmsDisplayField(
-                        "Vzorky na kameru",
-                        ToYesNo(item.SamplesOnCamera)),
-
-                    new DmsDisplayField(
-                        "Umístění prkna",
-                        item.BoardLocation)
+                    new DmsDisplayField(T("QA03.Field.Decoration", "Decoration"), item.DecorationCode),
+                    new DmsDisplayField(T("QA03.Field.GlassTreatment", "Glass treatment"), item.GlassTreatment),
+                    new DmsDisplayField(T("QA03.Field.Color", "Color"), item.ColorType),
+                    new DmsDisplayField(T("QA03.Field.Complaint", "Complaint"), ToYesNo(item.HasComplaint)),
+                    new DmsDisplayField(T("QA03.Field.TasksCompleted", "Tasks completed"), ToYesNo(ArePrintVersionTasksCompleted(item))),
+                    new DmsDisplayField(T("QA03.Field.SamplesOnCamera", "Samples on camera"), ToYesNo(item.SamplesOnCamera)),
+                    new DmsDisplayField(T("QA03.Field.BoardLocation", "Board location"), item.BoardLocation)
                 }));
 
         root.Children.Add(
@@ -355,9 +412,7 @@ public partial class QualityArticleView : UserControl
                 1,
                 new[]
                 {
-                    new DmsDisplayField(
-                        "Poznámky",
-                        item.Notes)
+                    new DmsDisplayField(T("QA03.Field.Notes", "Notes"), item.Notes)
                 }));
 
         return DmsDisplayFactory.CreateExpanderCard(
@@ -365,117 +420,72 @@ public partial class QualityArticleView : UserControl
             root);
     }
 
-    private static bool ArePrintVersionTasksCompleted(
-        QualityPrintVersion item)
+    private static bool ArePrintVersionTasksCompleted(QualityPrintVersion item)
     {
         var realTasks = item.Tasks
-            .Where(task =>
-                !string.IsNullOrWhiteSpace(task.Text))
+            .Where(task => !string.IsNullOrWhiteSpace(task.Text))
             .ToList();
 
         return realTasks.Count == 0 ||
-               realTasks.All(task =>
-                   task.CompletedAt.HasValue);
+               realTasks.All(task => task.CompletedAt.HasValue);
     }
 
-    private static string BuildGaugeText(
-        QualityPrintVersion item)
+    private string BuildGaugeText(QualityPrintVersion item)
     {
         if (!item.HasGauge &&
-            string.IsNullOrWhiteSpace(
-                item.GaugeLocation))
+            string.IsNullOrWhiteSpace(item.GaugeLocation))
         {
-            return "Ne";
+            return T("Common.No", "No");
         }
 
-        if (string.IsNullOrWhiteSpace(
-                item.GaugeLocation))
+        if (string.IsNullOrWhiteSpace(item.GaugeLocation))
         {
             return ToYesNo(item.HasGauge);
         }
 
         return item.HasGauge
-            ? $"Ano – {item.GaugeLocation}"
+            ? TF("QA03.Value.YesWithDetail", "Yes - {0}", item.GaugeLocation)
             : item.GaugeLocation;
     }
 
-    // ============================================================
-    // QUALITY ÚKOLY
-    // ============================================================
-
-    private UIElement CreateTasksSection(
-        QualityArticleOverview overview)
+    private UIElement CreateTasksSection(QualityArticleOverview overview)
     {
-        var section =
-            DmsDisplayFactory.CreateSection(
-                $"Quality úkoly ({overview.Tasks.Count})");
+        var section = DmsDisplayFactory.CreateSection(
+            TF("QA03.Section.Tasks", "Quality tasks ({0})", overview.Tasks.Count));
 
         if (overview.Tasks.Count == 0)
         {
             section.Children.Add(
                 DmsUiFactory.CreateMutedText(
-                    "Nejsou evidované žádné quality úkoly."));
+                    T("QA03.Tasks.Empty", "No quality tasks are recorded.")));
 
             return section;
         }
 
-        var grid =
-            DmsUiFactory.CreateDataGrid(
-                ForwardMouseWheelToOuterScroll);
+        var grid = DmsUiFactory.CreateDataGrid(ForwardMouseWheelToOuterScroll);
 
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Číslo",
-                "Number",
-                70));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Úkol",
-                "Text",
-                520));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Autor úkolu",
-                "CreatedBy",
-                140));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Termín splnění",
-                "DueDateText",
-                125));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Stav",
-                "CompletedText",
-                120));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Number", "Number"), "Number", 70));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Task", "Task"), "Text", 520));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.TaskAuthor", "Task author"), "CreatedBy", 140));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.DueDate", "Due date"), "DueDateText", 125));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.State", "State"), "CompletedText", 120));
 
         grid.ItemsSource = overview.Tasks;
-
         section.Children.Add(grid);
 
         return section;
     }
 
-    // ============================================================
-    // ZAKÁZKY
-    // ============================================================
-
-    private UIElement CreateOrdersSection(
-        QualityArticleOverview overview)
+    private UIElement CreateOrdersSection(QualityArticleOverview overview)
     {
-        var section =
-            DmsDisplayFactory.CreateSection(
-                $"Zakázky ({overview.Orders.Count})");
+        var section = DmsDisplayFactory.CreateSection(
+            TF("QA03.Section.Orders", "Orders ({0})", overview.Orders.Count));
 
         if (overview.Orders.Count == 0)
         {
             section.Children.Add(
                 DmsUiFactory.CreateMutedText(
-                    "Nejsou evidované žádné zakázky."));
+                    T("QA03.Orders.Empty", "No orders are recorded.")));
 
             return section;
         }
@@ -484,162 +494,63 @@ public partial class QualityArticleView : UserControl
             .Select(CreateOrderDisplayRow)
             .ToList();
 
-        var grid =
-            DmsUiFactory.CreateDataGrid(
-                ForwardMouseWheelToOuterScroll);
+        var grid = DmsUiFactory.CreateDataGrid(ForwardMouseWheelToOuterScroll);
 
         grid.MouseDoubleClick += (_, _) =>
         {
-            if (grid.SelectedItem is not
-                QualityOrderDisplayRow row)
+            if (grid.SelectedItem is not QualityOrderDisplayRow row)
             {
                 return;
             }
 
-            RequestTransaction(
-                "QO03",
-                row.OrderNumber);
+            RequestTransaction("QO03", row.OrderNumber);
         };
 
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Zakázka",
-                nameof(QualityOrderDisplayRow.OrderNumber),
-                100));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Stroje",
-                nameof(QualityOrderDisplayRow.Machines),
-                150));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Od",
-                nameof(QualityOrderDisplayRow.ProductionStartText),
-                105));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Do",
-                nameof(QualityOrderDisplayRow.ProductionEndText),
-                105));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Objednáno",
-                nameof(QualityOrderDisplayRow.OrderedQuantity),
-                100));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Odbaveno",
-                nameof(QualityOrderDisplayRow.ProducedQuantity),
-                100));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Lab. zakázka",
-                nameof(QualityOrderDisplayRow.LabOrderNumber),
-                125));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "L'Oréal",
-                nameof(QualityOrderDisplayRow.LorealText),
-                75));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Třída",
-                nameof(QualityOrderDisplayRow.QualityClass),
-                90));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Třídění v HD",
-                nameof(QualityOrderDisplayRow.SortingInHdText),
-                105));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Zůstává v HD",
-                nameof(QualityOrderDisplayRow.StaysInHdText),
-                110));
-
-        grid.Columns.Add(
-            DmsUiFactory.CreateTextColumn(
-                "Poznámky",
-                nameof(QualityOrderDisplayRow.Notes),
-                360));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Order", "Order"), nameof(QualityOrderDisplayRow.OrderNumber), 100));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Machines", "Machines"), nameof(QualityOrderDisplayRow.Machines), 150));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.From", "From"), nameof(QualityOrderDisplayRow.ProductionStartText), 105));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.To", "To"), nameof(QualityOrderDisplayRow.ProductionEndText), 105));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Ordered", "Ordered"), nameof(QualityOrderDisplayRow.OrderedQuantity), 100));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Produced", "Produced"), nameof(QualityOrderDisplayRow.ProducedQuantity), 100));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.LabOrder", "Lab order"), nameof(QualityOrderDisplayRow.LabOrderNumber), 125));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Loreal", "L'Oréal"), nameof(QualityOrderDisplayRow.LorealText), 75));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.QualityClass", "Class"), nameof(QualityOrderDisplayRow.QualityClass), 90));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.SortingInHd", "Sorting in HD"), nameof(QualityOrderDisplayRow.SortingInHdText), 105));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.StaysInHd", "Stays in HD"), nameof(QualityOrderDisplayRow.StaysInHdText), 110));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Notes", "Notes"), nameof(QualityOrderDisplayRow.Notes), 360));
 
         grid.ItemsSource = rows;
 
         section.Children.Add(
             DmsUiFactory.CreateSmallHint(
-                "Dvojklik otevře zakázku v QO03."));
+                T("QA03.Orders.Hint", "Double-click opens the order in QO03.")));
 
         section.Children.Add(grid);
 
         return section;
     }
 
-    private static QualityOrderDisplayRow CreateOrderDisplayRow(
-        QualityOrder order)
+    private QualityOrderDisplayRow CreateOrderDisplayRow(QualityOrder order)
     {
         return new QualityOrderDisplayRow
         {
             OrderNumber = order.OrderNumber,
-
-            Machines = NormalizeMultiValue(
-                order.Machine),
-
-            ProductionStartText =
-                order.ProductionStart?
-                    .ToString("dd.MM.yyyy")
-                ?? string.Empty,
-
-            ProductionEndText =
-                order.ProductionEnd?
-                    .ToString("dd.MM.yyyy")
-                ?? string.Empty,
-
-            OrderedQuantity =
-                order.OrderedQuantity,
-
-            ProducedQuantity =
-                order.ProducedQuantity,
-
-            LabOrderNumber =
-                order.LabOrderNumber,
-
-            LorealText =
-                ToYesNo(order.Loreal),
-
-            QualityClass =
-                order.QualityClass,
-
-            SortingInHdText =
-                ToYesNo(order.SortingInHd),
-
-            StaysInHdText =
-                ToYesNo(order.StaysInHd),
-
-            Notes =
-                order.Notes,
-
-            Source =
-                order
+            Machines = NormalizeMultiValue(order.Machine),
+            ProductionStartText = order.ProductionStart?.ToString("dd.MM.yyyy") ?? string.Empty,
+            ProductionEndText = order.ProductionEnd?.ToString("dd.MM.yyyy") ?? string.Empty,
+            OrderedQuantity = order.OrderedQuantity,
+            ProducedQuantity = order.ProducedQuantity,
+            LabOrderNumber = order.LabOrderNumber,
+            LorealText = ToYesNo(order.Loreal),
+            QualityClass = order.QualityClass,
+            SortingInHdText = ToYesNo(order.SortingInHd),
+            StaysInHdText = ToYesNo(order.StaysInHd),
+            Notes = order.Notes,
+            Source = order
         };
     }
 
-    // ============================================================
-    // SCROLL
-    // ============================================================
-
-    private void ForwardMouseWheelToOuterScroll(
-        object sender,
-        MouseWheelEventArgs e)
+    private void ForwardMouseWheelToOuterScroll(object sender, MouseWheelEventArgs e)
     {
         if (RootScrollViewer is null)
         {
@@ -652,12 +563,7 @@ public partial class QualityArticleView : UserControl
             RootScrollViewer.VerticalOffset - e.Delta);
     }
 
-    // ============================================================
-    // DISPLAY HELPERS SPECIFICKÉ PRO QUALITY
-    // ============================================================
-
-    private static string NormalizeMultiValue(
-        string? value)
+    private static string NormalizeMultiValue(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
@@ -671,57 +577,68 @@ public partial class QualityArticleView : UserControl
                     new[] { ";#" },
                     StringSplitOptions.RemoveEmptyEntries)
                 .Select(item => item.Trim())
-                .Where(item =>
-                    !string.IsNullOrWhiteSpace(item))
-                .Distinct(
-                    StringComparer.OrdinalIgnoreCase));
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Distinct(StringComparer.OrdinalIgnoreCase));
     }
 
-    private static string ToYesNo(bool value)
+    private string ToYesNo(bool value)
     {
-        return value ? "Ano" : "Ne";
+        return value
+            ? T("Common.Yes", "Yes")
+            : T("Common.No", "No");
     }
 
-    // ============================================================
-    // DISPLAY MODEL PRO ZAKÁZKY
-    // ============================================================
+    private string T(string key, string fallback)
+    {
+        var value = _translate?.Invoke(key) ?? key;
+        return IsMissing(value, key) ? fallback : value;
+    }
+
+    private string TF(string key, string fallback, params object[] args)
+    {
+        if (_translateFormat is not null)
+        {
+            var translated = _translateFormat(key, args);
+            if (!IsMissing(translated, key))
+            {
+                return translated;
+            }
+        }
+
+        var pattern = T(key, fallback);
+
+        try
+        {
+            return string.Format(pattern, args);
+        }
+        catch
+        {
+            return pattern;
+        }
+    }
+
+    private static bool IsMissing(string? value, string key)
+    {
+        return string.IsNullOrWhiteSpace(value)
+               || string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase);
+    }
 
     private sealed class QualityOrderDisplayRow
     {
-        public string OrderNumber { get; init; } =
-            string.Empty;
-
-        public string Machines { get; init; } =
-            string.Empty;
-
-        public string ProductionStartText { get; init; } =
-            string.Empty;
-
-        public string ProductionEndText { get; init; } =
-            string.Empty;
-
+        public string OrderNumber { get; init; } = string.Empty;
+        public string Machines { get; init; } = string.Empty;
+        public string ProductionStartText { get; init; } = string.Empty;
+        public string ProductionEndText { get; init; } = string.Empty;
         public int? OrderedQuantity { get; init; }
-
         public int? ProducedQuantity { get; init; }
-
-        public string LabOrderNumber { get; init; } =
-            string.Empty;
-
-        public string LorealText { get; init; } =
-            string.Empty;
-
-        public string QualityClass { get; init; } =
-            string.Empty;
-
-        public string SortingInHdText { get; init; } =
-            string.Empty;
-
-        public string StaysInHdText { get; init; } =
-            string.Empty;
-
-        public string Notes { get; init; } =
-            string.Empty;
-
+        public string LabOrderNumber { get; init; } = string.Empty;
+        public string LorealText { get; init; } = string.Empty;
+        public string QualityClass { get; init; } = string.Empty;
+        public string SortingInHdText { get; init; } = string.Empty;
+        public string StaysInHdText { get; init; } = string.Empty;
+        public string Notes { get; init; } = string.Empty;
         public QualityOrder Source { get; init; } = null!;
     }
 }
+

@@ -1,0 +1,217 @@
+{
+  "devices": [
+    {
+      "stationCode": "X5-1",
+      "driver": "BrX20ModbusTcp",
+      "enabled": true,
+      "port": 502,
+      "unitId": 0,
+      "pollIntervalMs": 500,
+      "timeoutMs": 3000,
+      "staleAfterSeconds": 3,
+      "stopTimeoutSeconds": 30,
+      "controller": "B&R X20BC0087",
+      "modules": [
+        {
+          "slot": 1,
+          "type": "X20DI2377",
+          "description": "2-channel counter / digital input module"
+        },
+        {
+          "slot": 2,
+          "type": "X20DI6371",
+          "description": "6-channel digital input module"
+        },
+        {
+          "slot": 3,
+          "type": "X20DO6322",
+          "description": "6-channel digital output module controlled by MES"
+        }
+      ],
+      "dataPoints": [
+        {
+          "code": "Counter1",
+          "logicalSignal": "GOOD_PIECES",
+          "displayName": "Good pieces",
+          "moduleType": "X20DI2377",
+          "slot": 1,
+          "channel": 1,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Counter2",
+          "logicalSignal": "REJECT_PIECES",
+          "displayName": "Reject pieces",
+          "moduleType": "X20DI2377",
+          "slot": 1,
+          "channel": 2,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Input1",
+          "logicalSignal": "IONIZER_ACTIVE",
+          "displayName": "Ionizer",
+          "moduleType": "X20DI6371",
+          "slot": 2,
+          "channel": 1,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Input2",
+          "logicalSignal": "ROBOT_ACTIVE",
+          "displayName": "Robot active",
+          "moduleType": "X20DI6371",
+          "slot": 2,
+          "channel": 2,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Input3",
+          "logicalSignal": "UV_LAMP_1_ACTIVE",
+          "displayName": "UV lamp 1",
+          "moduleType": "X20DI6371",
+          "slot": 2,
+          "channel": 3,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Input4",
+          "logicalSignal": "UV_LAMP_2_ACTIVE",
+          "displayName": "UV lamp 2",
+          "moduleType": "X20DI6371",
+          "slot": 2,
+          "channel": 4,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Input5",
+          "logicalSignal": "BURNER_ACTIVE",
+          "displayName": "Burner",
+          "moduleType": "X20DI6371",
+          "slot": 2,
+          "channel": 5,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Input6",
+          "logicalSignal": "UV_LAMP_3_ACTIVE",
+          "displayName": "UV lamp 3",
+          "moduleType": "X20DI6371",
+          "slot": 2,
+          "channel": 6,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Output1",
+          "logicalSignal": "MACHINE_READY",
+          "displayName": "Machine ready",
+          "moduleType": "X20DO6322",
+          "slot": 3,
+          "channel": 1,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Output2",
+          "logicalSignal": "MACHINE_STOPPED",
+          "displayName": "Machine stopped",
+          "moduleType": "X20DO6322",
+          "slot": 3,
+          "channel": 2,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Output3",
+          "logicalSignal": "MACHINE_RUNNING",
+          "displayName": "Machine running",
+          "moduleType": "X20DO6322",
+          "slot": 3,
+          "channel": 3,
+          "enabled": true,
+          "visibleInMes03": true,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Output4",
+          "logicalSignal": "RESERVE_DO4",
+          "displayName": "Reserve DO4",
+          "moduleType": "X20DO6322",
+          "slot": 3,
+          "channel": 4,
+          "enabled": false,
+          "visibleInMes03": false,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Output5",
+          "logicalSignal": "RESERVE_DO5",
+          "displayName": "Reserve DO5",
+          "moduleType": "X20DO6322",
+          "slot": 3,
+          "channel": 5,
+          "enabled": false,
+          "visibleInMes03": false,
+          "inverted": false,
+          "source": null
+        },
+        {
+          "code": "Output6",
+          "logicalSignal": "RESERVE_DO6",
+          "displayName": "Reserve DO6",
+          "moduleType": "X20DO6322",
+          "slot": 3,
+          "channel": 6,
+          "enabled": false,
+          "visibleInMes03": false,
+          "inverted": false,
+          "source": null
+        }
+      ]
+    },
+    {
+      "stationCode": "PSL-3",
+      "driver": "SiemensDeferred",
+      "enabled": false,
+      "port": 102,
+      "unitId": 0,
+      "pollIntervalMs": 500,
+      "timeoutMs": 5000,
+      "staleAfterSeconds": 3,
+      "stopTimeoutSeconds": 30,
+      "controller": "Siemens PLC type not identified yet",
+      "modules": [],
+      "dataPoints": []
+    }
+  ]
+}

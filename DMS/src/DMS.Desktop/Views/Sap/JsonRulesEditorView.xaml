@@ -29,21 +29,25 @@
                     Margin="0,0,0,12">
 
             <Button Content="Načíst"
+                    x:Name="BtnReload"
                     Width="110"
                     Margin="0,0,8,0"
                     Click="BtnReload_Click"/>
 
             <Button Content="Validovat"
+                    x:Name="BtnValidate"
                     Width="110"
                     Margin="0,0,8,0"
                     Click="BtnValidate_Click"/>
 
             <Button Content="Uložit"
+                    x:Name="BtnSave"
                     Width="110"
                     Margin="0,0,8,0"
                     Click="BtnSave_Click"/>
 
             <Button Content="Vrátit změny"
+                    x:Name="BtnRevert"
                     Width="130"
                     Click="BtnRevert_Click"/>
         </StackPanel>

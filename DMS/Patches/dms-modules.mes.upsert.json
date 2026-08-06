@@ -1,0 +1,7 @@
+{
+  "code": "MES",
+  "name": "MES",
+  "description": "Manufacturing system, stations, equipment and live operational data.",
+  "sortOrder": 60,
+  "isActive": true
+}

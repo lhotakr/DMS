@@ -1,0 +1,632 @@
+using DMS.Core.Checklists;
+using DMS.Core.Domain.Organization;
+using DMS.Core.Domain.People;
+using DMS.Core.Domain.Units;
+using DMS.Core.Sap;
+using DMS.Desktop.Services.Checklists;
+using DMS.Desktop.Services.MasterData;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.IO;
+using System.Threading.Tasks;
+
+namespace DMS.Desktop.Views.Checklists;
+
+public partial class ChecklistWorkspaceView : UserControl
+{
+    private readonly string _operationCode;
+    private readonly List<string> _arguments;
+    private readonly string _windowsLogin;
+    private readonly string _displayName;
+    private readonly Action<string> _executeTransaction;
+    private readonly Action<string, string> _audit;
+    private readonly Func<string, string> _translate;
+    private readonly ChecklistService _service;
+    private readonly DmsMasterDataService _masterData;
+    private readonly Dictionary<string, FieldEditor> _editors = new(StringComparer.OrdinalIgnoreCase);
+    private List<GridRow> _allRows = new();
+    private ChecklistDefinition? _definition;
+    private ChecklistInstance? _instance;
+    private ViewMode _mode;
+    private bool _isLoaded;
+
+    public ChecklistWorkspaceView(
+        string operationCode,
+        IReadOnlyList<string> arguments,
+        string dmsDataRootPath,
+        string windowsLogin,
+        string displayName,
+        Action<string> executeTransaction,
+        Action<string, string> audit,
+        Func<string, string> translate)
+    {
+        InitializeComponent();
+        _operationCode = operationCode.ToUpperInvariant();
+        _arguments = arguments.ToList();
+        _windowsLogin = windowsLogin;
+        _displayName = displayName;
+        _executeTransaction = executeTransaction;
+        _audit = audit;
+        _translate = translate;
+        ApplyLocalization();
+
+        var checklistRoot = Path.Combine(dmsDataRootPath, "Data", "Checklists");
+        var definitionRepository = new ChecklistDefinitionRepository(Path.Combine(checklistRoot, "Definitions"));
+        var instanceRepository = new ChecklistInstanceRepository(Path.Combine(checklistRoot, "Instances"));
+        var sapRepository = new JsonSapMaterialRepository(new SapStoragePaths(dmsDataRootPath).SapMaterialsFilePath);
+        _service = new ChecklistService(definitionRepository, instanceRepository, sapRepository);
+        _masterData = new DmsMasterDataService(Path.Combine(dmsDataRootPath, "Data", "MasterData"));
+
+        Loaded += async (_, _) =>
+        {
+            if (_isLoaded) return;
+            _isLoaded = true;
+            await LoadCurrentModeAsync();
+        };
+    }
+
+    private async Task LoadCurrentModeAsync()
+    {
+        try
+        {
+            switch (_operationCode)
+            {
+                case "CHL00": LoadDefinitionMode(); break;
+                case "CHL01": await LoadCreateModeAsync(); break;
+                case "CHL05": LoadOverviewMode(); break;
+                case "CHL02": LoadExistingMode(editable: true); break;
+                case "CHL03": LoadExistingMode(editable: false); break;
+                case "CHL04": LoadCopyMode(); break;
+                case "CHL06": LoadReviewMode(); break;
+                default: ShowMessage("Checklist", $"Unsupported transaction {_operationCode}."); break;
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowMessage("Checklist", ex.Message);
+        }
+        finally
+        {
+            SetBusy(false);
+        }
+    }
+
+    private void ApplyLocalization()
+    {
+        BtnRefresh.Content = Tr("CHL.Action.Refresh", "Obnovit");
+        ColPrimary.Header = Tr("CHL.Column.Primary", "Kód / číslo");
+        ColSecondary.Header = Tr("CHL.Column.Secondary", "Název / artikl");
+        ColTertiary.Header = Tr("CHL.Column.Tertiary", "Stav / typ");
+        ColModified.Header = Tr("CHL.Column.Modified", "Změněno");
+        TxtBusy.Text = Tr("CHL.Loading", "Načítám data…");
+    }
+
+    private void LoadDefinitionMode()
+    {
+        if (_arguments.Count == 0)
+        {
+            ShowDefinitions("CHL00");
+            return;
+        }
+
+        _definition = _service.FindDefinition(_arguments[0]);
+        if (_definition is null)
+        {
+            ShowMessage(Tr("CHL.DefinitionNotFound", "Definice nenalezena"), _arguments[0]);
+            return;
+        }
+
+        _mode = ViewMode.DefinitionDetail;
+        TxtTitle.Text = $"CHL00 — {_definition.Code}";
+        TxtSubtitle.Text = _definition.Description;
+        GridItems.Visibility = Visibility.Collapsed;
+        FormScroll.Visibility = Visibility.Visible;
+        FormPanel.Children.Clear();
+        FormPanel.Children.Add(CreateInfoCard("Název", _definition.Name));
+        FormPanel.Children.Add(CreateInfoCard("Verze", _definition.Version.ToString(CultureInfo.InvariantCulture)));
+        FormPanel.Children.Add(CreateInfoCard("Předmět", _definition.SubjectType.ToString()));
+        FormPanel.Children.Add(CreateInfoCard("Sekce", _definition.Sections.Count.ToString(CultureInfo.InvariantCulture)));
+        foreach (var section in _definition.Sections.OrderBy(x => x.SortOrder))
+        {
+            FormPanel.Children.Add(CreateSectionHeader(section.Title));
+            foreach (var field in section.Fields.OrderBy(x => x.SortOrder))
+            {
+                FormPanel.Children.Add(CreateInfoCard(field.Code, $"{field.Label} · {field.FieldType}"));
+            }
+        }
+    }
+
+    private async Task LoadCreateModeAsync()
+    {
+        if (_arguments.Count == 0)
+        {
+            ShowDefinitions("CHL01");
+            return;
+        }
+
+        _definition = _service.FindDefinition(_arguments[0]);
+        if (_definition is null)
+        {
+            ShowMessage(Tr("CHL.DefinitionNotFound", "Definice nenalezena"), _arguments[0]);
+            return;
+        }
+
+        if (_arguments.Count == 1)
+        {
+            await ShowSubjectsAsync(_definition);
+            return;
+        }
+
+        _instance = _service.CreateDraft(_definition, _arguments[1], _windowsLogin, _displayName);
+        ShowForm(_definition, _instance, editable: true, isNew: true);
+    }
+
+    private void LoadOverviewMode()
+    {
+        if (_arguments.Count == 0)
+        {
+            ShowDefinitionOverview();
+            return;
+        }
+
+        ShowInstances(typeCode: _arguments[0], subjectOrNumber: null, operationForOpen: "CHL03");
+    }
+
+    private void LoadExistingMode(bool editable)
+    {
+        if (_arguments.Count == 0)
+        {
+            ShowInstances(null, null, editable ? "CHL02" : "CHL03");
+            return;
+        }
+
+        var argument = _arguments[0];
+        var direct = _service.FindInstance(argument);
+        if (direct is not null)
+        {
+            var definition = _service.FindDefinition(direct.DefinitionCode)
+                ?? throw new InvalidOperationException($"Definition {direct.DefinitionCode} was not found.");
+            ShowForm(definition, direct, editable && direct.Status is ChecklistStatus.Draft or ChecklistStatus.InProgress or ChecklistStatus.ReturnedForCorrection, isNew: false);
+            return;
+        }
+
+        ShowInstances(null, argument, editable ? "CHL02" : "CHL03");
+    }
+
+    private void LoadCopyMode()
+    {
+        if (_arguments.Count == 0)
+        {
+            ShowInstances(null, null, "CHL04");
+            return;
+        }
+
+        var source = _service.FindInstance(_arguments[0]);
+        if (source is null)
+        {
+            ShowInstances(null, _arguments[0], "CHL04");
+            return;
+        }
+
+        _definition = _service.FindDefinition(source.DefinitionCode)
+            ?? throw new InvalidOperationException($"Definition {source.DefinitionCode} was not found.");
+        _instance = _service.CopyAsDraft(source, _windowsLogin, _displayName);
+        ShowForm(_definition, _instance, editable: true, isNew: true);
+        TxtSubtitle.Text = $"Kopie z {source.ChecklistNumber}. Schválení a stav se nekopírují.";
+    }
+
+    private void LoadReviewMode()
+    {
+        if (_arguments.Count == 0)
+        {
+            ShowInstances(null, null, "CHL06", onlyReviewable: true);
+            return;
+        }
+
+        var direct = _service.FindInstance(_arguments[0]);
+        if (direct is null)
+        {
+            ShowInstances(null, _arguments[0], "CHL06", onlyReviewable: true);
+            return;
+        }
+
+        _definition = _service.FindDefinition(direct.DefinitionCode)
+            ?? throw new InvalidOperationException($"Definition {direct.DefinitionCode} was not found.");
+        ShowForm(_definition, direct, editable: false, isNew: false);
+        BtnPrimary.Content = "Potvrdit kontrolu";
+        BtnPrimary.Visibility = Visibility.Visible;
+        BtnPrimary.Tag = "REVIEW";
+        BtnSecondary.Content = "Vrátit k opravě";
+        BtnSecondary.Visibility = Visibility.Visible;
+        BtnSecondary.Tag = "RETURN";
+    }
+
+    private void ShowDefinitions(string openOperation)
+    {
+        _mode = ViewMode.Definitions;
+        TxtTitle.Text = $"{_operationCode} — {Tr("CHL.AvailableDefinitions", "Dostupné checklisty")}";
+        TxtSubtitle.Text = openOperation == "CHL01"
+            ? "Vyber typ checklistu, který chceš vyplnit."
+            : "Vyber definici checklistu.";
+        var definitions = _service.LoadDefinitions().Where(x => x.IsActive).ToList();
+        _allRows = definitions.Select(x => new GridRow
+        {
+            Primary = x.Code,
+            Secondary = x.Name,
+            Tertiary = x.SubjectType.ToString(),
+            Modified = $"v{x.Version}",
+            Command = $"{openOperation} {x.Code}"
+        }).ToList();
+        ShowGrid();
+    }
+
+    private void ShowDefinitionOverview()
+    {
+        var instances = _service.LoadInstances();
+        _allRows = _service.LoadDefinitions().Where(x => x.IsActive).Select(x => new GridRow
+        {
+            Primary = x.Code,
+            Secondary = x.Name,
+            Tertiary = $"{instances.Count(i => string.Equals(i.DefinitionCode, x.Code, StringComparison.OrdinalIgnoreCase))} záznamů",
+            Modified = $"v{x.Version}",
+            Command = $"CHL05 {x.Code}"
+        }).ToList();
+        TxtTitle.Text = "CHL05 — Přehled checklistů";
+        TxtSubtitle.Text = "Vyber typ checklistu pro zobrazení jeho záznamů.";
+        ShowGrid();
+    }
+
+    private async Task ShowSubjectsAsync(ChecklistDefinition definition)
+    {
+        TxtTitle.Text = $"CHL01 — {definition.Name}";
+        TxtSubtitle.Text = Tr(
+            "CHL.SelectSapArticleHint",
+            "Vyber skleněný SAP artikl. Dvojklik otevře připravený checklist.");
+
+        SetBusy(true, Tr("CHL.LoadingSapArticles", "Načítám skleněné SAP artikly…"));
+
+        var subjects = await Task.Run(() =>
+            _service.LoadSubjects(definition).ToList());
+
+        _allRows = subjects.Select(x => new GridRow
+        {
+            Primary = x.MaterialNumber,
+            Secondary = x.Description,
+            Tertiary = x.GlassInfo?.MoldNumber ?? x.MaterialKind,
+            Modified = x.ImportedAt.ToString("dd.MM.yyyy HH:mm"),
+            Command = $"CHL01 {definition.Code} {x.MaterialNumber}"
+        }).ToList();
+
+        SetBusy(false);
+        ShowGrid();
+    }
+
+    private void ShowInstances(string? typeCode, string? subjectOrNumber, string operationForOpen, bool onlyReviewable = false)
+    {
+        var query = _service.LoadInstances().AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(typeCode))
+            query = query.Where(x => string.Equals(x.DefinitionCode, typeCode, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(subjectOrNumber))
+            query = query.Where(x => string.Equals(x.SubjectReference, subjectOrNumber, StringComparison.OrdinalIgnoreCase)
+                                  || string.Equals(x.ChecklistNumber, subjectOrNumber, StringComparison.OrdinalIgnoreCase));
+        if (onlyReviewable)
+            query = query.Where(x => x.Status == ChecklistStatus.SubmittedForReview);
+
+        _allRows = query.Select(x => new GridRow
+        {
+            Primary = x.ChecklistNumber,
+            Secondary = $"{x.SubjectReference} — {x.SubjectDisplayName}",
+            Tertiary = $"{x.DefinitionCode} · {x.Status}",
+            Modified = x.ModifiedAt.ToString("dd.MM.yyyy HH:mm"),
+            Command = $"{operationForOpen} {x.ChecklistNumber}"
+        }).ToList();
+        TxtTitle.Text = $"{_operationCode} — Checklisty";
+        TxtSubtitle.Text = _allRows.Count == 0 ? "Nebyly nalezeny žádné odpovídající checklisty." : "Dvojklik otevře vybraný checklist.";
+        ShowGrid();
+    }
+
+    private void ShowGrid()
+    {
+        _mode = ViewMode.Grid;
+        FormScroll.Visibility = Visibility.Collapsed;
+        GridItems.Visibility = Visibility.Visible;
+        BtnPrimary.Visibility = Visibility.Collapsed;
+        BtnSecondary.Visibility = Visibility.Collapsed;
+        ApplyGridFilter();
+    }
+
+    private void ShowForm(ChecklistDefinition definition, ChecklistInstance instance, bool editable, bool isNew)
+    {
+        _mode = editable ? ViewMode.EditForm : ViewMode.ReadForm;
+        _definition = definition;
+        _instance = instance;
+        _editors.Clear();
+        GridItems.Visibility = Visibility.Collapsed;
+        FormScroll.Visibility = Visibility.Visible;
+        FormPanel.Children.Clear();
+        TxtTitle.Text = isNew ? $"CHL01 — {definition.Name}" : $"{instance.ChecklistNumber} — {definition.Name}";
+        TxtSubtitle.Text = $"SAP artikl: {instance.SubjectReference} · Stav: {instance.Status} · Autor: {instance.CreatedByDisplayName}";
+
+        foreach (var section in definition.Sections.OrderBy(x => x.SortOrder))
+        {
+            FormPanel.Children.Add(CreateSectionHeader(section.Title));
+            foreach (var field in section.Fields.OrderBy(x => x.SortOrder))
+            {
+                FormPanel.Children.Add(CreateFieldEditor(field, instance, editable));
+            }
+        }
+
+        BtnPrimary.Content = isNew ? "Uložit koncept" : "Uložit změny";
+        BtnPrimary.Visibility = editable ? Visibility.Visible : Visibility.Collapsed;
+        BtnPrimary.Tag = "SAVE";
+        BtnSecondary.Visibility = Visibility.Collapsed;
+    }
+
+    private FrameworkElement CreateFieldEditor(ChecklistFieldDefinition field, ChecklistInstance instance, bool editable)
+    {
+        var border = new Border
+        {
+            Margin = new Thickness(0, 0, 0, 8),
+            Padding = new Thickness(12),
+            CornerRadius = new CornerRadius(6),
+            BorderThickness = new Thickness(1)
+        };
+        border.SetResourceReference(Border.BackgroundProperty, "DmsPanelBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "DmsBorderBrush");
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(240) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var label = new TextBlock
+        {
+            Text = field.Label + (field.IsRequired ? " *" : string.Empty),
+            FontWeight = FontWeights.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 12, 0)
+        };
+        label.SetResourceReference(TextBlock.ForegroundProperty, "DmsForegroundBrush");
+        grid.Children.Add(label);
+
+        instance.Values.TryGetValue(field.Code, out var value);
+        value ??= new ChecklistFieldValue();
+        instance.Values[field.Code] = value;
+        var editor = BuildEditor(field, value, editable && !field.IsReadOnly);
+        Grid.SetColumn(editor.Element, 1);
+        grid.Children.Add(editor.Element);
+        _editors[field.Code] = editor;
+        border.Child = grid;
+        return border;
+    }
+
+    private FieldEditor BuildEditor(ChecklistFieldDefinition field, ChecklistFieldValue value, bool editable)
+    {
+        switch (field.FieldType)
+        {
+            case ChecklistFieldType.Boolean:
+                var check = new CheckBox { IsChecked = value.BooleanValue, IsEnabled = editable, VerticalAlignment = VerticalAlignment.Center };
+                return new FieldEditor(check, () => value.BooleanValue = check.IsChecked);
+
+            case ChecklistFieldType.Integer:
+                var integer = CreateTextBox(value.IntegerValue?.ToString(CultureInfo.CurrentCulture), editable);
+                return new FieldEditor(integer, () => value.IntegerValue = int.TryParse(integer.Text, out var v) ? v : null);
+
+            case ChecklistFieldType.Decimal:
+                var number = CreateTextBox(value.DecimalValue?.ToString(CultureInfo.CurrentCulture), editable);
+                return new FieldEditor(number, () => value.DecimalValue = decimal.TryParse(number.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out var v) ? v : null);
+
+            case ChecklistFieldType.MultilineText:
+                var multi = CreateTextBox(value.TextValue, editable);
+                multi.AcceptsReturn = true;
+                multi.TextWrapping = TextWrapping.Wrap;
+                multi.MinHeight = 70;
+                return new FieldEditor(multi, () => value.TextValue = multi.Text.Trim());
+
+            case ChecklistFieldType.CatalogValue:
+                var catalog = new ComboBox { IsEnabled = editable, MinHeight = 30, ItemsSource = field.CatalogValues };
+                catalog.SelectedItem = value.TextValue;
+                return new FieldEditor(catalog, () => value.TextValue = catalog.SelectedItem?.ToString());
+
+            case ChecklistFieldType.Person:
+                var people = _masterData.LoadPeople().Where(x => x.IsActive).OrderBy(x => x.LastName).ThenBy(x => x.FirstName).ToList();
+                var personCombo = ChoiceCombo(people.Select(x => new Choice(x.PersonId, $"{x.PersonnelNumber} — {x.DisplayName}")).ToList(), value.PersonId, editable);
+                return new FieldEditor(personCombo, () => value.PersonId = (personCombo.SelectedItem as Choice)?.Id);
+
+            case ChecklistFieldType.OrganizationUnit:
+                var units = _masterData.LoadOrganizationUnits().Where(x => x.IsActive).OrderBy(x => x.Name).ToList();
+                var unitCombo = ChoiceCombo(units.Select(x => new Choice(x.OrganizationUnitId, $"{x.Code} — {x.Name}")).ToList(), value.OrganizationUnitId, editable);
+                return new FieldEditor(unitCombo, () => value.OrganizationUnitId = (unitCombo.SelectedItem as Choice)?.Id);
+
+            case ChecklistFieldType.Measurement:
+                return BuildMeasurementEditor(field, value, editable);
+
+            default:
+                var text = CreateTextBox(value.TextValue, editable);
+                return new FieldEditor(text, () => value.TextValue = text.Text.Trim());
+        }
+    }
+
+    private FieldEditor BuildMeasurementEditor(ChecklistFieldDefinition field, ChecklistFieldValue value, bool editable)
+    {
+        var panel = new Grid();
+        panel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        panel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
+        var number = CreateTextBox(value.DecimalValue?.ToString(CultureInfo.CurrentCulture), editable);
+        var dimensions = _masterData.LoadUnitDimensions();
+        var dimension = dimensions.FirstOrDefault(x => string.Equals(x.Code, field.UnitDimensionCode, StringComparison.OrdinalIgnoreCase));
+        var units = dimension is null
+            ? new List<UnitDefinition>()
+            : _masterData.LoadUnits().Where(x => x.UnitDimensionId == dimension.UnitDimensionId && x.IsActive).OrderBy(x => x.Code).ToList();
+        var combo = new ComboBox { ItemsSource = units, DisplayMemberPath = nameof(UnitDefinition.Symbol), IsEnabled = editable, Margin = new Thickness(8, 0, 0, 0) };
+        combo.SelectedItem = units.FirstOrDefault(x => string.Equals(x.Code, value.EnteredUnitCode ?? field.DefaultUnitCode, StringComparison.OrdinalIgnoreCase));
+        Grid.SetColumn(combo, 1);
+        panel.Children.Add(number);
+        panel.Children.Add(combo);
+        return new FieldEditor(panel, () =>
+        {
+            value.DecimalValue = decimal.TryParse(number.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out var v) ? v : null;
+            value.EnteredUnitCode = (combo.SelectedItem as UnitDefinition)?.Code;
+            if (value.DecimalValue.HasValue && combo.SelectedItem is UnitDefinition source && dimension is not null)
+            {
+                var baseUnit = units.FirstOrDefault(x => string.Equals(x.Code, dimension.BaseUnitCode, StringComparison.OrdinalIgnoreCase));
+                if (baseUnit is not null)
+                {
+                    value.NormalizedValue = new UnitConversionService().Convert(value.DecimalValue.Value, source, baseUnit);
+                    value.NormalizedUnitCode = baseUnit.Code;
+                }
+            }
+        });
+    }
+
+    private static TextBox CreateTextBox(string? value, bool editable) => new()
+    {
+        Text = value ?? string.Empty,
+        IsReadOnly = !editable,
+        MinHeight = 30,
+        VerticalContentAlignment = VerticalAlignment.Center
+    };
+
+    private static ComboBox ChoiceCombo(List<Choice> items, Guid? selectedId, bool editable)
+    {
+        var combo = new ComboBox { ItemsSource = items, DisplayMemberPath = nameof(Choice.DisplayText), IsEnabled = editable, MinHeight = 30 };
+        combo.SelectedItem = items.FirstOrDefault(x => x.Id == selectedId);
+        return combo;
+    }
+
+    private void SaveEditors()
+    {
+        foreach (var editor in _editors.Values) editor.Save();
+    }
+
+    private void BtnPrimary_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (Equals(BtnPrimary.Tag, "SAVE") && _instance is not null)
+            {
+                SaveEditors();
+                var isCreate = string.IsNullOrWhiteSpace(_instance.ChecklistNumber);
+                _service.SaveDraft(_instance, _displayName);
+                _audit(isCreate ? "AUDIT_CREATE" : "AUDIT", $"Checklist={_instance.ChecklistNumber}; Definition={_instance.DefinitionCode}; Subject={_instance.SubjectReference}; Status={_instance.Status}");
+                MessageBox.Show($"Checklist {_instance.ChecklistNumber} byl uložen.", "DMS", MessageBoxButton.OK, MessageBoxImage.Information);
+                _executeTransaction($"CHL03 {_instance.ChecklistNumber}");
+                return;
+            }
+
+            if (Equals(BtnPrimary.Tag, "REVIEW") && _instance is not null)
+            {
+                _instance.Status = ChecklistStatus.Checked;
+                _service.SaveDraft(_instance, _displayName);
+                _audit("CHECKLIST_CHECK", $"Checklist={_instance.ChecklistNumber}; Result=Checked");
+                _executeTransaction($"CHL03 {_instance.ChecklistNumber}");
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "DMS", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void BtnSecondary_Click(object sender, RoutedEventArgs e)
+    {
+        if (!Equals(BtnSecondary.Tag, "RETURN") || _instance is null) return;
+        _instance.Status = ChecklistStatus.ReturnedForCorrection;
+        _service.SaveDraft(_instance, _displayName);
+        _audit("CHECKLIST_RETURN", $"Checklist={_instance.ChecklistNumber}; Result=ReturnedForCorrection");
+        _executeTransaction($"CHL03 {_instance.ChecklistNumber}");
+    }
+
+    private void GridItems_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (GridItems.SelectedItem is GridRow row && !string.IsNullOrWhiteSpace(row.Command))
+            _executeTransaction(row.Command);
+    }
+
+    private void TxtFilter_TextChanged(object sender, TextChangedEventArgs e) => ApplyGridFilter();
+    private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
+    {
+        await LoadCurrentModeAsync();
+    }
+
+    private void ApplyGridFilter()
+    {
+        var filter = TxtFilter.Text.Trim();
+        GridItems.ItemsSource = string.IsNullOrWhiteSpace(filter)
+            ? _allRows
+            : _allRows.Where(x => x.SearchText.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private void ShowMessage(string title, string message)
+    {
+        TxtTitle.Text = title;
+        TxtSubtitle.Text = message;
+        GridItems.Visibility = Visibility.Collapsed;
+        FormScroll.Visibility = Visibility.Visible;
+        FormPanel.Children.Clear();
+        FormPanel.Children.Add(CreateInfoCard(title, message));
+    }
+
+    private static Border CreateSectionHeader(string title)
+    {
+        var border = new Border { Margin = new Thickness(0, 14, 0, 8), Padding = new Thickness(0, 0, 0, 6), BorderThickness = new Thickness(0, 0, 0, 1) };
+        border.SetResourceReference(Border.BorderBrushProperty, "DmsBorderBrush");
+        var text = new TextBlock { Text = title, FontSize = 19, FontWeight = FontWeights.Bold };
+        text.SetResourceReference(TextBlock.ForegroundProperty, "DmsForegroundBrush");
+        border.Child = text;
+        return border;
+    }
+
+    private static Border CreateInfoCard(string label, string value)
+    {
+        var border = new Border { Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(12), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(6) };
+        border.SetResourceReference(Border.BackgroundProperty, "DmsPanelBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "DmsBorderBrush");
+        var panel = new StackPanel();
+        panel.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.SemiBold });
+        panel.Children.Add(new TextBlock { Text = value, Margin = new Thickness(0, 3, 0, 0), TextWrapping = TextWrapping.Wrap });
+        border.Child = panel;
+        return border;
+    }
+
+    private string Tr(string key, string fallback)
+    {
+        var value = _translate(key);
+
+        if (string.IsNullOrWhiteSpace(value)
+            || string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase)
+            || (value.StartsWith("[[", StringComparison.Ordinal) && value.EndsWith("]]", StringComparison.Ordinal)))
+        {
+            return fallback;
+        }
+
+        return value;
+    }
+
+    private void SetBusy(bool isBusy, string? message = null)
+    {
+        BusyPanel.Visibility = isBusy ? Visibility.Visible : Visibility.Collapsed;
+        BtnRefresh.IsEnabled = !isBusy;
+        TxtFilter.IsEnabled = !isBusy;
+
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            TxtBusy.Text = message;
+        }
+    }
+
+    private enum ViewMode { Grid, Definitions, DefinitionDetail, EditForm, ReadForm }
+    private sealed record FieldEditor(FrameworkElement Element, Action Save);
+    private sealed record Choice(Guid Id, string DisplayText);
+    private sealed class GridRow
+    {
+        public string Primary { get; init; } = string.Empty;
+        public string Secondary { get; init; } = string.Empty;
+        public string Tertiary { get; init; } = string.Empty;
+        public string Modified { get; init; } = string.Empty;
+        public string Command { get; init; } = string.Empty;
+        public string SearchText => $"{Primary} {Secondary} {Tertiary} {Modified}";
+    }
+}

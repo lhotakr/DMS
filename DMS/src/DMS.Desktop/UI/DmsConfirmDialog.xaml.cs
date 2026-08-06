@@ -11,23 +11,41 @@ public enum DmsDialogButtons
 
 public partial class DmsConfirmDialog : Window
 {
+    private readonly DmsDialogButtons _buttons;
+
     public DmsConfirmDialog(
         string title,
         string message,
-        DmsDialogButtons buttons = DmsDialogButtons.YesNoCancel)
+        DmsDialogButtons buttons = DmsDialogButtons.YesNoCancel,
+        string okText = "OK",
+        string yesText = "Ano",
+        string noText = "Ne",
+        string cancelText = "Zrušit")
     {
         InitializeComponent();
+
+        _buttons = buttons;
 
         TxtTitle.Text = title;
         TxtMessage.Text = message;
 
-        ConfigureButtons(buttons);
+        ConfigureButtons(
+            buttons,
+            okText,
+            yesText,
+            noText,
+            cancelText);
     }
 
     public MessageBoxResult Result { get; private set; }
         = MessageBoxResult.Cancel;
 
-    private void ConfigureButtons(DmsDialogButtons buttons)
+    private void ConfigureButtons(
+        DmsDialogButtons buttons,
+        string okText,
+        string yesText,
+        string noText,
+        string cancelText)
     {
         BtnYes.Visibility = Visibility.Visible;
         BtnNo.Visibility = Visibility.Visible;
@@ -36,23 +54,23 @@ public partial class DmsConfirmDialog : Window
         switch (buttons)
         {
             case DmsDialogButtons.Ok:
-                BtnYes.Content = "OK";
+                BtnYes.Content = okText;
                 BtnNo.Visibility = Visibility.Collapsed;
                 BtnCancel.Visibility = Visibility.Collapsed;
                 Result = MessageBoxResult.OK;
                 break;
 
             case DmsDialogButtons.YesNo:
-                BtnYes.Content = "Ano";
-                BtnNo.Content = "Ne";
+                BtnYes.Content = yesText;
+                BtnNo.Content = noText;
                 BtnCancel.Visibility = Visibility.Collapsed;
                 Result = MessageBoxResult.No;
                 break;
 
             case DmsDialogButtons.YesNoCancel:
-                BtnYes.Content = "Ano";
-                BtnNo.Content = "Ne";
-                BtnCancel.Content = "Zrušit";
+                BtnYes.Content = yesText;
+                BtnNo.Content = noText;
+                BtnCancel.Content = cancelText;
                 Result = MessageBoxResult.Cancel;
                 break;
         }
@@ -60,7 +78,7 @@ public partial class DmsConfirmDialog : Window
 
     private void BtnYes_Click(object sender, RoutedEventArgs e)
     {
-        Result = BtnYes.Content?.ToString() == "OK"
+        Result = _buttons == DmsDialogButtons.Ok
             ? MessageBoxResult.OK
             : MessageBoxResult.Yes;
 
@@ -103,6 +121,35 @@ public partial class DmsConfirmDialog : Window
         return dialog.Result;
     }
 
+    public static MessageBoxResult Show(
+        Window? owner,
+        string title,
+        string message,
+        DmsDialogButtons buttons,
+        string okText,
+        string yesText,
+        string noText,
+        string cancelText)
+    {
+        var dialog = new DmsConfirmDialog(
+            title,
+            message,
+            buttons,
+            okText,
+            yesText,
+            noText,
+            cancelText);
+
+        if (owner is not null)
+        {
+            dialog.Owner = owner;
+        }
+
+        dialog.ShowDialog();
+
+        return dialog.Result;
+    }
+
     // Zpětná kompatibilita pro starší volání.
     public static MessageBoxResult Show(
         Window? owner,
@@ -120,6 +167,26 @@ public partial class DmsConfirmDialog : Window
     }
 
     public static void ShowInfo(
+        Window? owner,
+        string title,
+        string message)
+    {
+        Show(
+            owner,
+            title,
+            message,
+            DmsDialogButtons.Ok);
+    }
+
+    public static void Info(
+        Window? owner,
+        string title,
+        string message)
+    {
+        ShowInfo(owner, title, message);
+    }
+
+    public static void Warning(
         Window? owner,
         string title,
         string message)

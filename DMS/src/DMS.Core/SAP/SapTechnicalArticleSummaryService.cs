@@ -251,7 +251,7 @@ public sealed class SapTechnicalArticleSummaryService
                 ? FormatDecimal(item.ScrapPercent)
                 : string.Empty,
             Unit = item.Unit,
-            IsFixedQuantity = item.IsFixedQuantity ? "Ano" : "",
+            IsFixedQuantity = item.IsFixedQuantity,
             HasWarning = item.Quantity is null
         };
     }
@@ -634,18 +634,17 @@ public sealed class SapTechnicalArticleSummaryService
     }
 
     private static void AddFindingsToSummary(
-    SapTechnicalArticleSummary summary,
-    IReadOnlyList<SapValidationFinding> findings)
+        SapTechnicalArticleSummary summary,
+        IReadOnlyList<SapValidationFinding> findings)
     {
         foreach (var finding in findings)
         {
             if (string.Equals(finding.Severity, "Error", StringComparison.OrdinalIgnoreCase))
             {
-                summary.CriticalErrors.Add(finding.Message);
+                summary.CriticalErrors.Add(finding);
                 continue;
             }
-
-            summary.Warnings.Add(finding.Message);
+            summary.Warnings.Add(finding);
         }
     }
 

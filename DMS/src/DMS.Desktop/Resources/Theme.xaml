@@ -191,128 +191,516 @@
          BUTTON
          ========================================================= -->
 
-    <Style TargetType="{x:Type Button}">
-        <Setter Property="Background"
-                Value="{DynamicResource DmsPanelBrush}"/>
+    <!--
+        DMS BUTTON STANDARD
+        ================
+        DmsButtonBaseStyle      = běžné tlačítko na tmavém/světlém panelu
+        DmsAccentButtonStyle    = hlavní akce, používá DmsAccentBrush + DmsOnAccentBrush
+        DmsPrimaryButtonStyle   = alias kvůli existujícím obrazovkám
+        DmsToolbarButtonStyle   = malé tlačítko v transakční liště, NE akcentní
+        DmsToolbarAccentButtonStyle = malé akcentní tlačítko v toolbaru, např. menu
+        DmsFlatIconButtonStyle  = ploché tlačítko v levém menu
+        DmsFavoriteStarButtonStyle = žlutá hvězdička
 
-        <Setter Property="Foreground"
-                Value="{DynamicResource DmsForegroundBrush}"/>
+        Důležité:
+        TextElement.Foreground je nastavený na Border i ContentPresenter,
+        aby text uvnitř Buttonu opravdu přebíral Foreground stylu.
+    -->
 
-        <Setter Property="BorderBrush"
-                Value="{DynamicResource DmsBorderBrush}"/>
-
-        <Setter Property="Padding"
-                Value="8,4"/>
-    </Style>
-
-    <Style x:Key="DmsPrimaryButtonStyle"
-           TargetType="{x:Type Button}"
-           BasedOn="{StaticResource {x:Type Button}}">
-
-        <Setter Property="Background"
-                Value="{DynamicResource DmsAccentBrush}"/>
-
-        <Setter Property="Foreground"
-                Value="{DynamicResource DmsOnAccentBrush}"/>
-
-        <Setter Property="BorderBrush"
-                Value="{DynamicResource DmsAccentBrush}"/>
-
-        <Setter Property="Padding"
-                Value="14,7"/>
-    </Style>
-
-    <Style x:Key="DmsFormButtonStyle"
-           TargetType="{x:Type Button}"
-           BasedOn="{StaticResource {x:Type Button}}">
-
-        <Setter Property="Padding"
-                Value="12,6"/>
-
-        <Setter Property="Background"
-                Value="{DynamicResource DmsPanelBrush}"/>
-
-        <Setter Property="Foreground"
-                Value="{DynamicResource DmsForegroundBrush}"/>
-
-        <Setter Property="BorderBrush"
-                Value="{DynamicResource DmsBorderBrush}"/>
-    </Style>
-
-    <Style x:Key="DmsToolbarButtonStyle"
+    <Style x:Key="DmsButtonBaseStyle"
            TargetType="{x:Type Button}">
 
-        <Setter Property="Height"
-                Value="32"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="MinWidth" Value="90"/>
+        <Setter Property="Padding" Value="12,4"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
 
-        <Setter Property="MinWidth"
-                Value="38"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="ButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True"
+                            TextElement.Foreground="{TemplateBinding Foreground}">
 
-        <Setter Property="Margin"
-                Value="4,0,0,0"/>
+                        <ContentPresenter x:Name="ButtonContent"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          ContentStringFormat="{TemplateBinding ContentStringFormat}"
+                                          RecognizesAccessKey="True"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
 
-        <Setter Property="Padding"
-                Value="10,4"/>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ButtonBorder"
+                                    Property="Background"
+                                    Value="{DynamicResource DmsBackgroundBrush}"/>
+                            <Setter TargetName="ButtonBorder"
+                                    Property="BorderBrush"
+                                    Value="{DynamicResource DmsAccentBrush}"/>
+                        </Trigger>
 
-        <Setter Property="FontWeight"
-                Value="SemiBold"/>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="ButtonBorder"
+                                    Property="Opacity"
+                                    Value="0.82"/>
+                        </Trigger>
 
-        <Setter Property="Background"
-                Value="{DynamicResource DmsBackgroundBrush}"/>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="ButtonBorder"
+                                    Property="BorderBrush"
+                                    Value="{DynamicResource DmsAccentBrush}"/>
+                        </Trigger>
 
-        <Setter Property="Foreground"
-                Value="{DynamicResource DmsForegroundBrush}"/>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ButtonBorder"
+                                    Property="Background"
+                                    Value="{DynamicResource DmsBackgroundBrush}"/>
+                            <Setter TargetName="ButtonBorder"
+                                    Property="BorderBrush"
+                                    Value="{DynamicResource DmsBorderBrush}"/>
+                            <Setter Property="Foreground"
+                                    Value="{DynamicResource DmsMutedForegroundBrush}"/>
+                            <Setter TargetName="ButtonContent"
+                                    Property="TextElement.Foreground"
+                                    Value="{DynamicResource DmsMutedForegroundBrush}"/>
+                            <Setter Property="Opacity"
+                                    Value="0.45"/>
+                            <Setter Property="Cursor"
+                                    Value="Arrow"/>
+                        </Trigger>
 
-        <Setter Property="BorderBrush"
-                Value="{DynamicResource DmsBorderBrush}"/>
-
-        <Setter Property="BorderThickness"
-                Value="1"/>
-
-        <Setter Property="Cursor"
-                Value="Hand"/>
-
-        <Style.Triggers>
-
-            <Trigger Property="IsMouseOver"
-                     Value="True">
-
-                <Setter Property="Background"
-                        Value="{DynamicResource DmsAccentBrush}"/>
-
-                <Setter Property="Foreground"
-                        Value="{DynamicResource DmsOnAccentBrush}"/>
-            </Trigger>
-
-            <Trigger Property="IsPressed"
-                     Value="True">
-
-                <Setter Property="Opacity"
-                        Value="0.85"/>
-            </Trigger>
-
-            <Trigger Property="IsEnabled"
-                     Value="False">
-
-                <Setter Property="Background"
-                        Value="{DynamicResource DmsPanelBrush}"/>
-
-                <Setter Property="Foreground"
-                        Value="{DynamicResource DmsMutedForegroundBrush}"/>
-
-                <Setter Property="BorderBrush"
-                        Value="{DynamicResource DmsBorderBrush}"/>
-
-                <Setter Property="Opacity"
-                        Value="0.45"/>
-
-                <Setter Property="Cursor"
-                        Value="Arrow"/>
-            </Trigger>
-
-        </Style.Triggers>
+                    </ControlTemplate.Triggers>                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
+    <!-- Implicitní styl pro běžná tlačítka -->
+    <Style TargetType="{x:Type Button}"
+           BasedOn="{StaticResource DmsButtonBaseStyle}"/>
+
+    <!-- ComboBox -->
+    <Style x:Key="DmsEditableComboBoxStyle" TargetType="{x:Type ComboBox}">
+        <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="4,0,4,0"/>
+
+        <Style.Resources>
+            <Style TargetType="{x:Type TextBox}">
+                <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+                <Setter Property="CaretBrush" Value="{DynamicResource DmsForegroundBrush}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+            </Style>
+
+            <Style TargetType="{x:Type ComboBoxItem}">
+                <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+            </Style>
+        </Style.Resources>
+    </Style>
+    <Style x:Key="DmsTransactionComboBoxStyle"
+       TargetType="{x:Type ComboBox}">
+
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="MinWidth" Value="320"/>
+        <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="8,0"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+
+        <Setter Property="ItemContainerStyle">
+            <Setter.Value>
+                <Style TargetType="{x:Type ComboBoxItem}">
+                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+                    <Setter Property="Padding" Value="8,4"/>
+                    <Setter Property="MinHeight" Value="22"/>
+
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                                <Border x:Name="ItemBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="{TemplateBinding Padding}">
+
+                                    <ContentPresenter VerticalAlignment="Center"
+                                                  HorizontalAlignment="Stretch"
+                                                  TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                </Border>
+
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsHighlighted" Value="True">
+                                        <Setter TargetName="ItemBorder"
+                                            Property="Background"
+                                            Value="{DynamicResource DmsAccentBrush}"/>
+                                        <Setter Property="Foreground"
+                                            Value="{DynamicResource DmsOnAccentBrush}"/>
+                                    </Trigger>
+
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="ItemBorder"
+                                            Property="Background"
+                                            Value="{DynamicResource DmsAccentBrush}"/>
+                                        <Setter Property="Foreground"
+                                            Value="{DynamicResource DmsOnAccentBrush}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Setter.Value>
+        </Setter>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ComboBox}">
+                    <Grid>
+                        <Border x:Name="OuterBorder"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="2"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="30"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox x:Name="PART_EditableTextBox"
+                                 Grid.Column="0"
+                                 Margin="8,0,4,0"
+                                 VerticalContentAlignment="Center"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource DmsForegroundBrush}"
+                                 CaretBrush="{DynamicResource DmsForegroundBrush}"
+                                 BorderThickness="0"
+                                 Padding="0"
+                                 FontWeight="SemiBold"
+                                 Visibility="Hidden"
+                                 IsReadOnly="{TemplateBinding IsReadOnly}"/>
+
+                            <ContentPresenter x:Name="ContentSite"
+                                          Grid.Column="0"
+                                          Margin="8,0,4,0"
+                                          VerticalAlignment="Center"
+                                          HorizontalAlignment="Left"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                          TextElement.Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                            <ToggleButton x:Name="DropDownToggle"
+                                      Grid.Column="1"
+                                      Focusable="False"
+                                      IsChecked="{Binding IsDropDownOpen,
+                                                          Mode=TwoWay,
+                                                          RelativeSource={RelativeSource TemplatedParent}}"
+                                      ClickMode="Press"
+                                      Background="Transparent"
+                                      BorderThickness="0">
+
+                                <Path Width="8"
+                                  Height="5"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Fill="{DynamicResource DmsForegroundBrush}"
+                                  Data="M 0 0 L 4 5 L 8 0 Z"/>
+                            </ToggleButton>
+                        </Grid>
+
+                        <Popup x:Name="Popup"
+                           Placement="Bottom"
+                           IsOpen="{TemplateBinding IsDropDownOpen}"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           PopupAnimation="Slide">
+
+                            <Grid MinWidth="{Binding ActualWidth,
+                                                 RelativeSource={RelativeSource TemplatedParent}}"
+                              MaxHeight="360">
+
+                                <Border Background="{DynamicResource DmsPanelBrush}"
+                                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                                    BorderThickness="1"/>
+
+                                <ScrollViewer Margin="0"
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+
+                                    <ItemsPresenter/>
+                                </ScrollViewer>
+                            </Grid>
+                        </Popup>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEditable" Value="True">
+                            <Setter TargetName="PART_EditableTextBox"
+                                Property="Visibility"
+                                Value="Visible"/>
+                            <Setter TargetName="ContentSite"
+                                Property="Visibility"
+                                Value="Hidden"/>
+                        </Trigger>
+
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="OuterBorder"
+                                Property="BorderBrush"
+                                Value="{DynamicResource DmsAccentBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="OuterBorder"
+                                Property="BorderBrush"
+                                Value="{DynamicResource DmsAccentBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.55"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Akcentní / hlavní tlačítko: v HG režimu žluté tlačítko + černý text -->
+    <Style x:Key="DmsAccentButtonStyle"
+       TargetType="{x:Type Button}">
+
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="MinWidth" Value="90"/>
+        <Setter Property="Padding" Value="12,4"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DmsAccentBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Cursor" Value="Hand"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="ButtonBorder"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="3"
+                        Padding="{TemplateBinding Padding}">
+
+                        <TextBlock x:Name="ButtonContent"
+                               Text="{TemplateBinding Content}"
+                               Foreground="{DynamicResource DmsOnAccentBrush}"
+                               FontWeight="{TemplateBinding FontWeight}"
+                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                               TextAlignment="Center"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ButtonBorder"
+                                Property="Opacity"
+                                Value="0.92"/>
+                        </Trigger>
+
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="ButtonBorder"
+                                Property="Opacity"
+                                Value="0.82"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ButtonBorder"
+                                Property="Background"
+                                Value="{DynamicResource DmsBackgroundBrush}"/>
+                            <Setter TargetName="ButtonBorder"
+                                Property="BorderBrush"
+                                Value="{DynamicResource DmsBorderBrush}"/>
+                            <Setter TargetName="ButtonContent"
+                                Property="Foreground"
+                                Value="{DynamicResource DmsMutedForegroundBrush}"/>
+                            <Setter Property="Opacity"
+                                Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Starší název ponechaný kvůli existujícím obrazovkám -->
+    <Style x:Key="DmsPrimaryButtonStyle"
+           TargetType="{x:Type Button}"
+           BasedOn="{StaticResource DmsAccentButtonStyle}">
+        <Setter Property="Padding" Value="14,7"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!-- Formulářové tlačítko -->
+    <Style x:Key="DmsFormButtonStyle"
+           TargetType="{x:Type Button}"
+           BasedOn="{StaticResource DmsButtonBaseStyle}">
+        <Setter Property="MinWidth" Value="90"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+    </Style>
+
+    <!-- Běžné malé tlačítko v horní transakční liště: tmavé/neutrální -->
+    <Style x:Key="DmsToolbarButtonStyle"
+       TargetType="{x:Type Button}"
+       BasedOn="{StaticResource DmsButtonBaseStyle}">
+
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="MinWidth" Value="38"/>
+        <Setter Property="Width" Value="38"/>
+        <Setter Property="Margin" Value="4,0,0,0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+    </Style>
+
+    <Style x:Key="DmsFavoriteToolbarButtonStyle"
+       TargetType="{x:Type Button}"
+       BasedOn="{StaticResource DmsToolbarButtonStyle}">
+
+        <Setter Property="Foreground"
+            Value="{DynamicResource DmsAccentBrush}"/>
+
+        <Setter Property="Background"
+            Value="{DynamicResource DmsPanelBrush}"/>
+
+        <Setter Property="BorderBrush"
+            Value="{DynamicResource DmsBorderBrush}"/>
+    </Style>
+
+    <!-- Akcentní malé tlačítko v toolbaru, např. menu -->
+    <Style x:Key="DmsToolbarAccentButtonStyle"
+       TargetType="{x:Type Button}"
+       BasedOn="{StaticResource DmsToolbarButtonStyle}">
+
+        <Setter Property="Background"
+            Value="{DynamicResource DmsAccentBrush}"/>
+
+        <Setter Property="Foreground"
+            Value="{DynamicResource DmsOnAccentBrush}"/>
+
+        <Setter Property="TextElement.Foreground"
+            Value="{DynamicResource DmsOnAccentBrush}"/>
+
+        <Setter Property="BorderBrush"
+            Value="{DynamicResource DmsAccentBrush}"/>
+
+        <Setter Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}"
+                           Foreground="{DynamicResource DmsOnAccentBrush}"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Plochá tlačítka v levém menu -->
+    <Style x:Key="DmsFlatIconButtonStyle"
+           TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="ButtonBorder"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}"
+                            TextElement.Foreground="{TemplateBinding Foreground}">
+
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          RecognizesAccessKey="True"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter Property="Opacity" Value="0.75"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource DmsMutedForegroundBrush}"/>
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Žlutá hvězdička oblíbených položek -->
+    <Style x:Key="DmsFavoriteStarButtonStyle"
+           TargetType="{x:Type Button}"
+           BasedOn="{StaticResource DmsFlatIconButtonStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
+
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
+                <Setter Property="Opacity" Value="0.85"/>
+            </Trigger>
+
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Opacity" Value="0.70"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
 
     <!-- =========================================================
          COMBOBOX ITEM
@@ -791,15 +1179,23 @@
 
         <Style.Triggers>
 
-            <Trigger Property="IsSelected"
-                     Value="True">
-
+            <Trigger Property="IsSelected" Value="True">
                 <Setter Property="Background"
-                        Value="Transparent"/>
-
+                        Value="{DynamicResource DmsAccentBrush}"/>
                 <Setter Property="Foreground"
                         Value="{DynamicResource DmsOnAccentBrush}"/>
             </Trigger>
+
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsSelected" Value="True"/>
+                    <Condition Property="IsKeyboardFocusWithin" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background"
+                        Value="{DynamicResource DmsAccentBrush}"/>
+                <Setter Property="Foreground"
+                        Value="{DynamicResource DmsOnAccentBrush}"/>
+            </MultiTrigger>
 
         </Style.Triggers>
     </Style>
@@ -943,87 +1339,6 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
-    <!-- ============================================================
-     EDITOVATELNÉ DATAGRIDY - DMS
-     Použití např. QASET, SAPSET a další číselníkové editory
-     ============================================================ -->
-
-    <Style x:Key="DmsEditableGridStyle"
-       TargetType="{x:Type DataGrid}"
-       BasedOn="{StaticResource {x:Type DataGrid}}">
-        <Setter Property="IsReadOnly" Value="False"/>
-        <Setter Property="CanUserAddRows" Value="False"/>
-        <Setter Property="CanUserDeleteRows" Value="False"/>
-        <Setter Property="SelectionMode" Value="Extended"/>
-        <Setter Property="SelectionUnit" Value="FullRow"/>
-        <Setter Property="GridLinesVisibility" Value="Horizontal"/>
-        <Setter Property="HeadersVisibility" Value="Column"/>
-    </Style>
-
-    <Style x:Key="DmsEditableGridRowStyle"
-       TargetType="{x:Type DataGridRow}"
-       BasedOn="{StaticResource {x:Type DataGridRow}}">
-
-        <Style.Triggers>
-
-            <!-- Nový záznam -->
-            <DataTrigger Binding="{Binding State}"
-                     Value="Added">
-                <Setter Property="Background" Value="#263A28"/>
-                <Setter Property="ToolTip" Value="Nový záznam"/>
-            </DataTrigger>
-
-            <!-- Změněný záznam -->
-            <DataTrigger Binding="{Binding State}"
-                     Value="Modified">
-                <Setter Property="Background" Value="#4A3820"/>
-                <Setter Property="ToolTip" Value="Změněný záznam"/>
-            </DataTrigger>
-
-            <!-- Záznam označený ke smazání -->
-            <DataTrigger Binding="{Binding State}"
-                     Value="Deleted">
-                <Setter Property="Background" Value="#4A2020"/>
-                <Setter Property="Opacity" Value="0.65"/>
-                <Setter Property="ToolTip" Value="Záznam označený ke smazání"/>
-            </DataTrigger>
-
-        </Style.Triggers>
-    </Style>
-
-    <!-- ============================================================
-     DMS SELECTOR / LOOKUP FIELD
-     Použití: QA02, QASET, SAPSET, další editory
-     ============================================================ -->
-
-    <Style x:Key="DmsSelectorButtonStyle"
-       TargetType="{x:Type Button}"
-       BasedOn="{StaticResource DmsFormButtonStyle}">
-        <Setter Property="Width" Value="42"/>
-        <Setter Property="Margin" Value="4,4,0,4"/>
-        <Setter Property="Padding" Value="0"/>
-        <Setter Property="Content" Value="▼"/>
-    </Style>
-
-    <Style x:Key="DmsSelectorPopupBorderStyle"
-       TargetType="{x:Type Border}">
-        <Setter Property="Width" Value="420"/>
-        <Setter Property="MaxHeight" Value="320"/>
-        <Setter Property="Padding" Value="4"/>
-        <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="CornerRadius" Value="4"/>
-    </Style>
-
-    <Style x:Key="DmsSelectorListBoxStyle"
-       TargetType="{x:Type ListBox}">
-        <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
-        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="MinWidth" Value="400"/>
-    </Style>
 
     <!-- ========================================================= -->
     <!-- DMS DataGrid styles                                      -->
@@ -1105,6 +1420,206 @@
         <Setter Property="ColumnHeaderStyle" Value="{StaticResource DmsDataGridColumnHeaderStyle}"/>
         <Setter Property="CellStyle" Value="{StaticResource DmsDataGridCellStyle}"/>
         <Setter Property="RowStyle" Value="{StaticResource DmsDataGridRowStyle}"/>
+    </Style>
+
+
+    <!-- ============================================================
+     EDITOVATELNÉ DATAGRIDY - DMS
+     Použití např. QASET, SAPSET a další číselníkové editory
+     ============================================================ -->
+
+    <Style x:Key="DmsEditableGridStyle"
+       TargetType="{x:Type DataGrid}"
+       BasedOn="{StaticResource {x:Type DataGrid}}">
+        <Setter Property="IsReadOnly" Value="False"/>
+        <Setter Property="CanUserAddRows" Value="False"/>
+        <Setter Property="CanUserDeleteRows" Value="False"/>
+        <Setter Property="SelectionMode" Value="Extended"/>
+        <Setter Property="SelectionUnit" Value="FullRow"/>
+        <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+        <Setter Property="HeadersVisibility" Value="Column"/>
+    </Style>
+
+    <Style x:Key="DmsEditableGridRowStyle"
+       TargetType="{x:Type DataGridRow}"
+       BasedOn="{StaticResource DmsDataGridRowStyle}">
+
+        <Style.Triggers>
+
+            <!-- Nový záznam -->
+            <DataTrigger Binding="{Binding State}"
+                     Value="Added">
+                <Setter Property="Background" Value="#263A28"/>
+                <Setter Property="ToolTip" Value="Nový záznam"/>
+            </DataTrigger>
+
+            <!-- Změněný záznam -->
+            <DataTrigger Binding="{Binding State}"
+                     Value="Modified">
+                <Setter Property="Background" Value="#4A3820"/>
+                <Setter Property="ToolTip" Value="Změněný záznam"/>
+            </DataTrigger>
+
+            <!-- Záznam označený ke smazání -->
+            <DataTrigger Binding="{Binding State}"
+                     Value="Deleted">
+                <Setter Property="Background" Value="#4A2020"/>
+                <Setter Property="Opacity" Value="0.65"/>
+                <Setter Property="ToolTip" Value="Záznam označený ke smazání"/>
+            </DataTrigger>
+
+        </Style.Triggers>
+    </Style>
+
+    <!-- ============================================================
+     DMS SELECTOR / LOOKUP FIELD
+     Použití: QA02, QASET, SAPSET, další editory
+     ============================================================ -->
+
+    <Style x:Key="DmsSelectorButtonStyle"
+       TargetType="{x:Type Button}"
+       BasedOn="{StaticResource DmsFormButtonStyle}">
+        <Setter Property="Width" Value="42"/>
+        <Setter Property="Margin" Value="4,4,0,4"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Content" Value="▼"/>
+    </Style>
+
+    <Style x:Key="DmsSelectorPopupBorderStyle"
+       TargetType="{x:Type Border}">
+        <Setter Property="Width" Value="420"/>
+        <Setter Property="MaxHeight" Value="320"/>
+        <Setter Property="Padding" Value="4"/>
+        <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+
+    <Style x:Key="DmsSelectorListBoxStyle"
+       TargetType="{x:Type ListBox}">
+        <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="MinWidth" Value="400"/>
+    </Style>
+
+    <Style x:Key="DmsSettingsComboBoxItemStyle"
+       TargetType="{x:Type ComboBoxItem}">
+        <Setter Property="MinHeight" Value="32"/>
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                    <Border x:Name="Bd"
+                        Background="{TemplateBinding Background}"
+                        Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="DmsSettingsComboBoxStyle"
+       TargetType="{x:Type ComboBox}">
+        <Setter Property="Height" Value="36"/>
+        <Setter Property="MinHeight" Value="36"/>
+        <Setter Property="Padding" Value="10,0,34,0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="ItemContainerStyle" Value="{StaticResource DmsSettingsComboBoxItemStyle}"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ComboBox}">
+                    <Grid>
+                        <ToggleButton x:Name="ToggleButton"
+                                  Focusable="False"
+                                  IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                  ClickMode="Press"
+                                  Background="Transparent"
+                                  BorderThickness="0"/>
+
+                        <Border x:Name="MainBorder"
+                            Height="{TemplateBinding Height}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3"
+                            IsHitTestVisible="False"/>
+
+                        <ContentPresenter x:Name="ContentSite"
+                                      Content="{TemplateBinding SelectionBoxItem}"
+                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                      ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                      Margin="10,0,34,0"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Left"
+                                      IsHitTestVisible="False"
+                                      RecognizesAccessKey="True"/>
+
+                        <TextBlock Text="▼"
+                               Width="28"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"
+                               TextAlignment="Center"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                               IsHitTestVisible="False"/>
+
+                        <Popup x:Name="PART_Popup"
+                           Placement="Bottom"
+                           IsOpen="{TemplateBinding IsDropDownOpen}"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           PopupAnimation="Slide">
+                            <Border Background="{DynamicResource DmsPanelBrush}"
+                                BorderBrush="{DynamicResource DmsBorderBrush}"
+                                BorderThickness="1"
+                                MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ScrollViewer MaxHeight="260"
+                                          VerticalScrollBarVisibility="Auto">
+                                    <ItemsPresenter/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="MainBorder" Property="BorderBrush" Value="{DynamicResource DmsAccentBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="MainBorder" Property="BorderBrush" Value="{DynamicResource DmsAccentBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
 </ResourceDictionary>

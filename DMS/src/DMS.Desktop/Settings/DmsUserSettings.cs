@@ -47,4 +47,15 @@ public sealed class DmsUserSettings
     public string BorderColor { get; set; } = "#D0D7DE";
     public string AccentColor { get; set; } = "#0B2A4A";
     public string OnAccentColor { get; set; } = "#FFFFFF";
+
+    /// <summary>
+    /// Auto = jazyk podle systému, Manual = uživatelem zvolený jazyk.
+    /// </summary>
+    public string LanguageMode { get; set; } = "Auto";
+
+    /// <summary>
+    /// Uživatelem zvolená kultura, například cs-CZ, de-DE nebo en-US.
+    /// Používá se pouze při LanguageMode = Manual.
+    /// </summary>
+    public string CultureName { get; set; } = "";
 }

@@ -13,11 +13,13 @@
 
         <TextBlock Grid.Row="0"
                    Text="SAPSET - SAP nastavení"
+                   x:Name="TxtTitle"
                    Style="{StaticResource DmsTitleTextStyle}"
                    Margin="0,0,0,8"/>
 
         <TextBlock Grid.Row="1"
                    Text="Customizace SAP-DMS pravidel, číselníků a validační logiky. SAP00 zůstává pouze pro importy a stav cache."
+                   x:Name="TxtSubtitle"
                    TextWrapping="Wrap"
                    Margin="0,0,0,14"
                    Foreground="{DynamicResource DmsMutedForegroundBrush}"/>

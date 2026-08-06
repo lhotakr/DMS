@@ -8,7 +8,20 @@ public partial class MainWindow
     {
         WorkspacePanel.Children.Clear();
 
-        WorkspacePanel.Children.Add(new QualityCockpitView());
+        var dmsRootPath = GetDmsDataRootPath();
+
+        _logger.AdminAction(
+            "QA00",
+            "OpenQualityCockpit",
+            _currentUser.DisplayName,
+            $"Root={dmsRootPath}");
+
+        WorkspacePanel.Children.Add(new QualityCockpitView(
+            dmsRootPath,
+            _logger,
+            _currentUser.DisplayName,
+            translate: key => T(key),
+            translateFormat: (key, args) => T(key, args)));
 
         ResetWorkspaceScroll();
     }

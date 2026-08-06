@@ -1,0 +1,361 @@
+<UserControl x:Class="DMS.Desktop.Views.Mes.MesDataPointMonitorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinWidth="920"
+             MinHeight="680">
+    <UserControl.Resources>
+        <Style x:Key="MesDpmGridRowStyle"
+               TargetType="DataGridRow">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource DmsForegroundBrush}" />
+            <Setter Property="Background"
+                    Value="Transparent" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource DmsBorderBrush}" />
+            <Setter Property="BorderThickness"
+                    Value="0,0,0,1" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected"
+                         Value="True">
+                    <Setter Property="Background"
+                            Value="{DynamicResource DmsAccentBrush}" />
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource DmsOnAccentBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0"
+                    Margin="0,0,0,14">
+            <TextBlock x:Name="TxtTitle"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource DmsForegroundBrush}" />
+            <TextBlock x:Name="TxtSubtitle"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Margin="0,0,0,12"
+                Padding="14"
+                CornerRadius="8"
+                BorderThickness="1"
+                Background="{DynamicResource DmsPanelBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}">
+            <UniformGrid Columns="5">
+                <StackPanel Margin="0,0,12,8">
+                    <TextBlock x:Name="LblStation"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+                    <TextBlock x:Name="TxtStation"
+                               Margin="0,3,0,0"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,12,8">
+                    <TextBlock x:Name="LblIpAddress"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+                    <TextBlock x:Name="TxtIpAddress"
+                               Margin="0,3,0,0"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,12,8">
+                    <TextBlock x:Name="LblNetwork"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+                    <TextBlock x:Name="TxtNetwork"
+                               Margin="0,3,0,0"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,12,8">
+                    <TextBlock x:Name="LblConnection"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+                    <TextBlock x:Name="TxtConnection"
+                               Margin="0,3,0,0"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,12,8">
+                    <TextBlock x:Name="LblMachineState"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+                    <TextBlock x:Name="TxtMachineState"
+                               Margin="0,3,0,0"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,12,0">
+                    <TextBlock x:Name="LblDriver"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+                    <TextBlock x:Name="TxtDriver"
+                               Margin="0,3,0,0"
+                               FontSize="15"
+                               Foreground="{DynamicResource DmsForegroundBrush}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,12,0">
+                    <TextBlock x:Name="LblController"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+                    <TextBlock x:Name="TxtController"
+                               Margin="0,3,0,0"
+                               FontSize="15"
+                               Foreground="{DynamicResource DmsForegroundBrush}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,12,0">
+                    <TextBlock x:Name="LblCycleTime"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+                    <TextBlock x:Name="TxtCycleTime"
+                               Margin="0,3,0,0"
+                               FontSize="15"
+                               Foreground="{DynamicResource DmsForegroundBrush}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,12,0">
+                    <TextBlock x:Name="LblLastRead"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+                    <TextBlock x:Name="TxtLastRead"
+                               Margin="0,3,0,0"
+                               FontSize="15"
+                               Foreground="{DynamicResource DmsForegroundBrush}" />
+                </StackPanel>
+            </UniformGrid>
+        </Border>
+
+        <WrapPanel Grid.Row="2"
+                   Margin="0,0,0,12"
+                   VerticalAlignment="Center">
+            <TextBlock x:Name="LblDeviceFilter"
+                       Margin="0,0,6,0"
+                       VerticalAlignment="Center"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource DmsForegroundBrush}" />
+            <TextBox x:Name="TxtDeviceFilter"
+                     Width="155"
+                     Margin="0,0,8,0"
+                     TextChanged="TxtDeviceFilter_TextChanged" />
+
+            <TextBlock x:Name="LblDevice"
+                       Margin="0,0,6,0"
+                       VerticalAlignment="Center"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource DmsForegroundBrush}" />
+            <ComboBox x:Name="CmbDevices"
+                      Width="430"
+                      Margin="0,0,12,0"
+                      IsTextSearchEnabled="True"
+                      TextSearch.TextPath="DisplayText"
+                      SelectionChanged="CmbDevices_SelectionChanged">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid MinWidth="390">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="105" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="125" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding StationCode}"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="1"
+                                       Margin="10,0"
+                                       Text="{Binding Name}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding IpAddress}"
+                                       TextAlignment="Right"
+                                       Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+                        </Grid>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock x:Name="LblFilter"
+                       Margin="0,0,6,0"
+                       VerticalAlignment="Center"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource DmsForegroundBrush}" />
+            <TextBox x:Name="TxtFilter"
+                     Width="150"
+                     Margin="0,0,12,0"
+                     TextChanged="TxtFilter_TextChanged" />
+
+            <CheckBox x:Name="ChkOnlyActive"
+                      Margin="0,0,12,0"
+                      VerticalAlignment="Center"
+                      Checked="Filter_Changed"
+                      Unchecked="Filter_Changed" />
+
+            <CheckBox x:Name="ChkOnlyChanged"
+                      Margin="0,0,12,0"
+                      VerticalAlignment="Center"
+                      Checked="Filter_Changed"
+                      Unchecked="Filter_Changed" />
+
+            <Button x:Name="BtnRefresh"
+                    MinWidth="95"
+                    Margin="0,0,8,0"
+                    Click="BtnRefresh_Click" />
+
+            <Button x:Name="BtnPause"
+                    MinWidth="105"
+                    Margin="0,0,8,0"
+                    Click="BtnPause_Click" />
+
+            <Button x:Name="BtnCopyIp"
+                    MinWidth="90"
+                    Click="BtnCopyIp_Click" />
+        </WrapPanel>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="1*" MinWidth="280" />
+            </Grid.ColumnDefinitions>
+
+            <DataGrid x:Name="GridDataPoints"
+                      Grid.Column="0"
+                      MinHeight="430"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserReorderColumns="True"
+                      CanUserResizeColumns="True"
+                      CanUserSortColumns="True"
+                      EnableRowVirtualization="True"
+                      EnableColumnVirtualization="True"
+                      HeadersVisibility="Column"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      IsReadOnly="True"
+                      RowStyle="{StaticResource MesDpmGridRowStyle}"
+                      SelectionMode="Single"
+                      SelectionChanged="GridDataPoints_SelectionChanged"
+                      Background="{DynamicResource DmsPanelBrush}"
+                      Foreground="{DynamicResource DmsForegroundBrush}"
+                      BorderBrush="{DynamicResource DmsBorderBrush}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn x:Name="ColPoint"
+                                        Binding="{Binding Code}"
+                                        Width="105" />
+                    <DataGridTextColumn x:Name="ColMeaning"
+                                        Binding="{Binding DisplayName}"
+                                        Width="190" />
+                    <DataGridTextColumn x:Name="ColLogicalSignal"
+                                        Binding="{Binding LogicalSignal}"
+                                        Width="175" />
+                    <DataGridTextColumn x:Name="ColValue"
+                                        Binding="{Binding ValueText}"
+                                        Width="95" />
+                    <DataGridTextColumn x:Name="ColModule"
+                                        Binding="{Binding ModuleType}"
+                                        Width="125" />
+                    <DataGridTextColumn x:Name="ColPhysicalPoint"
+                                        Binding="{Binding PhysicalPointText}"
+                                        Width="85" />
+                    <DataGridTextColumn x:Name="ColSource"
+                                        Binding="{Binding SourceText}"
+                                        Width="175" />
+                    <DataGridTextColumn x:Name="ColQuality"
+                                        Binding="{Binding QualityText}"
+                                        Width="120" />
+                    <DataGridTextColumn x:Name="ColLastChange"
+                                        Binding="{Binding ChangedAtText}"
+                                        Width="110" />
+                    <DataGridTextColumn x:Name="ColLastRead"
+                                        Binding="{Binding ReadAtText}"
+                                        Width="110" />
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <GridSplitter Grid.Column="1"
+                          Width="5"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Stretch"
+                          Background="{DynamicResource DmsBorderBrush}" />
+
+            <Border Grid.Column="2"
+                    Padding="12"
+                    CornerRadius="6"
+                    BorderThickness="1"
+                    Background="{DynamicResource DmsPanelBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock x:Name="TxtDetailTitle"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}" />
+
+                    <TextBox x:Name="TxtDetail"
+                             Grid.Row="1"
+                             Margin="0,10,0,0"
+                             IsReadOnly="True"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             Background="{DynamicResource DmsBackgroundBrush}"
+                             Foreground="{DynamicResource DmsForegroundBrush}"
+                             BorderBrush="{DynamicResource DmsBorderBrush}" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="4"
+                Margin="0,10,0,0"
+                Padding="8,5"
+                CornerRadius="4"
+                Background="{DynamicResource DmsBackgroundBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="1">
+            <TextBlock x:Name="TxtStatus"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}" />
+        </Border>
+    </Grid>
+</UserControl>

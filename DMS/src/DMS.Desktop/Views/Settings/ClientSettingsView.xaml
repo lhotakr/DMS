@@ -17,166 +17,284 @@
                 <StackPanel Width="520"
                             HorizontalAlignment="Left">
 
-                    <TextBlock Text="Nastavení klienta"
-                           FontSize="22"
-                           FontWeight="Bold"
-                           Foreground="{DynamicResource DmsForegroundBrush}"
-                           Margin="0,0,0,16"/>
+                    <TextBlock x:Name="TxtTitle"
+                               Text="Nastavení klienta"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,16"/>
 
-                    <TextBlock Text="Vzhled"
-                           FontWeight="Bold"
-                           Margin="0,0,0,6"/>
+                    <TextBlock x:Name="TxtAppearanceTitle"
+                               Text="Vzhled"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,10"/>
 
-                    <Grid Width="520"
-      Height="32"
-      Margin="0,0,0,14">
+                    <TextBlock x:Name="TxtThemeTitle"
+                               Text="Motiv"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,6"/>
 
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="32"/>
-                        </Grid.ColumnDefinitions>
+                    <!-- Motiv - vlastní DMS selector bez ComboBoxu -->
+                    <Button x:Name="BtnThemeSelector"
+                            Width="260"
+                            Height="36"
+                            HorizontalAlignment="Left"
+                            Margin="0,0,0,14"
+                            Tag="Light"
+                            Click="BtnThemeSelector_Click"
+                            Background="{DynamicResource DmsBackgroundBrush}"
+                            Foreground="{DynamicResource DmsForegroundBrush}"
+                            BorderBrush="{DynamicResource DmsBorderBrush}"
+                            BorderThickness="1"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Center"
+                            Padding="0">
+                        <Grid>
+                            <TextBlock x:Name="TxtThemeModeValue"
+                                       Text="Light"
+                                       VerticalAlignment="Center"
+                                       Margin="10,0,34,0"
+                                       Foreground="{DynamicResource DmsForegroundBrush}"
+                                       FontSize="13"
+                                       LineHeight="16"
+                                       LineStackingStrategy="BlockLineHeight"/>
 
-                        <TextBox x:Name="TxtThemeMode"
-             Grid.Column="0"
-             Height="32"
-             IsReadOnly="True"
-             VerticalContentAlignment="Center"
-             Background="{DynamicResource DmsBackgroundBrush}"
-             Foreground="{DynamicResource DmsForegroundBrush}"
-             BorderBrush="{DynamicResource DmsBorderBrush}"
-             CaretBrush="{DynamicResource DmsForegroundBrush}"/>
+                            <TextBlock Text="▼"
+                                       Width="28"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
+                                       Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                                       FontSize="12"/>
+                        </Grid>
+                    </Button>
 
-                        <Button x:Name="BtnThemeModeDropDown"
-            Grid.Column="1"
-            Content="▼"
-            Height="32"
-            Background="{DynamicResource DmsPanelBrush}"
-            Foreground="{DynamicResource DmsForegroundBrush}"
-            BorderBrush="{DynamicResource DmsBorderBrush}"
-            Click="BtnThemeModeDropDown_Click"/>
+                    <Popup x:Name="PopupThemeMode"
+                           PlacementTarget="{Binding ElementName=BtnThemeSelector}"
+                           Placement="Bottom"
+                           StaysOpen="False"
+                           AllowsTransparency="True"
+                           PopupAnimation="Fade">
+                        <Border Background="{DynamicResource DmsPanelBrush}"
+                                BorderBrush="{DynamicResource DmsBorderBrush}"
+                                BorderThickness="1"
+                                MinWidth="{Binding ActualWidth, ElementName=BtnThemeSelector}">
+                            <ListBox x:Name="LstThemeModes"
+                                     Background="{DynamicResource DmsPanelBrush}"
+                                     Foreground="{DynamicResource DmsForegroundBrush}"
+                                     BorderThickness="0"
+                                     MouseLeftButtonUp="LstThemeModes_MouseLeftButtonUp">
+                                <ListBoxItem Tag="Light" Content="Light"/>
+                                <ListBoxItem Tag="Dark" Content="Dark"/>
+                                <ListBoxItem Tag="HG" Content="HG"/>
+                                <ListBoxItem Tag="Custom" Content="Custom"/>
+                            </ListBox>
+                        </Border>
+                    </Popup>
 
-                        <Popup x:Name="PopupThemeMode"
-           PlacementTarget="{Binding ElementName=TxtThemeMode}"
-           Placement="Bottom"
-           StaysOpen="False"
-           AllowsTransparency="True"
-           Width="520">
-
-                            <Border Background="{DynamicResource DmsPanelBrush}"
-                BorderBrush="{DynamicResource DmsBorderBrush}"
-                BorderThickness="1">
-
-                                <ListBox x:Name="LstThemeModes"
-                     Background="{DynamicResource DmsPanelBrush}"
-                     Foreground="{DynamicResource DmsForegroundBrush}"
-                     BorderThickness="0"
-                     MouseLeftButtonUp="LstThemeModes_MouseLeftButtonUp">
-                                    <ListBoxItem Content="Light"/>
-                                    <ListBoxItem Content="Dark"/>
-                                    <ListBoxItem Content="Custom"/>
-                                </ListBox>
-                            </Border>
-                        </Popup>
-                    </Grid>
-
-                    <TextBlock Text="Náhled"
-                           FontWeight="Bold"
-                           Margin="0,0,0,6"/>
+                    <TextBlock x:Name="TxtPreviewTitleLabel"
+                               Text="Náhled"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,6"/>
 
                     <Border x:Name="PreviewBackground"
-                        Background="{DynamicResource DmsBackgroundBrush}"
-                        BorderBrush="{DynamicResource DmsBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Padding="12"
-                        Margin="0,0,0,16">
-
-                        <Border x:Name="PreviewPanel"
-                            Background="{DynamicResource DmsPanelBrush}"
+                            Background="{DynamicResource DmsBackgroundBrush}"
                             BorderBrush="{DynamicResource DmsBorderBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
-                            Padding="12">
+                            Padding="12"
+                            Margin="0,0,0,16">
+
+                        <Border x:Name="PreviewPanel"
+                                Background="{DynamicResource DmsPanelBrush}"
+                                BorderBrush="{DynamicResource DmsBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="12">
 
                             <StackPanel>
                                 <TextBlock x:Name="PreviewTitle"
-                                       Text="Ukázka DMS karty"
-                                       FontSize="18"
-                                       FontWeight="Bold"
-                                       Foreground="{DynamicResource DmsForegroundBrush}"
-                                       Margin="0,0,0,8"/>
+                                           Text="Ukázka DMS karty"
+                                           FontSize="18"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"
+                                           Margin="0,0,0,8"/>
 
                                 <TextBlock x:Name="PreviewText"
-                                       Text="Běžný text, popisy polí a hodnoty."
-                                       Foreground="{DynamicResource DmsForegroundBrush}"
-                                       Margin="0,0,0,4"/>
+                                           Text="Běžný text, popisy polí a hodnoty."
+                                           Foreground="{DynamicResource DmsForegroundBrush}"
+                                           Margin="0,0,0,4"/>
 
                                 <TextBlock x:Name="PreviewMutedText"
-                                       Text="Pomocný tlumený text."
-                                       Foreground="{DynamicResource DmsMutedForegroundBrush}"
-                                       Margin="0,0,0,10"/>
+                                           Text="Pomocný tlumený text."
+                                           Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                                           Margin="0,0,0,10"/>
 
                                 <Button x:Name="PreviewButton"
-                                    Content="Akční tlačítko"
-                                    Width="130"
-                                    Background="{DynamicResource DmsAccentBrush}"
-                                    Foreground="{DynamicResource DmsOnAccentBrush}"
-                                    BorderBrush="{DynamicResource DmsAccentBrush}"/>
+                                        Content="Akční tlačítko"
+                                        Width="130"
+                                        Style="{StaticResource DmsPrimaryButtonStyle}"/>
                             </StackPanel>
                         </Border>
                     </Border>
 
+                    <TextBlock x:Name="TxtLanguageTitle"
+                               Text="Jazyk aplikace"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,6"/>
+
+                    <!-- Jazyk - vlastní DMS selector bez ComboBoxu -->
+                    <Button x:Name="BtnLanguageSelector"
+                            Width="260"
+                            Height="36"
+                            HorizontalAlignment="Left"
+                            Margin="0,0,0,6"
+                            Tag="Auto"
+                            Click="BtnLanguageSelector_Click"
+                            Background="{DynamicResource DmsBackgroundBrush}"
+                            Foreground="{DynamicResource DmsForegroundBrush}"
+                            BorderBrush="{DynamicResource DmsBorderBrush}"
+                            BorderThickness="1"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Center"
+                            Padding="0">
+                        <Grid>
+                            <TextBlock x:Name="TxtLanguageModeValue"
+                                       Text="Podle systému"
+                                       VerticalAlignment="Center"
+                                       Margin="10,0,34,0"
+                                       Foreground="{DynamicResource DmsForegroundBrush}"
+                                       FontSize="13"
+                                       LineHeight="16"
+                                       LineStackingStrategy="BlockLineHeight"/>
+
+                            <TextBlock Text="▼"
+                                       Width="28"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       TextAlignment="Center"
+                                       Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                                       FontSize="12"/>
+                        </Grid>
+                    </Button>
+
+                    <Popup x:Name="PopupLanguageMode"
+                           PlacementTarget="{Binding ElementName=BtnLanguageSelector}"
+                           Placement="Bottom"
+                           StaysOpen="False"
+                           AllowsTransparency="True"
+                           PopupAnimation="Fade">
+                        <Border Background="{DynamicResource DmsPanelBrush}"
+                                BorderBrush="{DynamicResource DmsBorderBrush}"
+                                BorderThickness="1"
+                                MinWidth="{Binding ActualWidth, ElementName=BtnLanguageSelector}">
+                            <ListBox x:Name="LstLanguageModes"
+                                     Background="{DynamicResource DmsPanelBrush}"
+                                     Foreground="{DynamicResource DmsForegroundBrush}"
+                                     BorderThickness="0"
+                                     MouseLeftButtonUp="LstLanguageModes_MouseLeftButtonUp">
+                                <ListBoxItem Tag="Auto" Content="Podle systému"/>
+                                <ListBoxItem Tag="cs-CZ" Content="Čeština"/>
+                                <ListBoxItem Tag="de-DE" Content="Deutsch"/>
+                                <ListBoxItem Tag="en-US" Content="English"/>
+                            </ListBox>
+                        </Border>
+                    </Popup>
+
+                    <TextBlock x:Name="TxtLanguageHelp"
+                               Text="Při volbě podle systému DMS použije jazyk Windows, pokud je podporovaný. Jinak použije angličtinu."
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,16"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+
                     <StackPanel x:Name="CustomColorsPanel">
-                        <TextBlock Text="Vlastní barvy"
-                               FontWeight="Bold"
-                               Margin="0,0,0,8"/>
+                        <TextBlock x:Name="TxtCustomColorsTitle"
+                                   Text="Vlastní barvy"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   Margin="0,0,0,8"/>
 
-                        <TextBlock Text="Pozadí aplikace"/>
-                        <TextBox x:Name="TxtBackgroundColor" Height="30" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="TxtBackgroundColorLabel"
+                                   Text="Pozadí aplikace"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+                        <TextBox x:Name="TxtBackgroundColor"
+                                 Height="30"
+                                 Margin="0,0,0,8"/>
 
-                        <TextBlock Text="Panel / karta"/>
-                        <TextBox x:Name="TxtPanelColor" Height="30" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="TxtPanelColorLabel"
+                                   Text="Panel / karta"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+                        <TextBox x:Name="TxtPanelColor"
+                                 Height="30"
+                                 Margin="0,0,0,8"/>
 
-                        <TextBlock Text="Text"/>
-                        <TextBox x:Name="TxtForegroundColor" Height="30" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="TxtForegroundColorLabel"
+                                   Text="Text"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+                        <TextBox x:Name="TxtForegroundColor"
+                                 Height="30"
+                                 Margin="0,0,0,8"/>
 
-                        <TextBlock Text="Tlumený text"/>
-                        <TextBox x:Name="TxtMutedForegroundColor" Height="30" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="TxtMutedForegroundColorLabel"
+                                   Text="Tlumený text"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+                        <TextBox x:Name="TxtMutedForegroundColor"
+                                 Height="30"
+                                 Margin="0,0,0,8"/>
 
-                        <TextBlock Text="Rámečky"/>
-                        <TextBox x:Name="TxtBorderColor" Height="30" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="TxtBorderColorLabel"
+                                   Text="Rámečky"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+                        <TextBox x:Name="TxtBorderColor"
+                                 Height="30"
+                                 Margin="0,0,0,8"/>
 
-                        <TextBlock Text="Akcentní barva"/>
-                        <TextBox x:Name="TxtAccentColor" Height="30" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="TxtAccentColorLabel"
+                                   Text="Akcentní barva"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+                        <TextBox x:Name="TxtAccentColor"
+                                 Height="30"
+                                 Margin="0,0,0,8"/>
 
-                        <TextBlock Text="Text na akcentní barvě"/>
-                        <TextBox x:Name="TxtOnAccentColor" Height="30" Margin="0,0,0,14"/>
+                        <TextBlock x:Name="TxtOnAccentColorLabel"
+                                   Text="Text na akcentní barvě"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+                        <TextBox x:Name="TxtOnAccentColor"
+                                 Height="30"
+                                 Margin="0,0,0,14"/>
                     </StackPanel>
 
-                    <TextBlock Text="Historie transakcí"
-                           FontWeight="Bold"
-                           Margin="0,0,0,6"/>
+                    <TextBlock x:Name="TxtHistoryTitle"
+                               Text="Historie transakcí"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,6"/>
 
                     <TextBox x:Name="TxtMaxHistory"
-                         Height="32"
-                         Margin="0,0,0,14"/>
+                             Height="32"
+                             Margin="0,0,0,14"/>
 
                     <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Right">
+                                HorizontalAlignment="Right">
 
-                        <Button Content="Použít"
-                            Width="90"
-                            Height="32"
-                            Margin="0,0,8,0"
-                            Click="BtnApply_Click"/>
+                        <Button x:Name="BtnApply"
+                                Content="Použít"
+                                Width="90"
+                                Height="32"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnApply_Click"/>
 
-                        <Button Content="Uložit"
-                            Width="90"
-                            Height="32"
-                            Background="{DynamicResource DmsAccentBrush}"
-                            Foreground="{DynamicResource DmsOnAccentBrush}"
-                            BorderBrush="{DynamicResource DmsAccentBrush}"
-                            Click="BtnSave_Click"/>
+                        <Button x:Name="BtnSave"
+                                Content="Uložit"
+                                Width="90"
+                                Height="32"
+                                Style="{StaticResource DmsPrimaryButtonStyle}"
+                                Click="BtnSave_Click"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

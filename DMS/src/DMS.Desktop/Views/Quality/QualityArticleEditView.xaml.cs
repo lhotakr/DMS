@@ -1,5 +1,7 @@
 ﻿using DMS.Core.Quality;
+using DMS.Desktop.Logging;
 using DMS.Desktop.UI;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -19,9 +21,16 @@ public partial class QualityArticleEditView :
     private readonly QualityArticleEditService _service;
     private readonly string _query;
     private readonly JsonQualityRepository _repository;
+    private readonly DmsLogger? _logger;
+    private readonly string _currentUserName;
+    private readonly Func<string, string>? _translate;
+    private readonly Func<string, object[], string>? _translateFormat;
 
     private QualityArticleEditModel? _model;
     private QualityPrintVersionEditModel? _selectedPrintVersion;
+
+    private ArticleSnapshot? _articleSnapshot;
+    private PrintVersionSnapshot? _printVersionSnapshot;
 
     private bool _identityWarningShown;
     private bool _isLoading;
@@ -36,25 +45,98 @@ public partial class QualityArticleEditView :
     public bool HasUnsavedChanges => _hasUnsavedChanges;
 
     public QualityArticleEditView(string query)
+        : this(
+            query,
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..")),
+            null,
+            null,
+            null,
+            null)
+    {
+    }
+
+    public QualityArticleEditView(
+        string query,
+        string dmsRootPath,
+        DmsLogger? logger = null,
+        string? currentUserName = null,
+        Func<string, string>? translate = null,
+        Func<string, object[], string>? translateFormat = null)
     {
         InitializeComponent();
 
         _query = query;
+        _logger = logger;
+        _currentUserName = string.IsNullOrWhiteSpace(currentUserName)
+            ? "UNKNOWN"
+            : currentUserName;
+        _translate = translate;
+        _translateFormat = translateFormat;
 
-        const string basePath = @"Z:\SAP\DMS-db\DEV";
+        var rootPath = string.IsNullOrWhiteSpace(dmsRootPath)
+            ? Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".."))
+            : dmsRootPath;
 
-        var paths = new QualityStoragePaths(basePath);
+        var paths = new QualityStoragePaths(rootPath);
+        paths.EnsureDirectories();
 
         _repository = new JsonQualityRepository(paths);
         _service = new QualityArticleEditService(_repository);
+
+        ApplyLocalization();
+
+        _logger?.AdminAction(
+            "QA02",
+            "OpenQualityArticleEdit",
+            _currentUserName,
+            $"Root={rootPath}; Query={query}");
 
         LoadLookupData();
         LoadData();
     }
 
-    // ============================================================
-    // NAČTENÍ
-    // ============================================================
+    private void ApplyLocalization()
+    {
+        TxtPageTitle.Text = T("QA02.Title");
+        BtnSave.Content = T("QA02.Action.Save");
+        BtnBackToQa03.Content = T("QA02.Action.BackToQa03");
+        BtnReload.Content = T("QA02.Action.Reload");
+
+        LblSelectedPrintVersion.Text = T("QA02.Field.SelectedPrintVersion");
+        TxtSectionArticleInfo.Text = T("QA02.Section.ArticleInfo");
+        LblImportantInfo.Text = T("QA02.Field.ImportantInfo");
+        LblArticleNotes.Text = T("QA02.Field.ArticleNotes");
+
+        BtnEnableIdentityEdit.Content = T("QA02.Action.EnableIdentityEdit");
+        TxtSectionPrintVersion.Text = T("QA02.Section.PrintVersion");
+        LblPrintVersionNumber.Text = T("QA02.Field.PrintVersionNumber");
+        LblSapMaterial.Text = T("QA02.Field.SapId");
+        LblTitle.Text = T("QA02.Field.PrintVersionTitle");
+        LblCustomer.Text = T("QA02.Field.Customer");
+        LblDecoration.Text = T("QA02.Field.Decoration");
+        TxtDecoration.ToolTip = T("QA02.Tooltip.DecorationFromSap");
+        LblColorType.Text = T("QA02.Field.ColorType");
+        TxtColorType.ToolTip = T("QA02.Tooltip.MultipleValues");
+        BtnClearColorTypes.Content = T("QA02.Action.Clear");
+        BtnApplyColorTypes.Content = T("QA02.Action.Apply");
+        LblGlassTreatment.Text = T("QA02.Field.GlassTreatment");
+        LblHdNumber.Text = T("QA02.Field.HdNumber");
+        LblSampleLocation.Text = T("QA02.Field.SampleLocation");
+        LblBoardLocation.Text = T("QA02.Field.BoardLocation");
+        LblGaugeLocation.Text = T("QA02.Field.GaugeLocation");
+        LblQualityClass.Text = T("QA02.Field.QualityClass");
+        ChkHasGauge.Content = T("QA02.Flag.HasGauge");
+        ChkComplaint.Content = T("QA02.Flag.Complaint");
+        ChkSamplesOnCamera.Content = T("QA02.Flag.SamplesOnCamera");
+        LblPrintVersionNotes.Text = T("QA02.Field.Notes");
+
+        TxtSectionTasks.Text = T("QA02.Section.Tasks");
+        ColTaskNumber.Header = T("QA02.Task.Column.Number");
+        ColTaskText.Header = T("QA02.Task.Column.Task");
+        ColTaskDueDate.Header = T("QA02.Task.Column.DueDate");
+        ColTaskCompleted.Header = T("QA02.Task.Column.Completed");
+        ColTaskCompletedAt.Header = T("QA02.Task.Column.CompletedAt");
+    }
 
     private void LoadData()
     {
@@ -66,11 +148,16 @@ public partial class QualityArticleEditView :
 
             if (_model is null)
             {
-                MessageBox.Show(
-                    $"Pro dotaz {_query} nebyla nalezena quality data.",
+                DmsConfirmDialog.ShowInfo(
+                    Window.GetWindow(this),
+                    T("QA02.Dialog.NotFound.Title"),
+                    TF("QA02.Dialog.NotFound.Message", _query));
+
+                _logger?.AdminAction(
                     "QA02",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                    "QualityDataNotFound",
+                    _currentUserName,
+                    $"Query={_query}");
 
                 IsEnabled = false;
                 return;
@@ -93,7 +180,14 @@ public partial class QualityArticleEditView :
             LoadSelectedPrintVersion();
 
             ClearDirtyState();
+            UpdateSnapshots();
             _identityWarningShown = false;
+
+            _logger?.AdminAction(
+                "QA02",
+                "LoadQualityArticleEdit",
+                _currentUserName,
+                $"Query={_query}; PrintVersions={_model.PrintVersions.Count}");
         }
         finally
         {
@@ -145,59 +239,25 @@ public partial class QualityArticleEditView :
                 return;
             }
 
-            TxtPrintVersion.Text =
-                _selectedPrintVersion.FullPrintVersionNumber;
-
-            TxtSapMaterial.Text =
-                _selectedPrintVersion.SapMaterialNumber;
-
-            TxtTitle.Text =
-                _selectedPrintVersion.Title;
-
-            TxtCustomer.Text =
-                _selectedPrintVersion.Customer;
-
-            TxtDecoration.Text =
-                _selectedPrintVersion.DecorationCode;
-
-            TxtColorType.Text =
-                _selectedPrintVersion.ColorType;
-
-            TxtGlassTreatment.Text =
-                _selectedPrintVersion.GlassTreatment;
-
-            TxtQualityClass.Text =
-                _selectedPrintVersion.QualityClass;
-
-            TxtHdNumber.Text =
-                _selectedPrintVersion.HdNumber;
-
-            TxtSampleLocation.Text =
-                _selectedPrintVersion.SampleLocation;
-
-            TxtBoardLocation.Text =
-                _selectedPrintVersion.BoardLocation;
-
-            TxtGaugeLocation.Text =
-                _selectedPrintVersion.GaugeLocation;
-
-            ChkHasGauge.IsChecked =
-                _selectedPrintVersion.HasGauge;
-
-            ChkComplaint.IsChecked =
-                _selectedPrintVersion.HasComplaint;
-
-            ChkSamplesOnCamera.IsChecked =
-                _selectedPrintVersion.SamplesOnCamera;
-
-            TxtPrintVersionNotes.Text =
-                _selectedPrintVersion.Notes;
+            TxtPrintVersion.Text = _selectedPrintVersion.FullPrintVersionNumber;
+            TxtSapMaterial.Text = _selectedPrintVersion.SapMaterialNumber;
+            TxtTitle.Text = _selectedPrintVersion.Title;
+            TxtCustomer.Text = _selectedPrintVersion.Customer;
+            TxtDecoration.Text = _selectedPrintVersion.DecorationCode;
+            TxtColorType.Text = _selectedPrintVersion.ColorType;
+            TxtGlassTreatment.Text = _selectedPrintVersion.GlassTreatment;
+            TxtQualityClass.Text = _selectedPrintVersion.QualityClass;
+            TxtHdNumber.Text = _selectedPrintVersion.HdNumber;
+            TxtSampleLocation.Text = _selectedPrintVersion.SampleLocation;
+            TxtBoardLocation.Text = _selectedPrintVersion.BoardLocation;
+            TxtGaugeLocation.Text = _selectedPrintVersion.GaugeLocation;
+            ChkHasGauge.IsChecked = _selectedPrintVersion.HasGauge;
+            ChkComplaint.IsChecked = _selectedPrintVersion.HasComplaint;
+            ChkSamplesOnCamera.IsChecked = _selectedPrintVersion.SamplesOnCamera;
+            TxtPrintVersionNotes.Text = _selectedPrintVersion.Notes;
 
             UnsubscribeTaskChanges();
-
-            GridTasks.ItemsSource =
-                _selectedPrintVersion.Tasks;
-
+            GridTasks.ItemsSource = _selectedPrintVersion.Tasks;
             SubscribeTaskChanges();
             UpdateTaskStatus();
 
@@ -206,6 +266,7 @@ public partial class QualityArticleEditView :
             TxtDecoration.IsReadOnly = true;
 
             ClearDirtyState();
+            UpdateSnapshots();
             _identityWarningShown = false;
         }
         finally
@@ -238,13 +299,8 @@ public partial class QualityArticleEditView :
         ChkSamplesOnCamera.IsChecked = false;
 
         GridTasks.ItemsSource = null;
-
-        TxtTaskStatus.Text = "Bez vybrané tiskové verze";
+        TxtTaskStatus.Text = T("QA02.TaskStatus.NoPrintVersion");
     }
-
-    // ============================================================
-    // VÝBĚR TISKOVÉ VERZE
-    // ============================================================
 
     private void BtnOpenPrintVersionSelector_Click(
         object sender,
@@ -286,9 +342,8 @@ public partial class QualityArticleEditView :
         {
             var result = DmsConfirmDialog.Show(
                 Window.GetWindow(this),
-                "Neuložené změny",
-                "V QA02 jsou neuložené změny.\n\n" +
-                "Chceš je před odchodem uložit?",
+                T("QA02.Dialog.Unsaved.Title"),
+                T("QA02.Dialog.Unsaved.SwitchMessage"),
                 showCancel: true);
 
             if (result == MessageBoxResult.Cancel)
@@ -310,9 +365,7 @@ public partial class QualityArticleEditView :
         }
 
         _selectedPrintVersion = selected;
-
         PopupPrintVersions.IsOpen = false;
-
         LoadSelectedPrintVersion();
     }
 
@@ -322,18 +375,13 @@ public partial class QualityArticleEditView :
 
         try
         {
-            ListPrintVersions.SelectedItem =
-                _selectedPrintVersion;
+            ListPrintVersions.SelectedItem = _selectedPrintVersion;
         }
         finally
         {
             _isLoading = false;
         }
     }
-
-    // ============================================================
-    // PŘENOS FORMULÁŘE DO MODELU
-    // ============================================================
 
     private void WriteFormToSelectedPrintVersion()
     {
@@ -342,75 +390,32 @@ public partial class QualityArticleEditView :
             return;
         }
 
-        GridTasks.CommitEdit(
-            DataGridEditingUnit.Cell,
-            true);
+        GridTasks.CommitEdit(DataGridEditingUnit.Cell, true);
+        GridTasks.CommitEdit(DataGridEditingUnit.Row, true);
 
-        GridTasks.CommitEdit(
-            DataGridEditingUnit.Row,
-            true);
-
-        _selectedPrintVersion.FullPrintVersionNumber =
-            TxtPrintVersion.Text.Trim();
-
-        _selectedPrintVersion.SapMaterialNumber =
-            TxtSapMaterial.Text.Trim();
-
-        _selectedPrintVersion.Title =
-            TxtTitle.Text.Trim();
-
-        _selectedPrintVersion.Customer =
-            TxtCustomer.Text.Trim();
-
-        _selectedPrintVersion.DecorationCode =
-            TxtDecoration.Text.Trim();
-
-        _selectedPrintVersion.ColorType =
-            TxtColorType.Text.Trim();
-
-        _selectedPrintVersion.GlassTreatment =
-            TxtGlassTreatment.Text.Trim();
-
-        _selectedPrintVersion.QualityClass =
-            TxtQualityClass.Text.Trim();
-
-        _selectedPrintVersion.HdNumber =
-            TxtHdNumber.Text.Trim();
-
-        _selectedPrintVersion.SampleLocation =
-            TxtSampleLocation.Text.Trim();
-
-        _selectedPrintVersion.BoardLocation =
-            TxtBoardLocation.Text.Trim();
-
-        _selectedPrintVersion.GaugeLocation =
-            TxtGaugeLocation.Text.Trim();
-
-        _selectedPrintVersion.HasGauge =
-            ChkHasGauge.IsChecked == true;
-
-        _selectedPrintVersion.HasComplaint =
-            ChkComplaint.IsChecked == true;
-
-        _selectedPrintVersion.SamplesOnCamera =
-            ChkSamplesOnCamera.IsChecked == true;
-
-        _selectedPrintVersion.Notes =
-            TxtPrintVersionNotes.Text;
+        _selectedPrintVersion.FullPrintVersionNumber = TxtPrintVersion.Text.Trim();
+        _selectedPrintVersion.SapMaterialNumber = TxtSapMaterial.Text.Trim();
+        _selectedPrintVersion.Title = TxtTitle.Text.Trim();
+        _selectedPrintVersion.Customer = TxtCustomer.Text.Trim();
+        _selectedPrintVersion.DecorationCode = TxtDecoration.Text.Trim();
+        _selectedPrintVersion.ColorType = TxtColorType.Text.Trim();
+        _selectedPrintVersion.GlassTreatment = TxtGlassTreatment.Text.Trim();
+        _selectedPrintVersion.QualityClass = TxtQualityClass.Text.Trim();
+        _selectedPrintVersion.HdNumber = TxtHdNumber.Text.Trim();
+        _selectedPrintVersion.SampleLocation = TxtSampleLocation.Text.Trim();
+        _selectedPrintVersion.BoardLocation = TxtBoardLocation.Text.Trim();
+        _selectedPrintVersion.GaugeLocation = TxtGaugeLocation.Text.Trim();
+        _selectedPrintVersion.HasGauge = ChkHasGauge.IsChecked == true;
+        _selectedPrintVersion.HasComplaint = ChkComplaint.IsChecked == true;
+        _selectedPrintVersion.SamplesOnCamera = ChkSamplesOnCamera.IsChecked == true;
+        _selectedPrintVersion.Notes = TxtPrintVersionNotes.Text;
 
         if (_model is not null)
         {
-            _model.ImportantInfo =
-                TxtImportantInfo.Text;
-
-            _model.ArticleNotes =
-                TxtArticleNotes.Text;
+            _model.ImportantInfo = TxtImportantInfo.Text;
+            _model.ArticleNotes = TxtArticleNotes.Text;
         }
     }
-
-    // ============================================================
-    // ULOŽENÍ
-    // ============================================================
 
     private void BtnSave_Click(
         object sender,
@@ -421,12 +426,9 @@ public partial class QualityArticleEditView :
             return;
         }
 
-        var target =
-            _selectedPrintVersion?.FullPrintVersionNumber
-            ?? _query;
+        var target = _selectedPrintVersion?.FullPrintVersionNumber ?? _query;
 
         _allowNavigationAfterSave = true;
-
         TransactionRequested?.Invoke($"QA03 {target}");
     }
 
@@ -435,11 +437,10 @@ public partial class QualityArticleEditView :
         if (_model is null ||
             _selectedPrintVersion is null)
         {
-            MessageBox.Show(
-                "Není vybraná tisková verze k uložení.",
-                "QA02",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            DmsConfirmDialog.ShowInfo(
+                Window.GetWindow(this),
+                T("QA02.Dialog.Validation.Title"),
+                T("QA02.Validation.NoPrintVersionSelected"));
 
             return false;
         }
@@ -450,30 +451,41 @@ public partial class QualityArticleEditView :
             _model,
             _selectedPrintVersion);
 
-        MessageBox.Show(
-            result.Message,
-            result.Success
-                ? "QA02 - uloženo"
-                : "QA02 - chyba",
-            MessageBoxButton.OK,
-            result.Success
-                ? MessageBoxImage.Information
-                : MessageBoxImage.Error);
-
         if (!result.Success)
         {
+            _logger?.AdminAction(
+                "QA02",
+                "SaveQualityArticleFailed",
+                _currentUserName,
+                $"PrintVersion={_selectedPrintVersion.FullPrintVersionNumber}; Message={result.Message}");
+
+            DmsConfirmDialog.ShowInfo(
+                Window.GetWindow(this),
+                T("QA02.Dialog.SaveFailed.Title"),
+                TF("QA02.Dialog.SaveFailed.Message", result.Message));
+
             return false;
         }
 
+        LogQualityChanges();
+
+        _logger?.AdminAction(
+            "QA02",
+            "SaveQualityArticleEdit",
+            _currentUserName,
+            $"PrintVersion={_selectedPrintVersion.FullPrintVersionNumber}; SapMaterial={_selectedPrintVersion.SapMaterialNumber}");
+
         ClearDirtyState();
         UpdateTaskStatus();
+        UpdateSnapshots();
+
+        DmsConfirmDialog.ShowInfo(
+            Window.GetWindow(this),
+            T("QA02.Dialog.Saved.Title"),
+            TF("QA02.Dialog.Saved.Message", _selectedPrintVersion.FullPrintVersionNumber));
 
         return true;
     }
-
-    // ============================================================
-    // NAVIGACE
-    // ============================================================
 
     private void BtnBackToQa03_Click(
         object sender,
@@ -484,12 +496,9 @@ public partial class QualityArticleEditView :
             return;
         }
 
-        var target =
-            _selectedPrintVersion?.FullPrintVersionNumber
-            ?? _query;
+        var target = _selectedPrintVersion?.FullPrintVersionNumber ?? _query;
 
         _allowNavigationAfterSave = true;
-
         TransactionRequested?.Invoke($"QA03 {target}");
     }
 
@@ -501,9 +510,8 @@ public partial class QualityArticleEditView :
         {
             var result = DmsConfirmDialog.Show(
                 Window.GetWindow(this),
-                "Neuložené změny",
-                "V QA02 jsou neuložené změny.\n\n" +
-                "Chceš je před obnovením uložit?",
+                T("QA02.Dialog.Unsaved.Title"),
+                T("QA02.Dialog.Unsaved.ReloadMessage"),
                 showCancel: true);
 
             if (result == MessageBoxResult.Cancel)
@@ -511,12 +519,17 @@ public partial class QualityArticleEditView :
                 return;
             }
 
-            if (result == MessageBoxResult.Yes &&
-                !TrySave())
+            if (result == MessageBoxResult.Yes && !TrySave())
             {
                 return;
             }
         }
+
+        _logger?.AdminAction(
+            "QA02",
+            "ReloadQualityArticleEdit",
+            _currentUserName,
+            $"Query={_query}; HadUnsavedChanges={_hasUnsavedChanges}");
 
         LoadLookupData();
         LoadData();
@@ -537,9 +550,8 @@ public partial class QualityArticleEditView :
 
         var result = DmsConfirmDialog.Show(
             Window.GetWindow(this),
-            "Neuložené změny",
-            "V QA02 jsou neuložené změny.\n\n" +
-            "Chceš je před odchodem uložit?",
+            T("QA02.Dialog.Unsaved.Title"),
+            T("QA02.Dialog.Unsaved.LeaveMessage"),
             showCancel: true);
 
         return result switch
@@ -550,19 +562,14 @@ public partial class QualityArticleEditView :
         };
     }
 
-    // ============================================================
-    // IDENTIFIKÁTORY
-    // ============================================================
-
     private void BtnEnableIdentityEdit_Click(
         object sender,
         RoutedEventArgs e)
     {
         var result = DmsConfirmDialog.Show(
             Window.GetWindow(this),
-            "Změna identifikačních dat",
-            "POZOR: Změna těchto polí může narušit integritu dat.\n\n" +
-            "Opravdu chceš povolit změnu čísla tiskové verze a SAP ID?",
+            T("QA02.Dialog.Identity.Title"),
+            T("QA02.Dialog.Identity.Message"),
             showCancel: true);
 
         if (result != MessageBoxResult.Yes)
@@ -570,9 +577,14 @@ public partial class QualityArticleEditView :
             return;
         }
 
+        _logger?.AdminAction(
+            "QA02",
+            "EnableIdentityEdit",
+            _currentUserName,
+            $"PrintVersion={_selectedPrintVersion?.FullPrintVersionNumber ?? _query}");
+
         TxtPrintVersion.IsReadOnly = false;
         TxtSapMaterial.IsReadOnly = false;
-
         TxtPrintVersion.Focus();
     }
 
@@ -591,11 +603,9 @@ public partial class QualityArticleEditView :
         {
             return;
         }
-    }
 
-    // ============================================================
-    // DIRTY TRACKING
-    // ============================================================
+        _identityWarningShown = true;
+    }
 
     private void EditableControl_TextChanged(
         object sender,
@@ -631,11 +641,9 @@ public partial class QualityArticleEditView :
         }
 
         _hasUnsavedChanges = true;
-
         MarkGridChanged(GridTasks);
 
-        Dispatcher.BeginInvoke(
-            new Action(UpdateTaskStatus));
+        Dispatcher.BeginInvoke(new Action(UpdateTaskStatus));
     }
 
     private void MarkControlChanged(Control? control)
@@ -646,25 +654,16 @@ public partial class QualityArticleEditView :
         }
 
         _hasUnsavedChanges = true;
-
         _changedControls.Add(control);
 
-        control.BorderBrush =
-            new SolidColorBrush(
-                Color.FromRgb(230, 160, 45));
-
-        control.BorderThickness =
-            new Thickness(2);
+        control.BorderBrush = new SolidColorBrush(Color.FromRgb(230, 160, 45));
+        control.BorderThickness = new Thickness(2);
     }
 
     private static void MarkGridChanged(DataGrid grid)
     {
-        grid.BorderBrush =
-            new SolidColorBrush(
-                Color.FromRgb(230, 160, 45));
-
-        grid.BorderThickness =
-            new Thickness(2);
+        grid.BorderBrush = new SolidColorBrush(Color.FromRgb(230, 160, 45));
+        grid.BorderThickness = new Thickness(2);
     }
 
     private void ClearDirtyState()
@@ -673,25 +672,15 @@ public partial class QualityArticleEditView :
 
         foreach (var control in _changedControls)
         {
-            control.ClearValue(
-                Control.BorderBrushProperty);
-
-            control.ClearValue(
-                Control.BorderThicknessProperty);
+            control.ClearValue(Control.BorderBrushProperty);
+            control.ClearValue(Control.BorderThicknessProperty);
         }
 
         _changedControls.Clear();
 
-        GridTasks.ClearValue(
-            Control.BorderBrushProperty);
-
-        GridTasks.ClearValue(
-            Control.BorderThicknessProperty);
+        GridTasks.ClearValue(Control.BorderBrushProperty);
+        GridTasks.ClearValue(Control.BorderThicknessProperty);
     }
-
-    // ============================================================
-    // SCROLL
-    // ============================================================
 
     private void GridTasks_PreviewMouseWheel(
         object sender,
@@ -702,10 +691,6 @@ public partial class QualityArticleEditView :
         RootScrollViewer.ScrollToVerticalOffset(
             RootScrollViewer.VerticalOffset - e.Delta);
     }
-
-    // ============================================================
-    // LOOKUPY / VÝBĚROVÁ POLE
-    // ============================================================
 
     private void LoadLookupData()
     {
@@ -753,9 +738,7 @@ public partial class QualityArticleEditView :
         object sender,
         RoutedEventArgs e)
     {
-        SelectColorTypesFromText(
-            TxtColorType.Text);
-
+        SelectColorTypesFromText(TxtColorType.Text);
         PopupColorTypes.IsOpen = true;
     }
 
@@ -770,11 +753,8 @@ public partial class QualityArticleEditView :
             .Select(item => item.Name)
             .ToList();
 
-        TxtColorType.Text =
-            string.Join(", ", selectedNames);
-
+        TxtColorType.Text = string.Join(", ", selectedNames);
         PopupColorTypes.IsOpen = false;
-
         MarkControlChanged(TxtColorType);
     }
 
@@ -783,16 +763,12 @@ public partial class QualityArticleEditView :
         RoutedEventArgs e)
     {
         ListColorTypes.SelectedItems.Clear();
-
         TxtColorType.Clear();
-
         PopupColorTypes.IsOpen = false;
-
         MarkControlChanged(TxtColorType);
     }
 
-    private void SelectColorTypesFromText(
-        string? currentText)
+    private void SelectColorTypesFromText(string? currentText)
     {
         ListColorTypes.SelectedItems.Clear();
 
@@ -809,8 +785,7 @@ public partial class QualityArticleEditView :
         }
     }
 
-    private static IEnumerable<string> SplitLookupValues(
-        string? value)
+    private static IEnumerable<string> SplitLookupValues(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
@@ -851,9 +826,9 @@ public partial class QualityArticleEditView :
 
         TxtCustomer.Text = customer.Name;
         PopupCustomers.IsOpen = false;
-
         MarkControlChanged(TxtCustomer);
     }
+
     private void ListGlassTreatments_SelectionChanged(
         object sender,
         SelectionChangedEventArgs e)
@@ -866,7 +841,6 @@ public partial class QualityArticleEditView :
 
         TxtGlassTreatment.Text = item.Name;
         PopupGlassTreatments.IsOpen = false;
-
         MarkControlChanged(TxtGlassTreatment);
     }
 
@@ -882,13 +856,8 @@ public partial class QualityArticleEditView :
 
         TxtQualityClass.Text = item.Name;
         PopupQualityClasses.IsOpen = false;
-
         MarkControlChanged(TxtQualityClass);
     }
-
-    // ============================================================
-    // NORMALIZACE
-    // ============================================================
 
     private static string NormalizeSapNumber(string? value)
     {
@@ -909,10 +878,6 @@ public partial class QualityArticleEditView :
             : text;
     }
 
-    // ============================================================
-    // QUALITY ÚKOLY
-    // ============================================================
-
     private void SubscribeTaskChanges()
     {
         if (_selectedPrintVersion is null)
@@ -924,7 +889,6 @@ public partial class QualityArticleEditView :
         {
             task.PropertyChanged -= Task_PropertyChanged;
             task.PropertyChanged += Task_PropertyChanged;
-
             _subscribedTasks.Add(task);
         }
     }
@@ -949,9 +913,7 @@ public partial class QualityArticleEditView :
         }
 
         _hasUnsavedChanges = true;
-
         MarkGridChanged(GridTasks);
-
         UpdateTaskStatus();
     }
 
@@ -959,29 +921,317 @@ public partial class QualityArticleEditView :
     {
         if (_selectedPrintVersion is null)
         {
-            TxtTaskStatus.Text =
-                "Bez vybrané tiskové verze";
-
+            TxtTaskStatus.Text = T("QA02.TaskStatus.NoPrintVersion");
             return;
         }
 
         var tasks = _selectedPrintVersion.Tasks
-            .Where(task =>
-                !string.IsNullOrWhiteSpace(task.Text))
+            .Where(task => !string.IsNullOrWhiteSpace(task.Text))
             .ToList();
 
         if (tasks.Count == 0)
         {
-            TxtTaskStatus.Text = "Bez úkolů";
+            TxtTaskStatus.Text = T("QA02.TaskStatus.NoTasks");
             return;
         }
 
-        var completedCount = tasks.Count(task =>
-            task.CompletedAt.HasValue);
+        var completedCount = tasks.Count(task => task.CompletedAt.HasValue);
 
-        TxtTaskStatus.Text =
-            completedCount == tasks.Count
-                ? $"Úkoly splněny ({completedCount}/{tasks.Count})"
-                : $"Úkoly nesplněny ({completedCount}/{tasks.Count})";
+        TxtTaskStatus.Text = completedCount == tasks.Count
+            ? TF("QA02.TaskStatus.AllCompleted", completedCount, tasks.Count)
+            : TF("QA02.TaskStatus.NotCompleted", completedCount, tasks.Count);
+    }
+
+    private void UpdateSnapshots()
+    {
+        _articleSnapshot = _model is null
+            ? null
+            : ArticleSnapshot.From(_model);
+
+        _printVersionSnapshot = _selectedPrintVersion is null
+            ? null
+            : PrintVersionSnapshot.From(_selectedPrintVersion);
+    }
+
+    private void LogQualityChanges()
+    {
+        if (_model is not null && _articleSnapshot is not null)
+        {
+            var articleId = _selectedPrintVersion?.SapMaterialNumber ?? _query;
+
+            LogFieldChange(
+                "QualityArticle",
+                articleId,
+                "ImportantInfo",
+                _articleSnapshot.ImportantInfo,
+                _model.ImportantInfo);
+
+            LogFieldChange(
+                "QualityArticle",
+                articleId,
+                "ArticleNotes",
+                _articleSnapshot.ArticleNotes,
+                _model.ArticleNotes);
+        }
+
+        if (_selectedPrintVersion is null || _printVersionSnapshot is null)
+        {
+            return;
+        }
+
+        var current = _selectedPrintVersion;
+        var old = _printVersionSnapshot;
+        var entityId = current.FullPrintVersionNumber;
+
+        LogFieldChange("QualityPrintVersion", entityId, "FullPrintVersionNumber", old.FullPrintVersionNumber, current.FullPrintVersionNumber);
+        LogFieldChange("QualityPrintVersion", entityId, "SapMaterialNumber", old.SapMaterialNumber, current.SapMaterialNumber);
+        LogFieldChange("QualityPrintVersion", entityId, "Title", old.Title, current.Title);
+        LogFieldChange("QualityPrintVersion", entityId, "Customer", old.Customer, current.Customer);
+        LogFieldChange("QualityPrintVersion", entityId, "DecorationCode", old.DecorationCode, current.DecorationCode);
+        LogFieldChange("QualityPrintVersion", entityId, "ColorType", old.ColorType, current.ColorType);
+        LogFieldChange("QualityPrintVersion", entityId, "GlassTreatment", old.GlassTreatment, current.GlassTreatment);
+        LogFieldChange("QualityPrintVersion", entityId, "QualityClass", old.QualityClass, current.QualityClass);
+        LogFieldChange("QualityPrintVersion", entityId, "HdNumber", old.HdNumber, current.HdNumber);
+        LogFieldChange("QualityPrintVersion", entityId, "SampleLocation", old.SampleLocation, current.SampleLocation);
+        LogFieldChange("QualityPrintVersion", entityId, "BoardLocation", old.BoardLocation, current.BoardLocation);
+        LogFieldChange("QualityPrintVersion", entityId, "GaugeLocation", old.GaugeLocation, current.GaugeLocation);
+        LogFieldChange("QualityPrintVersion", entityId, "HasGauge", old.HasGauge.ToString(), current.HasGauge.ToString());
+        LogFieldChange("QualityPrintVersion", entityId, "HasComplaint", old.HasComplaint.ToString(), current.HasComplaint.ToString());
+        LogFieldChange("QualityPrintVersion", entityId, "SamplesOnCamera", old.SamplesOnCamera.ToString(), current.SamplesOnCamera.ToString());
+        LogFieldChange("QualityPrintVersion", entityId, "Notes", old.Notes, current.Notes);
+
+        LogTaskChanges(old, current);
+    }
+
+    private void LogTaskChanges(
+        PrintVersionSnapshot old,
+        QualityPrintVersionEditModel current)
+    {
+        var oldTasks = old.Tasks
+            .Where(task => !string.IsNullOrWhiteSpace(task.Number))
+            .GroupBy(task => task.Number, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+        var currentTasks = current.Tasks
+            .Select(TaskSnapshot.From)
+            .Where(task => !string.IsNullOrWhiteSpace(task.Number))
+            .GroupBy(task => task.Number, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var currentTask in currentTasks.Values)
+        {
+            var entityId = $"{current.FullPrintVersionNumber}#{currentTask.Number}";
+
+            if (!oldTasks.TryGetValue(currentTask.Number, out var oldTask))
+            {
+                if (!string.IsNullOrWhiteSpace(currentTask.Text))
+                {
+                    _logger?.AuditCreated(
+                        "QA02",
+                        "QualityTask",
+                        entityId,
+                        _currentUserName,
+                        currentTask.ToDetail());
+                }
+
+                continue;
+            }
+
+            if (oldTask.IsEmpty && currentTask.IsEmpty)
+            {
+                continue;
+            }
+
+            if (!oldTask.IsEmpty && currentTask.IsEmpty)
+            {
+                _logger?.AuditDeleted(
+                    "QA02",
+                    "QualityTask",
+                    entityId,
+                    _currentUserName,
+                    oldTask.ToDetail());
+
+                continue;
+            }
+
+            LogFieldChange("QualityTask", entityId, "Text", oldTask.Text, currentTask.Text);
+            LogFieldChange("QualityTask", entityId, "DueDate", FormatDateForLog(oldTask.DueDate), FormatDateForLog(currentTask.DueDate));
+            LogFieldChange("QualityTask", entityId, "IsCompleted", oldTask.IsCompleted.ToString(), currentTask.IsCompleted.ToString());
+            LogFieldChange("QualityTask", entityId, "CompletedAt", FormatDateForLog(oldTask.CompletedAt), FormatDateForLog(currentTask.CompletedAt));
+        }
+
+        foreach (var oldTask in oldTasks.Values)
+        {
+            if (currentTasks.ContainsKey(oldTask.Number) || oldTask.IsEmpty)
+            {
+                continue;
+            }
+
+            var entityId = $"{current.FullPrintVersionNumber}#{oldTask.Number}";
+
+            _logger?.AuditDeleted(
+                "QA02",
+                "QualityTask",
+                entityId,
+                _currentUserName,
+                oldTask.ToDetail());
+        }
+    }
+
+    private void LogFieldChange(
+        string entity,
+        string entityId,
+        string field,
+        string? oldValue,
+        string? newValue)
+    {
+        if (string.Equals(oldValue ?? string.Empty, newValue ?? string.Empty, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _logger?.AuditChange(
+            "QA02",
+            entity,
+            entityId,
+            field,
+            oldValue,
+            newValue,
+            _currentUserName);
+    }
+
+    private string T(string key)
+    {
+        var value = _translate?.Invoke(key) ?? key;
+        return IsMissing(value, key) ? key : value;
+    }
+
+    private string TF(string key, params object[] args)
+    {
+        if (_translateFormat is not null)
+        {
+            var value = _translateFormat.Invoke(key, args);
+            if (!IsMissing(value, key))
+            {
+                return value;
+            }
+        }
+
+        var pattern = T(key);
+
+        try
+        {
+            return string.Format(pattern, args);
+        }
+        catch
+        {
+            return pattern;
+        }
+    }
+
+    private static bool IsMissing(string? value, string key)
+    {
+        return string.IsNullOrWhiteSpace(value)
+               || string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FormatDateForLog(DateTime? value)
+    {
+        return value.HasValue
+            ? value.Value.ToString("yyyy-MM-dd")
+            : string.Empty;
+    }
+
+    private sealed class ArticleSnapshot
+    {
+        public string ImportantInfo { get; init; } = string.Empty;
+        public string ArticleNotes { get; init; } = string.Empty;
+
+        public static ArticleSnapshot From(QualityArticleEditModel model)
+        {
+            return new ArticleSnapshot
+            {
+                ImportantInfo = model.ImportantInfo ?? string.Empty,
+                ArticleNotes = model.ArticleNotes ?? string.Empty
+            };
+        }
+    }
+
+    private sealed class PrintVersionSnapshot
+    {
+        public string FullPrintVersionNumber { get; init; } = string.Empty;
+        public string SapMaterialNumber { get; init; } = string.Empty;
+        public string Title { get; init; } = string.Empty;
+        public string Customer { get; init; } = string.Empty;
+        public string DecorationCode { get; init; } = string.Empty;
+        public string ColorType { get; init; } = string.Empty;
+        public string GlassTreatment { get; init; } = string.Empty;
+        public string QualityClass { get; init; } = string.Empty;
+        public string HdNumber { get; init; } = string.Empty;
+        public string SampleLocation { get; init; } = string.Empty;
+        public string BoardLocation { get; init; } = string.Empty;
+        public string GaugeLocation { get; init; } = string.Empty;
+        public bool HasGauge { get; init; }
+        public bool HasComplaint { get; init; }
+        public bool SamplesOnCamera { get; init; }
+        public string Notes { get; init; } = string.Empty;
+        public List<TaskSnapshot> Tasks { get; init; } = new();
+
+        public static PrintVersionSnapshot From(QualityPrintVersionEditModel model)
+        {
+            return new PrintVersionSnapshot
+            {
+                FullPrintVersionNumber = model.FullPrintVersionNumber ?? string.Empty,
+                SapMaterialNumber = model.SapMaterialNumber ?? string.Empty,
+                Title = model.Title ?? string.Empty,
+                Customer = model.Customer ?? string.Empty,
+                DecorationCode = model.DecorationCode ?? string.Empty,
+                ColorType = model.ColorType ?? string.Empty,
+                GlassTreatment = model.GlassTreatment ?? string.Empty,
+                QualityClass = model.QualityClass ?? string.Empty,
+                HdNumber = model.HdNumber ?? string.Empty,
+                SampleLocation = model.SampleLocation ?? string.Empty,
+                BoardLocation = model.BoardLocation ?? string.Empty,
+                GaugeLocation = model.GaugeLocation ?? string.Empty,
+                HasGauge = model.HasGauge,
+                HasComplaint = model.HasComplaint,
+                SamplesOnCamera = model.SamplesOnCamera,
+                Notes = model.Notes ?? string.Empty,
+                Tasks = model.Tasks.Select(TaskSnapshot.From).ToList()
+            };
+        }
+    }
+
+    private sealed class TaskSnapshot
+    {
+        public string Number { get; init; } = string.Empty;
+        public string Text { get; init; } = string.Empty;
+        public DateTime? DueDate { get; init; }
+        public bool IsCompleted { get; init; }
+        public DateTime? CompletedAt { get; init; }
+
+        public bool IsEmpty =>
+            string.IsNullOrWhiteSpace(Text) &&
+            !DueDate.HasValue &&
+            !IsCompleted &&
+            !CompletedAt.HasValue;
+
+        public static TaskSnapshot From(QualityTaskEditModel model)
+        {
+            return new TaskSnapshot
+            {
+                Number = Convert.ToString(model.Number) ?? string.Empty,
+                Text = model.Text ?? string.Empty,
+                DueDate = model.DueDate,
+                IsCompleted = model.IsCompleted,
+                CompletedAt = model.CompletedAt
+            };
+        }
+
+        public string ToDetail()
+        {
+            return $"Number={Number}; Text={Text}; DueDate={FormatDateForLog(DueDate)}; IsCompleted={IsCompleted}; CompletedAt={FormatDateForLog(CompletedAt)}";
+        }
     }
 }

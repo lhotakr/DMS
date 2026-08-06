@@ -1,4 +1,4 @@
-﻿using DMS.Desktop.Configuration.Editing;
+using DMS.Desktop.Configuration.Editing;
 
 namespace DMS.Desktop.Configuration.Roles;
 

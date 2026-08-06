@@ -1,0 +1,100 @@
+<UserControl x:Class="DMS.Desktop.Views.Checklists.ChecklistWorkspaceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinHeight="540">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <TextBlock x:Name="TxtTitle" FontSize="25" FontWeight="Bold"
+                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+            <TextBlock x:Name="TxtSubtitle" Margin="0,5,0,12" TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Margin="0,0,0,12" Padding="10" CornerRadius="6"
+                BorderThickness="1" BorderBrush="{DynamicResource DmsBorderBrush}"
+                Background="{DynamicResource DmsPanelBrush}">
+            <DockPanel>
+                <TextBox x:Name="TxtFilter" Width="320" Margin="0,0,8,0"
+                         VerticalContentAlignment="Center" TextChanged="TxtFilter_TextChanged"/>
+                <Button x:Name="BtnRefresh" Content="Obnovit" Width="90" Click="BtnRefresh_Click"/>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <DataGrid x:Name="GridItems"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      SelectionUnit="FullRow"
+                      HeadersVisibility="Column"
+                      CanUserAddRows="False"
+                      CanUserResizeColumns="True"
+                      CanUserReorderColumns="True"
+                      EnableRowVirtualization="True"
+                      EnableColumnVirtualization="True"
+                      FrozenColumnCount="1"
+                      MinColumnWidth="110"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto"
+                      MouseDoubleClick="GridItems_MouseDoubleClick"
+                      Visibility="Collapsed">
+                <DataGrid.Columns>
+                    <DataGridTextColumn x:Name="ColPrimary" Header="Kód / číslo"
+                                        Binding="{Binding Primary}"
+                                        Width="170"
+                                        MinWidth="145"/>
+                    <DataGridTextColumn x:Name="ColSecondary" Header="Název / artikl"
+                                        Binding="{Binding Secondary}"
+                                        Width="3*"
+                                        MinWidth="300"/>
+                    <DataGridTextColumn x:Name="ColTertiary" Header="Stav / typ"
+                                        Binding="{Binding Tertiary}"
+                                        Width="210"
+                                        MinWidth="180"/>
+                    <DataGridTextColumn x:Name="ColModified" Header="Změněno"
+                                        Binding="{Binding Modified}"
+                                        Width="175"
+                                        MinWidth="160"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <ScrollViewer x:Name="FormScroll"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Auto"
+                          Visibility="Collapsed">
+                <StackPanel x:Name="FormPanel"/>
+            </ScrollViewer>
+
+            <Border x:Name="BusyPanel"
+                    Visibility="Collapsed"
+                    Background="{DynamicResource DmsPanelBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="24"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <StackPanel>
+                    <ProgressBar IsIndeterminate="True" Width="260" Height="8"/>
+                    <TextBlock x:Name="TxtBusy"
+                               Text="Načítám data…"
+                               Margin="0,12,0,0"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="BtnPrimary" Width="150" Margin="0,0,8,0" Click="BtnPrimary_Click" Visibility="Collapsed"/>
+            <Button x:Name="BtnSecondary" Width="150" Click="BtnSecondary_Click" Visibility="Collapsed"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

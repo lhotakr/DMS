@@ -4,11 +4,11 @@
              Background="{DynamicResource DmsPanelBrush}">
 
     <ScrollViewer x:Name="RootScrollViewer"
-              VerticalScrollBarVisibility="Auto"
-              HorizontalScrollBarVisibility="Auto"
-              PanningMode="VerticalOnly">
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Auto"
+                  PanningMode="VerticalOnly">
 
         <StackPanel x:Name="RootPanel"
-                Margin="18"/>
+                    Margin="18"/>
     </ScrollViewer>
 </UserControl>

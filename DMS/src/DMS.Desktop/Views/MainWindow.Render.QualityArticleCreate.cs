@@ -8,7 +8,22 @@ public partial class MainWindow
     {
         WorkspacePanel.Children.Clear();
 
-        var view = new QualityArticleCreateView(query);
+        var dmsRootPath = GetDmsDataRootPath();
+
+        _logger.AdminAction(
+            "QA01",
+            "OpenQualityArticleCreate",
+            _currentUser.DisplayName,
+            $"Root={dmsRootPath}; Query={query}");
+
+        var view = new QualityArticleCreateView(
+            query,
+            dmsRootPath,
+            _logger,
+            _currentUser.DisplayName,
+            translate: key => T(key),
+            translateFormat: (key, args) => T(key, args));
+
         view.TransactionRequested += ExecuteTransactionFromView;
 
         WorkspacePanel.Children.Add(view);

@@ -1,0 +1,144 @@
+﻿using DMS.Core.Checklists;
+using System.Text.Json;
+using System.IO;
+
+namespace DMS.Desktop.Services.Checklists;
+
+public sealed class ChecklistCatalogService
+{
+    private readonly string _filePath;
+    private readonly JsonSerializerOptions _options = new()
+    {
+        WriteIndented = true,
+        PropertyNameCaseInsensitive = true
+    };
+
+    public ChecklistCatalogService(string checklistRoot)
+    {
+        var configRoot = Path.Combine(checklistRoot, "Configuration");
+        Directory.CreateDirectory(configRoot);
+        _filePath = Path.Combine(configRoot, "catalogs.json");
+        EnsureSeed();
+    }
+
+    public string FilePath => _filePath;
+
+    public IReadOnlyList<ChecklistCatalog> LoadAll()
+    {
+        if (!File.Exists(_filePath))
+            return Array.Empty<ChecklistCatalog>();
+
+        var json = File.ReadAllText(_filePath);
+        return JsonSerializer.Deserialize<List<ChecklistCatalog>>(json, _options)
+               ?? new List<ChecklistCatalog>();
+    }
+
+    public ChecklistCatalog? Find(string? code) => LoadAll().FirstOrDefault(x =>
+        string.Equals(x.Code, code, StringComparison.OrdinalIgnoreCase));
+
+    public void SaveAll(IEnumerable<ChecklistCatalog> catalogs)
+    {
+        var list = catalogs.ToList();
+        Validate(list);
+
+        var directory = Path.GetDirectoryName(_filePath)!;
+        Directory.CreateDirectory(directory);
+        var tmp = _filePath + ".tmp";
+        var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+
+        File.WriteAllText(tmp, JsonSerializer.Serialize(list, _options));
+
+        // Validate the generated JSON before replacing the live file.
+        _ = JsonSerializer.Deserialize<List<ChecklistCatalog>>(File.ReadAllText(tmp), _options)
+            ?? throw new InvalidOperationException("Catalog serialization validation failed.");
+
+        if (File.Exists(_filePath))
+            File.Copy(_filePath, _filePath + ".bak-" + stamp, overwrite: true);
+
+        File.Move(tmp, _filePath, overwrite: true);
+    }
+
+    public void Save(ChecklistCatalog catalog)
+    {
+        var all = LoadAll().ToList();
+        var index = all.FindIndex(x => x.CatalogId == catalog.CatalogId ||
+            string.Equals(x.Code, catalog.Code, StringComparison.OrdinalIgnoreCase));
+
+        if (index >= 0) all[index] = catalog;
+        else all.Add(catalog);
+
+        SaveAll(all);
+    }
+
+    private void EnsureSeed()
+    {
+        if (File.Exists(_filePath))
+            return;
+
+        SaveAll(CreateSeed());
+    }
+
+    private static void Validate(IReadOnlyList<ChecklistCatalog> catalogs)
+    {
+        var catalogCodes = catalogs.Select(x => x.Code.Trim()).ToList();
+        if (catalogCodes.Any(string.IsNullOrWhiteSpace) ||
+            catalogCodes.Distinct(StringComparer.OrdinalIgnoreCase).Count() != catalogCodes.Count)
+            throw new InvalidOperationException("Catalog codes must be filled and unique.");
+
+        foreach (var catalog in catalogs)
+        {
+            var itemCodes = catalog.Items.Select(x => x.Code.Trim()).ToList();
+            if (itemCodes.Any(string.IsNullOrWhiteSpace) ||
+                itemCodes.Distinct(StringComparer.OrdinalIgnoreCase).Count() != itemCodes.Count)
+                throw new InvalidOperationException($"Item codes in catalog {catalog.Code} must be filled and unique.");
+        }
+    }
+
+    private static List<ChecklistCatalog> CreateSeed() => new()
+    {
+        Catalog("SAMPLING_TYPE", "Typ vzorování",
+            Item("NEW", "Nové vzorování", 10),
+            Item("REPEAT", "Opakované vzorování", 20),
+            Item("TECH_CHANGE", "Změna technologie", 30),
+            Item("RECIPE_CHANGE", "Změna receptury", 40)),
+
+        Catalog("DECORATION_TYPE", "Typ dekorace"),
+        Catalog("EXECUTION_TYPE", "Provedení"),
+        Catalog("TIP_TYPE", "Typ špiček"),
+        Catalog("MASK_TYPE", "Typ masky"),
+
+        Catalog("PRETREATMENT_TYPE", "Předúprava",
+            Item("OPAL", "Opal", 10),
+            Item("MANUAL_OPAL", "Manuální opal", 20),
+            Item("DEGREASING", "Odmaštění", 30),
+            Item("IONIZATION", "Ionizace", 40),
+            Item("OSTRICH_FEATHERS", "Pštrosí pera", 50),
+            Item("MANUAL_BLOWING", "Manuální ofuk", 60)),
+
+        Catalog("KOLZER_MACHINE", "Použitý Kolzer",
+            Item("1", "Kolzer 1", 10),
+            Item("2", "Kolzer 2", 20),
+            Item("3", "Kolzer 3", 30)),
+
+        Catalog("KOLZER_LOAD_TYPE", "Použitý typ",
+            Item("TREES", "Stromečky", 10),
+            Item("CAROUSEL", "Karusel", 20))
+    };
+
+    private static ChecklistCatalog Catalog(
+        string code,
+        string name,
+        params ChecklistCatalogItem[] items) => new()
+    {
+        Code = code,
+        Name = name,
+        Items = items.ToList()
+    };
+
+    private static ChecklistCatalogItem Item(string code, string text, int order) => new()
+    {
+        Code = code,
+        DisplayText = text,
+        SortOrder = order
+    };
+}

@@ -49,12 +49,16 @@ public sealed class DmsSystemSettingsService
     private static DmsSystemSettings CreateDefault()
     {
 
-
         return new DmsSystemSettings
         {
             DocumentsRootPath = @"Z:\SAP\DMS-db\DEV\Documents",
             ArticleFoldersRootPath = @"Z:\SAP\DMS-db\DEV\Documents\Articles",
             CreateArticleFoldersOnSapImport = true,
+
+            HeaderSecondaryLogoPath = string.Empty,
+            HeaderSecondaryLogoMaxWidth = 360,
+            HeaderSecondaryLogoMaxHeight = 70,
+
             ArticleFolderMaterialRanges =
 {
     new DmsMaterialRangeDefinition

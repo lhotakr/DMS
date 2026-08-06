@@ -14,11 +14,11 @@
                  NADPIS
                  ================================================= -->
 
-            <TextBlock Text="QA01 - Založení quality dat"
+            <TextBlock x:Name="TxtTitle" Text="QA01 - Create quality data"
                        Style="{StaticResource DmsTitleTextStyle}"
                        Margin="0,0,0,8"/>
 
-            <TextBlock Text="Založení quality artiklu a první tiskové verze podle SAP cache."
+            <TextBlock x:Name="TxtSubtitle" Text="Create quality article data and the first print version from the SAP cache."
                        TextWrapping="Wrap"
                        Margin="0,0,0,14"
                        Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
@@ -27,7 +27,7 @@
                  SAP VSTUP
                  ================================================= -->
 
-            <TextBlock Text="SAP materiál"
+            <TextBlock x:Name="TxtSectionSapMaterial" Text="SAP material"
                        Style="{StaticResource DmsSectionTitleStyle}"/>
 
             <Grid Width="620"
@@ -41,7 +41,8 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0"
-                           Text="SAP číslo"
+                           x:Name="LblSapNumber"
+                           Text="SAP number"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtSapInput"
@@ -51,8 +52,9 @@
                          TextChanged="EditableControl_TextChanged"
                          KeyDown="TxtSapInput_KeyDown"/>
 
-                <Button Grid.Column="2"
-                        Content="Načíst"
+                <Button x:Name="BtnLoadSap"
+                        Grid.Column="2"
+                        Content="Load"
                         Style="{StaticResource DmsPrimaryButtonStyle}"
                         Click="BtnLoadSap_Click"/>
             </Grid>
@@ -76,7 +78,7 @@
                  SAP ZÁKLAD
                  ================================================= -->
 
-            <TextBlock Text="SAP základ"
+            <TextBlock x:Name="TxtSectionSapBase" Text="SAP base data"
                        Style="{StaticResource DmsSectionTitleStyle}"/>
 
             <Grid Margin="0,0,0,12">
@@ -95,6 +97,7 @@
 
                 <TextBlock Grid.Row="0"
                            Grid.Column="0"
+                           x:Name="LblSapId"
                            Text="SAP ID"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
@@ -107,7 +110,8 @@
 
                 <TextBlock Grid.Row="0"
                            Grid.Column="2"
-                           Text="Staré číslo"
+                           x:Name="LblOldNumber"
+                           Text="Old number"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtOldMaterialNumber"
@@ -118,7 +122,8 @@
 
                 <TextBlock Grid.Row="1"
                            Grid.Column="0"
-                           Text="SAP název"
+                           x:Name="LblSapTitle"
+                           Text="SAP title"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtSapTitle"
@@ -134,7 +139,7 @@
                  INFORMACE O ARTIKLU
                  ================================================= -->
 
-            <TextBlock Text="Informace o artiklu"
+            <TextBlock x:Name="TxtSectionArticleInfo" Text="Article information"
                        Style="{StaticResource DmsSectionTitleStyle}"/>
 
             <Grid Margin="0,0,0,12">
@@ -151,7 +156,8 @@
 
                 <TextBlock Grid.Row="0"
                            Grid.Column="0"
-                           Text="Důležité info"
+                           x:Name="LblImportantInfo"
+                           Text="Important info"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtImportantInfo"
@@ -163,7 +169,8 @@
 
                 <TextBlock Grid.Row="1"
                            Grid.Column="0"
-                           Text="Poznámky k artiklu"
+                           x:Name="LblArticleNotes"
+                           Text="Article notes"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtArticleNotes"
@@ -178,7 +185,7 @@
                  PRVNÍ TISKOVÁ VERZE
                  ================================================= -->
 
-            <TextBlock Text="První tisková verze"
+            <TextBlock x:Name="TxtSectionFirstPrintVersion" Text="First print version"
                        Style="{StaticResource DmsSectionTitleStyle}"/>
 
             <Grid x:Name="PrintVersionForm"
@@ -207,7 +214,8 @@
 
                 <TextBlock Grid.Row="0"
                            Grid.Column="0"
-                           Text="Číslo tiskové verze"
+                           x:Name="LblPrintVersionNumber"
+                           Text="Print version number"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtPrintVersion"
@@ -219,7 +227,8 @@
 
                 <TextBlock Grid.Row="0"
                            Grid.Column="2"
-                           Text="Název"
+                           x:Name="LblPrintVersionTitle"
+                           Text="Title"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtPrintVersionTitle"
@@ -232,7 +241,8 @@
 
                 <TextBlock Grid.Row="1"
                            Grid.Column="0"
-                           Text="Zákazník"
+                           x:Name="LblCustomer"
+                           Text="Customer"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <Grid Grid.Row="1"
@@ -271,7 +281,8 @@
 
                 <TextBlock Grid.Row="1"
                            Grid.Column="2"
-                           Text="Dekorace"
+                           x:Name="LblDecoration"
+                           Text="Decoration"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtDecoration"
@@ -279,13 +290,14 @@
                          Grid.Column="3"
                          IsReadOnly="True"
                          Style="{StaticResource DmsReadOnlyTextBoxStyle}"
-                         ToolTip="Dekorace je převzata ze SAP cache."/>
+                         ToolTip="Decoration is taken from the SAP cache."/>
 
                 <!-- Barva / úprava skla -->
 
                 <TextBlock Grid.Row="2"
                            Grid.Column="0"
-                           Text="Barva"
+                           x:Name="LblColorType"
+                           Text="Color"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <Grid Grid.Row="2"
@@ -302,7 +314,7 @@
                              IsReadOnly="True"
                              Style="{StaticResource DmsReadOnlyTextBoxStyle}"
                              TextChanged="EditableControl_TextChanged"
-                             ToolTip="Lze vybrat více hodnot."/>
+                             ToolTip="Multiple values can be selected."/>
 
                     <Button Grid.Column="1"
                             Style="{StaticResource DmsSelectorButtonStyle}"
@@ -325,13 +337,15 @@
                                             HorizontalAlignment="Right"
                                             Margin="0,8,0,0">
 
-                                    <Button Content="Vyčistit"
+                                    <Button x:Name="BtnClearColorTypes"
+                                            Content="Clear"
                                             Width="90"
                                             Margin="0,0,8,0"
                                             Style="{StaticResource DmsFormButtonStyle}"
                                             Click="BtnClearColorTypes_Click"/>
 
-                                    <Button Content="Použít"
+                                    <Button x:Name="BtnApplyColorTypes"
+                                            Content="Apply"
                                             Width="90"
                                             Style="{StaticResource DmsPrimaryButtonStyle}"
                                             Click="BtnApplyColorTypes_Click"/>
@@ -349,7 +363,8 @@
 
                 <TextBlock Grid.Row="2"
                            Grid.Column="2"
-                           Text="Úprava skla"
+                           x:Name="LblGlassTreatment"
+                           Text="Glass treatment"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <Grid Grid.Row="2"
@@ -390,7 +405,8 @@
 
                 <TextBlock Grid.Row="3"
                            Grid.Column="0"
-                           Text="Třída kvality"
+                           x:Name="LblQualityClass"
+                           Text="Quality class"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <Grid Grid.Row="3"
@@ -429,7 +445,8 @@
 
                 <TextBlock Grid.Row="3"
                            Grid.Column="2"
-                           Text="HD číslo"
+                           x:Name="LblHdNumber"
+                           Text="HD number"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtHdNumber"
@@ -442,7 +459,8 @@
 
                 <TextBlock Grid.Row="4"
                            Grid.Column="0"
-                           Text="Umístění vzorků"
+                           x:Name="LblSampleLocation"
+                           Text="Sample location"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtSampleLocation"
@@ -454,7 +472,8 @@
 
                 <TextBlock Grid.Row="4"
                            Grid.Column="2"
-                           Text="Umístění prkna"
+                           x:Name="LblBoardLocation"
+                           Text="Board location"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtBoardLocation"
@@ -465,7 +484,8 @@
 
                 <TextBlock Grid.Row="5"
                            Grid.Column="0"
-                           Text="Umístění měrky"
+                           x:Name="LblGaugeLocation"
+                           Text="Gauge location"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtGaugeLocation"
@@ -485,19 +505,19 @@
                             Margin="0,8,0,8">
 
                     <CheckBox x:Name="ChkHasGauge"
-                              Content="Měrka"
+                              Content="Gauge"
                               Margin="0,0,18,0"
                               Checked="EditableControl_Changed"
                               Unchecked="EditableControl_Changed"/>
 
                     <CheckBox x:Name="ChkComplaint"
-                              Content="Reklamace"
+                              Content="Complaint"
                               Margin="0,0,18,0"
                               Checked="EditableControl_Changed"
                               Unchecked="EditableControl_Changed"/>
 
                     <CheckBox x:Name="ChkSamplesOnCamera"
-                              Content="Vzorky na kameru"
+                              Content="Samples on camera"
                               Checked="EditableControl_Changed"
                               Unchecked="EditableControl_Changed"/>
                 </StackPanel>
@@ -506,7 +526,8 @@
 
                 <TextBlock Grid.Row="6"
                            Grid.Column="0"
-                           Text="Poznámky"
+                           x:Name="LblPrintVersionNotes"
+                           Text="Notes"
                            Style="{StaticResource DmsFormLabelStyle}"/>
 
                 <TextBox x:Name="TxtPrintVersionNotes"
@@ -526,13 +547,14 @@
                         Margin="0,12,0,0">
 
                 <Button x:Name="BtnCreate"
-                        Content="Založit quality data"
+                        Content="Create quality data"
                         IsEnabled="False"
                         Margin="0,0,8,0"
                         Style="{StaticResource DmsPrimaryButtonStyle}"
                         Click="BtnCreate_Click"/>
 
-                <Button Content="Vyčistit"
+                <Button x:Name="BtnClear"
+                        Content="Clear"
                         Style="{StaticResource DmsFormButtonStyle}"
                         Click="BtnClear_Click"/>
             </StackPanel>

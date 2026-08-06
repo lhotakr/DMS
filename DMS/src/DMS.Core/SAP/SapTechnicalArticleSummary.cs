@@ -1,4 +1,6 @@
-﻿namespace DMS.Core.Sap;
+﻿using DMS.Core.Sap.Validation;
+
+namespace DMS.Core.Sap;
 
 public sealed class SapTechnicalArticleSummary
 {
@@ -11,9 +13,8 @@ public sealed class SapTechnicalArticleSummary
 
     public List<SapRouting> Routings9200 { get; set; } = new();
     public List<SapRouting> Routings2000 { get; set; } = new();
-
-    public List<string> Warnings { get; set; } = new();
-    public List<string> CriticalErrors { get; set; } = new();
+    public List<SapValidationFinding> Warnings { get; set; } = new();
+    public List<SapValidationFinding> CriticalErrors { get; set; } = new();
 
     public bool HasCriticalError => CriticalErrors.Count > 0;
     public bool HasWarning => Warnings.Count > 0;
@@ -22,17 +23,9 @@ public sealed class SapTechnicalArticleSummary
     {
         get
         {
-            if (HasCriticalError)
-            {
-                return "Kritický problém";
-            }
-
-            if (HasWarning)
-            {
-                return "Varování";
-            }
-
-            return "Připraveno";
+            if (HasCriticalError) return "Critical";
+            if (HasWarning) return "Warning";
+            return "Ready";
         }
     }
 }

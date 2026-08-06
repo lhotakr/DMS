@@ -1,0 +1,129 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Checklists.ChecklistSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="CHLSET – Obecné nastavení checklistů"
+                       FontSize="24"
+                       FontWeight="Bold"/>
+            <TextBlock Text="Správa společných katalogů hodnot používaných definicemi checklistů."
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <GroupBox Header="Katalogy" Grid.Column="0">
+                <DockPanel Margin="8">
+                    <StackPanel DockPanel.Dock="Bottom"
+                                Orientation="Horizontal"
+                                Margin="0,8,0,0">
+                        <Button Content="Nový katalog"
+                                Width="120"
+                                Click="NewCatalog_Click"/>
+                        <Button Content="Uložit katalog"
+                                Width="120"
+                                Margin="8,0,0,0"
+                                Click="SaveCatalog_Click"/>
+                    </StackPanel>
+
+                    <DataGrid x:Name="CatalogGrid"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              SelectionChanged="CatalogGrid_SelectionChanged"
+                              HorizontalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Kód" Binding="{Binding Code}" Width="130" MinWidth="110"/>
+                            <DataGridTextColumn Header="Název" Binding="{Binding Name}" Width="*" MinWidth="160"/>
+                            <DataGridCheckBoxColumn Header="Aktivní" Binding="{Binding IsActive}" Width="70"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </GroupBox>
+
+            <GridSplitter Grid.Column="1"
+                          Width="5"
+                          HorizontalAlignment="Center"/>
+
+            <GroupBox Header="Detail katalogu a hodnoty" Grid.Column="2">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="220"/>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="80"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Text="Kód" VerticalAlignment="Center"/>
+                        <TextBox x:Name="CodeBox" Grid.Column="1" Margin="6,0,14,0"/>
+
+                        <TextBlock Text="Název" Grid.Column="2" VerticalAlignment="Center"/>
+                        <TextBox x:Name="NameBox" Grid.Column="3" Margin="6,0,14,0"/>
+
+                        <CheckBox x:Name="ActiveCheck"
+                                  Grid.Column="4"
+                                  Content="Aktivní"
+                                  VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <TextBlock Grid.Row="1"
+                               Text="Hodnoty katalogu"
+                               FontWeight="Bold"
+                               Margin="0,2,0,6"/>
+
+                    <DataGrid x:Name="ItemsGrid"
+                              Grid.Row="2"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              CanUserResizeColumns="True"
+                              HorizontalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Technický kód" Binding="{Binding Code, UpdateSourceTrigger=PropertyChanged}" Width="180" MinWidth="140"/>
+                            <DataGridTextColumn Header="Zobrazovaný text" Binding="{Binding DisplayText, UpdateSourceTrigger=PropertyChanged}" Width="*" MinWidth="250"/>
+                            <DataGridTextColumn Header="Pořadí" Binding="{Binding SortOrder, UpdateSourceTrigger=PropertyChanged}" Width="90"/>
+                            <DataGridCheckBoxColumn Header="Aktivní" Binding="{Binding IsActive, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <StackPanel Grid.Row="3"
+                                Orientation="Horizontal"
+                                Margin="0,8,0,0">
+                        <Button Content="Přidat hodnotu"
+                                Width="120"
+                                Click="AddItem_Click"/>
+                        <Button Content="Odebrat hodnotu"
+                                Width="130"
+                                Margin="8,0,0,0"
+                                Click="RemoveItem_Click"/>
+                    </StackPanel>
+                </Grid>
+            </GroupBox>
+        </Grid>
+
+        <TextBlock x:Name="StatusText"
+                   Grid.Row="2"
+                   Margin="0,10,0,0"/>
+    </Grid>
+</UserControl>

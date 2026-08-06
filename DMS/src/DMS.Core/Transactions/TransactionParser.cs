@@ -1,21 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace DMS.Core.Transactions;
 
-/// <summary>
-/// Parser transakčního řádku.
-/// Převádí textový vstup na strukturovaný TransactionCommand.
-/// Neřeší oprávnění, databázi ani otevírání obrazovek.
-/// </summary>
 public static class TransactionParser
 {
     public static TransactionCommand Parse(string? input)
     {
         var rawInput = input ?? string.Empty;
         var workInput = rawInput.Trim();
-
         var mode = "Current";
 
         if (workInput.StartsWith("/n", StringComparison.OrdinalIgnoreCase))
@@ -30,21 +20,16 @@ public static class TransactionParser
         }
 
         var parts = workInput.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-        var code = parts.Length > 0
-            ? parts[0].Trim().ToUpperInvariant()
-            : string.Empty;
-
-        var parameter = parts.Length > 1
-            ? parts[1].Trim()
-            : null;
+        var code = parts.Length > 0 ? parts[0].Trim().ToUpperInvariant() : string.Empty;
+        var arguments = parts.Skip(1).Select(x => x.Trim()).Where(x => x.Length > 0).ToArray();
 
         return new TransactionCommand
         {
             RawInput = rawInput,
             Mode = mode,
             Code = code,
-            Parameter = parameter
+            Parameter = arguments.FirstOrDefault(),
+            Arguments = arguments
         };
     }
 }

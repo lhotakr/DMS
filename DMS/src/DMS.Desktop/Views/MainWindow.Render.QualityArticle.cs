@@ -11,24 +11,28 @@ public partial class MainWindow
         if (string.IsNullOrWhiteSpace(query))
         {
             RenderSimplePage(
-                "QA03 - Quality karta",
-                "Zadej SAP číslo, tiskovou verzi nebo historické číslo artiklu.\n\n" +
-                "Příklady:\n" +
-                "QA03 1000013206\n" +
-                "QA03 0114025101.99001\n" +
-                "QA03 0114025");
+                T("QA03.Empty.Title"),
+                T("QA03.Empty.Body"));
             return;
         }
 
-        var view = new QualityArticleView(query);
-
-        var canEditQuality = _currentUser.Roles.Any(role =>
-            role.Equals("DMS_ADMIN", StringComparison.OrdinalIgnoreCase) ||
-            role.Equals("DMS_QUALITY_EDIT", StringComparison.OrdinalIgnoreCase));
+        var view = new QualityArticleView(
+            query,
+            GetDmsDataRootPath(),
+            _logger,
+            _currentUser.DisplayName,
+            translate: key => T(key),
+            translateFormat: (key, args) => T(key, args));
 
         view.TransactionRequested += ExecuteTransactionFromView;
 
         WorkspacePanel.Children.Add(view);
+
+        _logger.AdminAction(
+            "QA03",
+            "OpenQualityArticleView",
+            _currentUser.DisplayName,
+            $"Query={query}; Root={GetDmsDataRootPath()}");
 
         ResetWorkspaceScroll();
     }

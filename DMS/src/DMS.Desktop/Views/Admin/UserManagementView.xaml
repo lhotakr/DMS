@@ -3,6 +3,44 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{DynamicResource DmsBackgroundBrush}">
 
+    <UserControl.Resources>
+        <Style x:Key="Usr01UserListBoxItemStyle"
+               TargetType="{x:Type ListBoxItem}">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource DmsAccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <Grid Background="{DynamicResource DmsBackgroundBrush}">
 
         <Grid.RowDefinitions>
@@ -11,43 +49,57 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="USR01 - Správa uživatelů"
+        <TextBlock x:Name="TxtTitle"
+                   Grid.Row="0"
+                   Text="USR01 - User management"
                    Style="{StaticResource DmsTitleTextStyle}"/>
 
         <Grid Grid.Row="1">
 
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="340"/>
+                <ColumnDefinition Width="360"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Levý panel -->
             <Border Grid.Column="0"
                     Style="{StaticResource DmsCardBorderStyle}"
                     Margin="0,0,12,0">
 
                 <DockPanel>
 
-                    <TextBlock DockPanel.Dock="Top"
-                               Text="Uživatelé"
+                    <TextBlock x:Name="TxtUsersTitle"
+                               DockPanel.Dock="Top"
+                               Text="Users"
                                FontSize="18"
                                FontWeight="Bold"
                                Foreground="{DynamicResource DmsForegroundBrush}"
                                Margin="0,0,0,12"/>
 
+                    <StackPanel DockPanel.Dock="Top"
+                                Margin="0,0,0,10">
+                        <TextBlock x:Name="TxtUserFilterLabel"
+                                   Text="Filter"
+                                   Style="{StaticResource DmsFormLabelStyle}"/>
+
+                        <TextBox x:Name="TxtUserFilter"
+                                 Style="{StaticResource DmsFormTextBoxStyle}"
+                                 TextChanged="TxtUserFilter_TextChanged"/>
+                    </StackPanel>
+
                     <StackPanel DockPanel.Dock="Bottom"
                                 Orientation="Horizontal"
                                 Margin="0,12,0,0">
 
-                        <Button Content="Nový"
-                                Width="90"
+                        <Button x:Name="BtnNew"
+                                Content="New"
+                                Width="100"
                                 Height="32"
                                 Style="{StaticResource DmsFormButtonStyle}"
                                 Click="BtnNew_Click"/>
 
-                        <Button Content="Načíst"
-                                Width="90"
+                        <Button x:Name="BtnReload"
+                                Content="Reload"
+                                Width="100"
                                 Height="32"
                                 Margin="8,0,0,0"
                                 Style="{StaticResource DmsFormButtonStyle}"
@@ -55,12 +107,30 @@
                     </StackPanel>
 
                     <ListBox x:Name="LstUsers"
-                             DisplayMemberPath="DisplayName"
-                             SelectionChanged="LstUsers_SelectionChanged"/>
+                             ItemContainerStyle="{StaticResource Usr01UserListBoxItemStyle}"
+                             SelectionChanged="LstUsers_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               FontWeight="Bold"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"/>
+                                    <TextBlock Text="{Binding WindowsLogin}"
+                                               FontSize="12"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"/>
+                                    <TextBlock Text="{Binding Email}"
+                                               FontSize="12"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=Foreground}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </DockPanel>
             </Border>
 
-            <!-- Detail -->
             <Border Grid.Column="1"
                     Style="{StaticResource DmsCardBorderStyle}">
 
@@ -72,12 +142,14 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0"
-                               Text="Detail uživatele"
+                    <TextBlock x:Name="TxtDetailTitle"
+                               Grid.Row="0"
+                               Text="User detail"
                                FontSize="18"
                                FontWeight="Bold"
                                Foreground="{DynamicResource DmsForegroundBrush}"
@@ -86,19 +158,21 @@
                     <StackPanel Grid.Row="1"
                                 Margin="0,0,0,8">
 
-                        <TextBlock Text="Windows login"
+                        <TextBlock x:Name="TxtWindowsLoginLabel"
+                                   Text="Windows login"
                                    Style="{StaticResource DmsFormLabelStyle}"/>
 
                         <TextBox x:Name="TxtWindowsLogin"
                                  Style="{StaticResource DmsFormTextBoxStyle}"
-                                 ToolTip="Například FIRMA\novakj"
+                                 ToolTip="Example: COMPANY\jnovak"
                                  TextChanged="EditorChanged"/>
                     </StackPanel>
 
                     <StackPanel Grid.Row="2"
                                 Margin="0,0,0,8">
 
-                        <TextBlock Text="Zobrazované jméno"
+                        <TextBlock x:Name="TxtDisplayNameLabel"
+                                   Text="Display name"
                                    Style="{StaticResource DmsFormLabelStyle}"/>
 
                         <TextBox x:Name="TxtDisplayName"
@@ -109,7 +183,8 @@
                     <StackPanel Grid.Row="3"
                                 Margin="0,0,0,8">
 
-                        <TextBlock Text="E-mail"
+                        <TextBlock x:Name="TxtEmailLabel"
+                                   Text="E-mail"
                                    Style="{StaticResource DmsFormLabelStyle}"/>
 
                         <TextBox x:Name="TxtEmail"
@@ -117,15 +192,36 @@
                                  TextChanged="EditorChanged"/>
                     </StackPanel>
 
+                    <StackPanel Grid.Row="4"
+                                Margin="0,0,0,8">
+                        <TextBlock x:Name="TxtLinkedPersonLabel"
+                                   Text="Linked person"
+                                   Style="{StaticResource DmsFormLabelStyle}"/>
+
+                        <ComboBox x:Name="CmbLinkedPerson"
+                                  MinHeight="32"
+                                  IsTextSearchEnabled="True"
+                                  SelectionChanged="EditorChanged">
+
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayText}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+
+                        </ComboBox>
+                    </StackPanel>
+
                     <CheckBox x:Name="ChkIsActive"
-                              Grid.Row="4"
-                              Content="Aktivní uživatel"
+                              Grid.Row="5"
+                              Content="Active user"
                               IsChecked="True"
                               Margin="0,8,0,16"
                               Checked="EditorChanged"
                               Unchecked="EditorChanged"/>
 
-                    <Grid Grid.Row="5">
+                    <Grid Grid.Row="6">
 
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -133,15 +229,17 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0"
-                                   Text="Role"
+                        <TextBlock x:Name="TxtRolesTitle"
+                                   Grid.Row="0"
+                                   Text="Roles"
                                    FontSize="16"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource DmsForegroundBrush}"
                                    Margin="0,0,0,8"/>
 
-                        <TextBlock Grid.Row="1"
-                                   Text="Role se načítají dynamicky z číselníku SYS12 / Config\dms-roles.json."
+                        <TextBlock x:Name="TxtRolesNote"
+                                   Grid.Row="1"
+                                   Text="Roles are loaded dynamically from SYS12 / Config\dms-roles.json."
                                    TextWrapping="Wrap"
                                    Foreground="{DynamicResource DmsMutedForegroundBrush}"
                                    Margin="0,0,0,8"/>
@@ -154,20 +252,22 @@
                         </ScrollViewer>
                     </Grid>
 
-                    <StackPanel Grid.Row="6"
+                    <StackPanel Grid.Row="7"
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 Margin="0,16,0,0">
 
-                        <Button Content="Smazat"
-                                Width="100"
+                        <Button x:Name="BtnDelete"
+                                Content="Delete"
+                                Width="110"
                                 Height="32"
                                 Margin="0,0,8,0"
                                 Style="{StaticResource DmsFormButtonStyle}"
                                 Click="BtnDelete_Click"/>
 
-                        <Button Content="Uložit"
-                                Width="100"
+                        <Button x:Name="BtnSave"
+                                Content="Save"
+                                Width="110"
                                 Height="32"
                                 Style="{StaticResource DmsPrimaryButtonStyle}"
                                 Click="BtnSave_Click"/>

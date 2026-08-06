@@ -1,0 +1,171 @@
+﻿namespace DMS.Core.Checklists;
+
+public enum ChecklistSubjectType
+{
+    None,
+    SapArticle,
+    SapMaterial,
+    Project,
+    Machine,
+    Order,
+    Document
+}
+
+public enum ChecklistFieldType
+{
+    Text,
+    MultilineText,
+    Integer,
+    Decimal,
+    Boolean,
+    Date,
+    DateTime,
+    Person,
+    OrganizationUnit,
+    SapMaterial,
+    Measurement,
+    CatalogValue,
+    Attachment,
+    RepeatingGroup
+}
+
+public enum ChecklistStatus
+{
+    Draft,
+    InProgress,
+    SubmittedForReview,
+    ReturnedForCorrection,
+    Checked,
+    Closed,
+    Cancelled
+}
+
+public sealed class ChecklistDefinition
+{
+    public Guid ChecklistDefinitionId { get; set; } = Guid.NewGuid();
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string NumberPrefix { get; set; } = string.Empty;
+    public int Version { get; set; } = 1;
+    public bool IsActive { get; set; } = true;
+    public ChecklistSubjectType SubjectType { get; set; } = ChecklistSubjectType.None;
+    public string? SubjectMaterialKind { get; set; }
+    public bool AllowMultipleInstancesPerSubject { get; set; } = true;
+    public bool SupportsCopy { get; set; } = true;
+    public bool RequiresReview { get; set; } = true;
+    public List<ChecklistSectionDefinition> Sections { get; set; } = new();
+}
+
+public sealed class ChecklistSectionDefinition
+{
+    public Guid SectionId { get; set; } = Guid.NewGuid();
+    public string Code { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public int SortOrder { get; set; }
+    public List<ChecklistFieldDefinition> Fields { get; set; } = new();
+}
+
+public sealed class ChecklistFieldDefinition
+{
+    public Guid FieldId { get; set; } = Guid.NewGuid();
+    public string Code { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+    public string? HelpText { get; set; }
+    public ChecklistFieldType FieldType { get; set; }
+    public bool IsRequired { get; set; }
+    public bool IsReadOnly { get; set; }
+    public int SortOrder { get; set; }
+    public string? UnitDimensionCode { get; set; }
+    public string? DefaultUnitCode { get; set; }
+    public string? SourceBinding { get; set; }
+
+    // Legacy fallback. New definitions should use CatalogCode and CHLSET.
+    public List<string> CatalogValues { get; set; } = new();
+
+    public string? CatalogCode { get; set; }
+    public bool AllowMultipleValues { get; set; }
+    public List<ChecklistFieldDefinition> ChildFields { get; set; } = new();
+}
+
+public sealed class ChecklistInstance
+{
+    public Guid ChecklistId { get; set; } = Guid.NewGuid();
+    public string ChecklistNumber { get; set; } = string.Empty;
+    public Guid ChecklistDefinitionId { get; set; }
+    public string DefinitionCode { get; set; } = string.Empty;
+    public string NumberPrefix { get; set; } = string.Empty;
+    public int DefinitionVersion { get; set; }
+    public string? SubjectReference { get; set; }
+    public string? SubjectDisplayName { get; set; }
+    public ChecklistStatus Status { get; set; } = ChecklistStatus.Draft;
+
+    public string CreatedByLogin { get; set; } = string.Empty;
+    public string CreatedByDisplayName { get; set; } = string.Empty;
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
+
+    public string ModifiedByDisplayName { get; set; } = string.Empty;
+    public DateTimeOffset ModifiedAt { get; set; } = DateTimeOffset.Now;
+
+    public Guid? SubmittedByPersonId { get; set; }
+    public string? SubmittedByDisplayName { get; set; }
+    public DateTimeOffset? SubmittedAt { get; set; }
+
+    public Guid? CheckedByPersonId { get; set; }
+    public string? CheckedByDisplayName { get; set; }
+    public DateTimeOffset? CheckedAt { get; set; }
+
+    public Dictionary<string, ChecklistFieldValue> Values { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class ChecklistFieldValue
+{
+    public string? TextValue { get; set; }
+    public decimal? DecimalValue { get; set; }
+    public int? IntegerValue { get; set; }
+    public bool? BooleanValue { get; set; }
+    public DateTimeOffset? DateTimeValue { get; set; }
+    public Guid? PersonId { get; set; }
+    public Guid? OrganizationUnitId { get; set; }
+    public string? EnteredUnitCode { get; set; }
+    public decimal? NormalizedValue { get; set; }
+    public string? NormalizedUnitCode { get; set; }
+
+    public List<ChecklistCatalogSelection> CatalogSelections { get; set; } = new();
+    public List<ChecklistRepeatingRow> RepeatingRows { get; set; } = new();
+}
+
+public sealed class ChecklistCatalogSelection
+{
+    public string CatalogCode { get; set; } = string.Empty;
+    public string ItemCode { get; set; } = string.Empty;
+    public string DisplayTextSnapshot { get; set; } = string.Empty;
+}
+
+public sealed class ChecklistRepeatingRow
+{
+    public Guid RowId { get; set; } = Guid.NewGuid();
+    public int SortOrder { get; set; }
+    public Dictionary<string, ChecklistFieldValue> Values { get; set; } =
+        new(StringComparer.OrdinalIgnoreCase);
+}
+
+public sealed class ChecklistCatalog
+{
+    public Guid CatalogId { get; set; } = Guid.NewGuid();
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+    public int SortOrder { get; set; }
+    public List<ChecklistCatalogItem> Items { get; set; } = new();
+}
+
+public sealed class ChecklistCatalogItem
+{
+    public Guid ItemId { get; set; } = Guid.NewGuid();
+    public string Code { get; set; } = string.Empty;
+    public string DisplayText { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+    public int SortOrder { get; set; }
+}

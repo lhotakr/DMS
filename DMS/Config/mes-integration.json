@@ -1,0 +1,8 @@
+{
+  "devicesFilePath": "devices.txt",
+  "plcBindingsFilePath": "mes-plc-bindings.json",
+  "deviceInventoryReloadSeconds": 5,
+  "defaultRefreshIntervalMs": 500,
+  "defaultTimeoutMs": 3000,
+  "defaultStaleAfterSeconds": 3
+}

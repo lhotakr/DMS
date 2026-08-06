@@ -11,11 +11,8 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- =====================================================
-             NADPIS
-             ===================================================== -->
-
-        <TextBlock Grid.Row="0"
+        <TextBlock x:Name="TxtTitle"
+                   Grid.Row="0"
                    Text="QA00 - Quality cockpit"
                    Style="{StaticResource DmsTitleTextStyle}"
                    Margin="0,0,0,8"/>
@@ -26,19 +23,12 @@
                    Margin="0,0,0,14"
                    Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
 
-        <!-- =====================================================
-             ZÁLOŽKY
-             ===================================================== -->
-
         <TabControl Grid.Row="2"
                     Background="{DynamicResource DmsPanelBrush}"
                     Foreground="{DynamicResource DmsForegroundBrush}">
 
-            <!-- =================================================
-                 STAV CACHE
-                 ================================================= -->
-
-            <TabItem Header="Stav cache">
+            <TabItem x:Name="TabCacheStatus"
+                     Header="Cache status">
 
                 <Grid Margin="12">
 
@@ -58,17 +48,20 @@
 
                         <DataGrid.Columns>
 
-                            <DataGridTextColumn Header="Oblast"
+                            <DataGridTextColumn x:Name="ColArea"
+                                                Header="Area"
                                                 Binding="{Binding Area}"
                                                 Width="220"
                                                 MinWidth="180"/>
 
-                            <DataGridTextColumn Header="Počet"
+                            <DataGridTextColumn x:Name="ColCount"
+                                                Header="Count"
                                                 Binding="{Binding Count}"
                                                 Width="120"
                                                 MinWidth="90"/>
 
-                            <DataGridTextColumn Header="Soubor"
+                            <DataGridTextColumn x:Name="ColFilePath"
+                                                Header="File"
                                                 Binding="{Binding FilePath}"
                                                 Width="*"
                                                 MinWidth="520"/>
@@ -92,21 +85,19 @@
                 </Grid>
             </TabItem>
 
-            <!-- =================================================
-                 IMPORT ARTIKLŮ
-                 ================================================= -->
-
-            <TabItem Header="Import artiklů">
+            <TabItem x:Name="TabImportArticles"
+                     Header="Import articles">
 
                 <StackPanel Margin="14">
 
-                    <TextBlock Text="Import quality artiklů z exportu PowerApps / SharePoint."
+                    <TextBlock x:Name="TxtImportArticlesDescription"
+                               Text="Import quality articles from a PowerApps / SharePoint export."
                                Margin="0,0,0,12"
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource DmsForegroundBrush}"/>
 
                     <Button x:Name="BtnImportArticles"
-                            Content="Importovat Soupis artiklů"
+                            Content="Import article list"
                             Width="240"
                             HorizontalAlignment="Left"
                             Style="{StaticResource DmsPrimaryButtonStyle}"
@@ -115,21 +106,19 @@
                 </StackPanel>
             </TabItem>
 
-            <!-- =================================================
-                 IMPORT TISKOVÝCH VERZÍ
-                 ================================================= -->
-
-            <TabItem Header="Import tiskových verzí">
+            <TabItem x:Name="TabImportPrintVersions"
+                     Header="Import print versions">
 
                 <StackPanel Margin="14">
 
-                    <TextBlock Text="Import tiskových verzí, poznámek, úkolů a doplnění dekorace ze SAP cache."
+                    <TextBlock x:Name="TxtImportPrintVersionsDescription"
+                               Text="Import print versions, notes, tasks and SAP decoration details."
                                Margin="0,0,0,12"
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource DmsForegroundBrush}"/>
 
                     <Button x:Name="BtnImportPrintVersions"
-                            Content="Importovat Soupis tiskových verzí"
+                            Content="Import print version list"
                             Width="280"
                             HorizontalAlignment="Left"
                             Style="{StaticResource DmsPrimaryButtonStyle}"
@@ -138,21 +127,19 @@
                 </StackPanel>
             </TabItem>
 
-            <!-- =================================================
-                 IMPORT ZAKÁZEK
-                 ================================================= -->
-
-            <TabItem Header="Import zakázek">
+            <TabItem x:Name="TabImportOrders"
+                     Header="Import orders">
 
                 <StackPanel Margin="14">
 
-                    <TextBlock Text="Import historických quality zakázek."
+                    <TextBlock x:Name="TxtImportOrdersDescription"
+                               Text="Import historical quality orders."
                                Margin="0,0,0,12"
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource DmsForegroundBrush}"/>
 
                     <Button x:Name="BtnImportOrders"
-                            Content="Importovat zakázky"
+                            Content="Import orders"
                             Width="220"
                             HorizontalAlignment="Left"
                             Style="{StaticResource DmsPrimaryButtonStyle}"
@@ -161,37 +148,35 @@
                 </StackPanel>
             </TabItem>
 
-            <!-- =================================================
-                 IMPORT ZÁKAZNÍKŮ
-                 ================================================= -->
-
-            <TabItem Header="Import zákazníků">
+            <TabItem x:Name="TabImportCustomers"
+                     Header="Import customers">
 
                 <StackPanel Margin="14">
 
-                    <TextBlock Text="Import zákaznického číselníku z Excel exportu MS Lists."
-                   Margin="0,0,0,12"
-                   TextWrapping="Wrap"
-                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBlock x:Name="TxtImportCustomersDescription"
+                               Text="Import customer master data from an MS Lists Excel export."
+                               Margin="0,0,0,12"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
 
                     <Button x:Name="BtnImportCustomers"
-                Content="Importovat zákazníky"
-                Width="220"
-                HorizontalAlignment="Left"
-                Style="{StaticResource DmsPrimaryButtonStyle}"
-                Click="BtnImportCustomers_Click"/>
+                            Content="Import customers"
+                            Width="220"
+                            HorizontalAlignment="Left"
+                            Style="{StaticResource DmsPrimaryButtonStyle}"
+                            Click="BtnImportCustomers_Click"/>
 
                     <Border Margin="0,14,0,0"
-                Padding="10,7"
-                Background="{DynamicResource DmsBackgroundBrush}"
-                BorderBrush="{DynamicResource DmsBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="4">
+                            Padding="10,7"
+                            Background="{DynamicResource DmsBackgroundBrush}"
+                            BorderBrush="{DynamicResource DmsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4">
 
                         <TextBlock x:Name="TxtCustomersStatus"
-                       Text="Zákazníci zatím nejsou importováni."
-                       TextWrapping="Wrap"
-                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+                                   Text="Customers have not been imported yet."
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
 
                     </Border>
 

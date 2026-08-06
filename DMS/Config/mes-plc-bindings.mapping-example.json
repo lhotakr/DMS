@@ -1,0 +1,35 @@
+{
+  "note": "EXAMPLE ONLY. The address values below are not the X20BC0087 map. Replace them with the confirmed zero-based Modbus process-image addresses.",
+  "examples": [
+    {
+      "description": "X20DI2377 hardware counter in one 16-bit register (use only after the generated station map confirms the address)",
+      "source": {
+        "area": "InputRegister",
+        "address": 0,
+        "dataType": "UInt16",
+        "bitIndex": null,
+        "wordOrder": "BigEndian"
+      }
+    },
+    {
+      "description": "Packed digital input bit inside one 16-bit input register",
+      "source": {
+        "area": "InputRegister",
+        "address": 10,
+        "dataType": "Bool",
+        "bitIndex": 0,
+        "wordOrder": "BigEndian"
+      }
+    },
+    {
+      "description": "Packed MES output bit read back from one holding register",
+      "source": {
+        "area": "HoldingRegister",
+        "address": 20,
+        "dataType": "Bool",
+        "bitIndex": 2,
+        "wordOrder": "BigEndian"
+      }
+    }
+  ]
+}

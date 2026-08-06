@@ -1,4 +1,4 @@
-﻿using DMS.Core.Sap.Diagnostics;
+using DMS.Core.Sap.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -7,18 +7,48 @@ namespace DMS.Desktop.Views.Sap;
 public partial class SapCacheStatusView : UserControl
 {
     private readonly SapCacheStatusService _service;
+    private readonly Func<string, string>? _translate;
+    private readonly Func<string, object[], string>? _translateFormat;
+    private readonly Action<string, string>? _logAction;
     private SapCacheStatusOverview? _overview;
 
     public SapCacheStatusView()
+        : this(
+            @"Z:\SAP\DMS-db\DEV",
+            System.IO.Path.Combine(@"Z:\SAP\DMS-db\DEV", "Config"))
+    {
+    }
+
+    public SapCacheStatusView(
+        string basePath,
+        string configPath,
+        Func<string, string>? translate = null,
+        Func<string, object[], string>? translateFormat = null,
+        Action<string, string>? logAction = null)
     {
         InitializeComponent();
 
-        var basePath = @"Z:\SAP\DMS-db\DEV";
-        var configPath = System.IO.Path.Combine(basePath, "Config");
-
+        _translate = translate;
+        _translateFormat = translateFormat;
+        _logAction = logAction;
         _service = new SapCacheStatusService(basePath, configPath);
 
+        ApplyLocalization();
         LoadOverview();
+    }
+
+    private void ApplyLocalization()
+    {
+        TxtTitle.Text = T("SAP00.Cache.Title");
+        BtnRefresh.Content = T("SAP00.Cache.Refresh");
+        BtnCopy.Content = T("SAP00.Cache.Copy");
+
+        ColArea.Header = T("SAP00.Cache.Column.Area");
+        ColFile.Header = T("SAP00.Cache.Column.File");
+        ColStatus.Header = T("SAP00.Cache.Column.Status");
+        ColCount.Header = T("SAP00.Cache.Column.Count");
+        ColLastChanged.Header = T("SAP00.Cache.Column.LastChanged");
+        ColPath.Header = T("SAP00.Cache.Column.Path");
     }
 
     private void LoadOverview()
@@ -27,10 +57,16 @@ public partial class SapCacheStatusView : UserControl
 
         GridCacheStatus.ItemsSource = _overview.Rows;
 
-        TxtSummary.Text =
-            $"DMS pracuje nad lokální read-only SAP cache: {_overview.BasePath}\n" +
-            $"Souborů OK: {_overview.ExistingFiles}, chybí: {_overview.MissingFiles}, " +
-            $"vygenerováno: {_overview.CreatedAt:dd.MM.yyyy HH:mm:ss}";
+        TxtSummary.Text = TF(
+            "SAP00.Cache.Summary",
+            _overview.BasePath,
+            _overview.ExistingFiles,
+            _overview.MissingFiles,
+            _overview.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss"));
+
+        _logAction?.Invoke(
+            "RefreshCacheOverview",
+            $"BasePath={_overview.BasePath}; ExistingFiles={_overview.ExistingFiles}; MissingFiles={_overview.MissingFiles}");
     }
 
     private void BtnRefresh_Click(object sender, RoutedEventArgs e)
@@ -49,5 +85,46 @@ public partial class SapCacheStatusView : UserControl
             $"{row.Area}\t{row.Status}\t{row.CountText}\t{row.LastChangedText}\t{row.Path}");
 
         Clipboard.SetText(string.Join(Environment.NewLine, lines));
+
+        _logAction?.Invoke(
+            "CopyCacheOverview",
+            $"Rows={_overview.Rows.Count}");
+    }
+
+    private string T(string key)
+    {
+        var value = _translate?.Invoke(key) ?? key;
+
+        return IsMissing(value, key)
+            ? key
+            : value;
+    }
+
+    private string TF(string key, params object[] args)
+    {
+        var value = _translateFormat?.Invoke(key, args);
+
+        if (!string.IsNullOrWhiteSpace(value) && !IsMissing(value, key))
+        {
+            return value;
+        }
+
+        var pattern = T(key);
+
+        try
+        {
+            return string.Format(pattern, args);
+        }
+        catch
+        {
+            return pattern;
+        }
+    }
+
+    private static bool IsMissing(string? value, string key)
+    {
+        return string.IsNullOrWhiteSpace(value)
+               || string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase);
     }
 }

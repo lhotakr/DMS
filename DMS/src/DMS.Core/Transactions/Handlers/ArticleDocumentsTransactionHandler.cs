@@ -1,4 +1,4 @@
-﻿using DMS.Core.Articles;
+using DMS.Core.Articles;
 
 namespace DMS.Core.Transactions.Handlers;
 
@@ -12,12 +12,12 @@ public sealed class ArticleDocumentsTransactionHandler : ITransactionHandler
         {
             return TransactionResult.Fail(
                 definition.Code,
-                $"{definition.Code} očekává desetimístné SAP číslo artiklu.");
+                $"{definition.Code} expects a ten-digit SAP article number.");
         }
 
         return TransactionResult.Ok(
             definition.Code,
             command.Parameter,
-            $"Otevřena dokumentace artiklu {command.Parameter}.");
+            $"Article documentation opened for {command.Parameter}.");
     }
 }

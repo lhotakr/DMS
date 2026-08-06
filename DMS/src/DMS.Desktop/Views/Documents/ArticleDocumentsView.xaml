@@ -1,126 +1,168 @@
-﻿<UserControl x:Class="DMS.Desktop.Views.Documents.ArticleDocumentsView"
+<UserControl x:Class="DMS.Desktop.Views.Documents.ArticleDocumentsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Background="{DynamicResource DmsPanelBrush}">
+             Background="{DynamicResource DmsBackgroundBrush}">
 
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <!-- Hlavička -->
-        <TextBlock x:Name="TxtTitle"
-                   Grid.Row="0"
-                   FontSize="24"
-                   FontWeight="Bold"
-                   Margin="0,0,0,14"
-                   Foreground="{DynamicResource DmsForegroundBrush}"/>
-
-        <!-- Popisek složky -->
-        <TextBlock Grid.Row="1"
-                   Text="Složka dokumentů"
-                   FontWeight="SemiBold"
-                   Margin="0,0,0,6"
-                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
-
-        <!-- Cesta složky -->
-        <TextBox x:Name="TxtFolder"
-                 Grid.Row="2"
-                 IsReadOnly="True"
-                 Margin="0,0,0,16"
-                 Padding="10,6"
-                 Background="{DynamicResource DmsBackgroundBrush}"
-                 Foreground="{DynamicResource DmsForegroundBrush}"
-                 BorderBrush="{DynamicResource DmsBorderBrush}"/>
-
-        <!-- Dokumenty -->
-        <DataGrid x:Name="DgvDocuments"
-                  Grid.Row="3"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="True"
-                  CanUserAddRows="False"
-                  CanUserResizeColumns="True"
-                  CanUserReorderColumns="True"
-                  HeadersVisibility="Column"
-                  GridLinesVisibility="Horizontal"
-                  MinHeight="260"
-                  HorizontalAlignment="Stretch"
-                  VerticalAlignment="Stretch"
-                  Background="{DynamicResource DmsBackgroundBrush}"
-                  Foreground="{DynamicResource DmsForegroundBrush}"
-                  BorderBrush="{DynamicResource DmsBorderBrush}"
-                  SelectionMode="Extended"
-                  SelectionUnit="FullRow"
-                  ClipboardCopyMode="IncludeHeader"
-                  HorizontalScrollBarVisibility="Auto"
+    <ScrollViewer x:Name="RootScrollViewer"
                   VerticalScrollBarVisibility="Auto"
-                  MouseDoubleClick="DgvDocuments_MouseDoubleClick">
+                  HorizontalScrollBarVisibility="Disabled">
 
-            <DataGrid.Resources>
-                <Style TargetType="DataGridColumnHeader">
-                    <Setter Property="Padding" Value="8,5"/>
-                    <Setter Property="FontWeight" Value="Bold"/>
-                    <Setter Property="HorizontalContentAlignment" Value="Left"/>
-                    <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
-                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
-                    <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
-                </Style>
+        <StackPanel Margin="20">
 
-                <Style TargetType="DataGridCell">
-                    <Setter Property="Padding" Value="8,3"/>
-                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
-                    <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
-                    <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
-                </Style>
-            </DataGrid.Resources>
+            <TextBlock x:Name="TxtTitle"
+                       Style="{StaticResource DmsTitleTextStyle}"/>
 
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Soubor"
-                                    Binding="{Binding FileName}"
-                                    Width="280"
-                                    MinWidth="220"/>
+            <Border Style="{StaticResource DmsCardBorderStyle}"
+                    Margin="0,0,0,12">
 
-                <DataGridTextColumn Header="Druh"
-                                    Binding="{Binding DocumentKind}"
-                                    Width="180"
-                                    MinWidth="130"/>
+                <StackPanel>
+                    <TextBlock x:Name="TxtSummary"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                               Margin="0,0,0,12"/>
 
-                <DataGridTextColumn Header="Typ"
-                                    Binding="{Binding Extension}"
-                                    Width="80"
-                                    MinWidth="70"/>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                <DataGridTextColumn Header="Velikost"
-                                    Binding="{Binding SizeText}"
-                                    Width="110"
-                                    MinWidth="90"/>
+                        <TextBlock x:Name="TxtFolderLabel"
+                                   Grid.Column="0"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
 
-                <DataGridTextColumn Header="Změněno"
-                                    Binding="{Binding LastModified, StringFormat={}{0:dd.MM.yyyy HH:mm:ss}}"
-                                    Width="170"
-                                    MinWidth="150"/>
+                        <TextBox x:Name="TxtFolder"
+                                 Grid.Column="1"
+                                 IsReadOnly="True"
+                                 Padding="10,6"
+                                 Background="{DynamicResource DmsPanelBrush}"
+                                 Foreground="{DynamicResource DmsForegroundBrush}"
+                                 BorderBrush="{DynamicResource DmsBorderBrush}"/>
+                    </Grid>
 
-                <DataGridTextColumn Header="Cesta"
-                                    Binding="{Binding FilePath}"
-                                    Width="*"
-                                    MinWidth="400"/>
+                    <StackPanel Orientation="Horizontal"
+                                Margin="0,0,0,12">
+                        <Button x:Name="BtnOpenTec03"
+                                Style="{StaticResource DmsPrimaryButtonStyle}"
+                                MinWidth="120"
+                                Margin="0,0,8,0"
+                                Click="BtnOpenTec03_Click"/>
 
-                <DataGridTemplateColumn Header="Akce"
-                                        Width="90"
-                                        MinWidth="80">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Button Content="Otevřít"
-                                    Padding="8,2"
-                                    Tag="{Binding FilePath}"
-                                    Click="BtnOpenDocument_Click"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
-    </Grid>
+                        <Button x:Name="BtnOpenDoc02"
+                                MinWidth="120"
+                                Margin="0,0,8,0"
+                                Click="BtnOpenDoc02_Click"/>
+
+                        <Button x:Name="BtnRefresh"
+                                MinWidth="120"
+                                Click="BtnRefresh_Click"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="TxtStatus"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                               Margin="0,0,0,10"/>
+
+                    <DataGrid x:Name="DgvDocuments"
+                              Style="{StaticResource DmsDataGridStyle}"
+                              RowStyle="{StaticResource DmsDataGridRowStyle}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              CanUserResizeColumns="True"
+                              CanUserReorderColumns="True"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              MinHeight="360"
+                              SelectionMode="Extended"
+                              SelectionUnit="FullRow"
+                              ClipboardCopyMode="IncludeHeader"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              MouseDoubleClick="DgvDocuments_MouseDoubleClick">
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn x:Name="ColFileName"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                Binding="{Binding FileName}"
+                                                Width="260"
+                                                MinWidth="180"/>
+
+                            <DataGridTextColumn x:Name="ColKind"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                Binding="{Binding DocumentKind}"
+                                                Width="180"
+                                                MinWidth="130"/>
+
+                            <DataGridTextColumn x:Name="ColDescription"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                Binding="{Binding Description}"
+                                                Width="260"
+                                                MinWidth="180"/>
+
+                            <DataGridTextColumn x:Name="ColExtension"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                Binding="{Binding Extension}"
+                                                Width="80"
+                                                MinWidth="70"/>
+
+                            <DataGridTextColumn x:Name="ColSize"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                Binding="{Binding SizeText}"
+                                                Width="110"
+                                                MinWidth="90"/>
+
+                            <DataGridTextColumn x:Name="ColUploadedBy"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                Binding="{Binding UploadedBy}"
+                                                Width="150"
+                                                MinWidth="120"/>
+
+                            <DataGridTextColumn x:Name="ColUploadedAt"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                Binding="{Binding UploadedAt, StringFormat={}{0:dd.MM.yyyy HH:mm:ss}}"
+                                                Width="170"
+                                                MinWidth="150"/>
+
+                            <DataGridTextColumn x:Name="ColChangedBy"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                Binding="{Binding ChangedBy}"
+                                                Width="150"
+                                                MinWidth="120"/>
+
+                            <DataGridTextColumn x:Name="ColChangedAt"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                Binding="{Binding ChangedAt, StringFormat={}{0:dd.MM.yyyy HH:mm:ss}}"
+                                                Width="170"
+                                                MinWidth="150"/>
+
+                            <DataGridTextColumn x:Name="ColPath"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                Binding="{Binding FullPath}"
+                                                Width="*"
+                                                MinWidth="360"/>
+
+                            <DataGridTemplateColumn x:Name="ColAction"
+                                                    Width="100"
+                                                    MinWidth="90">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Padding="8,2"
+                                                Style="{StaticResource DmsPrimaryButtonStyle}"
+                                                Foreground="{DynamicResource DmsOnAccentBrush}"
+                                                Content="{Binding DataContext.OpenButtonText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                Tag="{Binding FullPath}"
+                                                Click="BtnOpenDocument_Click"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

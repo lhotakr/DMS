@@ -1,0 +1,5 @@
+# MES device inventory example.
+# In production, mes-integration.json must point to the existing live devices.txt
+# used by the assembler MES network monitor. Do not maintain a second copy.
+10.131.10.50;STROJ;BRIO X5-1;
+10.131.10.87;STROJ;S7AGL4 PSL-3;

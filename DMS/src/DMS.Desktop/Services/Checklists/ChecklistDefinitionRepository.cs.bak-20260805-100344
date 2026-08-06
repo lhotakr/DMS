@@ -1,0 +1,137 @@
+using DMS.Core.Checklists;
+using System.IO;
+
+namespace DMS.Desktop.Services.Checklists;
+
+public sealed class ChecklistDefinitionRepository
+{
+    private readonly string _definitionsRoot;
+
+    public ChecklistDefinitionRepository(string definitionsRoot)
+    {
+        _definitionsRoot = definitionsRoot;
+        Directory.CreateDirectory(_definitionsRoot);
+        EnsureVzrMetSeed();
+    }
+
+    public IReadOnlyList<ChecklistDefinition> LoadAll() => Directory
+        .EnumerateFiles(_definitionsRoot, "*.json", SearchOption.TopDirectoryOnly)
+        .Select(AtomicChecklistJsonStore.Load<ChecklistDefinition>)
+        .Where(x => x is not null)
+        .Cast<ChecklistDefinition>()
+        .OrderBy(x => x.Code)
+        .ToList();
+
+    public ChecklistDefinition? Find(string code) => LoadAll().FirstOrDefault(x =>
+        string.Equals(x.Code, Normalize(code), StringComparison.OrdinalIgnoreCase));
+
+    public void Save(ChecklistDefinition definition)
+    {
+        Validate(definition);
+        definition.Code = Normalize(definition.Code);
+        AtomicChecklistJsonStore.Save(Path.Combine(_definitionsRoot, definition.Code + ".json"), definition);
+    }
+
+    private void EnsureVzrMetSeed()
+    {
+        var path = Path.Combine(_definitionsRoot, "VZRMET.json");
+        if (File.Exists(path)) return;
+        Save(ChecklistSeedFactory.CreateVzrMet());
+    }
+
+    private static string Normalize(string code) => (code ?? string.Empty).Trim().ToUpperInvariant();
+
+    private static void Validate(ChecklistDefinition definition)
+    {
+        if (string.IsNullOrWhiteSpace(definition.Code)) throw new InvalidOperationException("Checklist code is required.");
+        if (string.IsNullOrWhiteSpace(definition.Name)) throw new InvalidOperationException("Checklist name is required.");
+        var fieldCodes = definition.Sections.SelectMany(x => x.Fields).Select(x => x.Code.Trim()).ToList();
+        if (fieldCodes.Any(string.IsNullOrWhiteSpace) || fieldCodes.Distinct(StringComparer.OrdinalIgnoreCase).Count() != fieldCodes.Count)
+            throw new InvalidOperationException("Checklist field codes must be filled and unique.");
+    }
+}
+
+internal static class ChecklistSeedFactory
+{
+    public static ChecklistDefinition CreateVzrMet()
+    {
+        var definition = new ChecklistDefinition
+        {
+            Code = "VZRMET",
+            Name = "Vzorování metalizace / postřiku",
+            Description = "Elektronický vzorovací checklist pro metalizaci a postřik.",
+            SubjectType = ChecklistSubjectType.SapArticle,
+            SubjectMaterialKind = "GlassArticle",
+            AllowMultipleInstancesPerSubject = true,
+            SupportsCopy = true,
+            RequiresReview = true
+        };
+
+        definition.Sections.Add(Section("BASIC", "Základní údaje", 10,
+            Field("SAP_ARTICLE", "SAP číslo", ChecklistFieldType.SapMaterial, 10, required: true, readOnly: true, source: "Sap.MaterialNumber"),
+            Field("BOTTLE_NUMBER", "Číslo lahve", ChecklistFieldType.Text, 20, source: "Sap.GlassInfo.MoldNumber"),
+            Field("PROJECT_NAME", "Název projektu", ChecklistFieldType.Text, 30),
+            Catalog("SAMPLING_TYPE", "Typ vzorování", 40, "Nové vzorování", "Opakované vzorování", "Změna receptury", "Změna technologie"),
+            Field("SAMPLING_SEQUENCE", "Pořadí vzorování", ChecklistFieldType.Integer, 50),
+            Field("REPEAT_REASON", "Důvod opakovaného vzorování", ChecklistFieldType.MultilineText, 60),
+            Measurement("VOLUME", "Objem", 70, "VOLUME", "ML", source: "Sap.GlassInfo.VolumeMl")));
+
+        definition.Sections.Add(Section("PREPARATION", "Příprava", 20,
+            Field("TIP_TYPE", "Typ špiček", ChecklistFieldType.Text, 10),
+            Field("NEW_TIPS_BURNED", "Nové špičky vypáleny", ChecklistFieldType.Boolean, 20),
+            Field("TIPS_MODIFIED", "Špičky modifikovány", ChecklistFieldType.Boolean, 30)));
+
+        definition.Sections.Add(Section("SPRAY_1", "První postřik", 30,
+            Measurement("GUN_PRESSURE_1", "Tlak pistole", 10, "PRESSURE", "BAR"),
+            Field("GLASS_QUANTITY_1", "Množství nastříkaného skla", ChecklistFieldType.Integer, 20)));
+
+        definition.Sections.Add(Section("METALLIZATION", "Metalizace", 40,
+            Measurement("ALUMINUM_AMOUNT", "Množství použitého hliníku", 10, "MASS", "G"),
+            Measurement("METALLIZATION_TIME", "Doba metalizace", 20, "TIME", "S")));
+
+        definition.Sections.Add(Section("RESULT", "Výsledek", 50,
+            Measurement("COATING_THICKNESS", "Tloušťka laku", 10, "THICKNESS", "UM"),
+            Field("NOTES", "Poznámka", ChecklistFieldType.MultilineText, 20)));
+
+        return definition;
+    }
+
+    private static ChecklistSectionDefinition Section(string code, string title, int order, params ChecklistFieldDefinition[] fields) => new()
+    {
+        Code = code,
+        Title = title,
+        SortOrder = order,
+        Fields = fields.ToList()
+    };
+
+    private static ChecklistFieldDefinition Field(string code, string label, ChecklistFieldType type, int order, bool required = false, bool readOnly = false, string? source = null) => new()
+    {
+        Code = code,
+        Label = label,
+        FieldType = type,
+        SortOrder = order,
+        IsRequired = required,
+        IsReadOnly = readOnly,
+        SourceBinding = source
+    };
+
+    private static ChecklistFieldDefinition Measurement(string code, string label, int order, string dimension, string unit, string? source = null) => new()
+    {
+        Code = code,
+        Label = label,
+        FieldType = ChecklistFieldType.Measurement,
+        SortOrder = order,
+        UnitDimensionCode = dimension,
+        DefaultUnitCode = unit,
+        SourceBinding = source
+    };
+
+    private static ChecklistFieldDefinition Catalog(string code, string label, int order, params string[] values) => new()
+    {
+        Code = code,
+        Label = label,
+        FieldType = ChecklistFieldType.CatalogValue,
+        SortOrder = order,
+        CatalogValues = values.ToList()
+    };
+}

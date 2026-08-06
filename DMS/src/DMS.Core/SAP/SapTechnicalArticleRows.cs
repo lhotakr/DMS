@@ -29,7 +29,7 @@ public sealed class SapTechnicalBomItemRow
     public string Quantity { get; init; } = string.Empty;
     public string ScrapPercent { get; init; } = string.Empty;
     public string Unit { get; init; } = string.Empty;
-    public string IsFixedQuantity { get; init; } = string.Empty;
+    public bool IsFixedQuantity { get; init; }
 
     public bool HasWarning { get; init; }
 }

@@ -1,0 +1,21 @@
+﻿using DMS.Core.Domain.Units;
+using DMS.Desktop.Logging;
+using DMS.Desktop.Services.MasterData;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace DMS.Desktop.Views.MasterData;
+
+public partial class UnitsView : UserControl
+{
+ private readonly DmsMasterDataService _service;private readonly DmsLogger _logger;private readonly string _user;private List<UnitDimension> _dimensions=new();private List<UnitDefinition> _allUnits=new();private readonly ObservableCollection<UnitDefinition> _visibleUnits=new();
+ public UnitsView(DmsMasterDataService service,DmsLogger logger,string user){InitializeComponent();_service=service;_logger=logger;_user=user;GridUnits.ItemsSource=_visibleUnits;LoadData();}
+ private void LoadData(){_dimensions=_service.LoadUnitDimensions();_allUnits=_service.LoadUnits();ListDimensions.ItemsSource=_dimensions.OrderBy(x=>x.SortOrder).ToList();if(ListDimensions.Items.Count>0)ListDimensions.SelectedIndex=0;TxtStatus.Text=$"Soubory: {_service.UnitDimensionsPath}; {_service.UnitsPath}";}
+ private void DimensionChanged(object sender,SelectionChangedEventArgs e){_visibleUnits.Clear();if(ListDimensions.SelectedItem is not UnitDimension d)return;foreach(var u in _allUnits.Where(x=>x.UnitDimensionId==d.UnitDimensionId).OrderBy(x=>x.Code))_visibleUnits.Add(u);RefreshConverter();}
+ private void RefreshConverter(){var list=_visibleUnits.Where(x=>x.IsActive).ToList();CmbSource.ItemsSource=list;CmbTarget.ItemsSource=list;if(list.Count>0){CmbSource.SelectedIndex=0;CmbTarget.SelectedIndex=Math.Min(1,list.Count-1);}}
+ private void AddDimension_Click(object sender,RoutedEventArgs e){var code=Microsoft.VisualBasic.Interaction.InputBox("Technický kód veličiny:","Přidat veličinu","NEW").Trim().ToUpperInvariant();if(string.IsNullOrWhiteSpace(code))return;var name=Microsoft.VisualBasic.Interaction.InputBox("Název veličiny:","Přidat veličinu",code).Trim();if(string.IsNullOrWhiteSpace(name))return;var d=new UnitDimension{Code=code,Name=name,SortOrder=(_dimensions.Count+1)*10};_dimensions.Add(d);ListDimensions.ItemsSource=_dimensions.OrderBy(x=>x.SortOrder).ToList();ListDimensions.SelectedItem=d;}
+ private void Save_Click(object sender,RoutedEventArgs e){GridUnits.CommitEdit(DataGridEditingUnit.Cell,true);GridUnits.CommitEdit(DataGridEditingUnit.Row,true);if(ListDimensions.SelectedItem is UnitDimension d){_allUnits.RemoveAll(x=>x.UnitDimensionId==d.UnitDimensionId);foreach(var u in _visibleUnits){u.UnitDimensionId=d.UnitDimensionId;u.Code=u.Code.Trim().ToUpperInvariant();_allUnits.Add(u);}}try{_service.SaveUnits(_dimensions,_allUnits);_logger.AdminAction("SYS01","SaveUnits",_user,$"Dimensions={_dimensions.Count}; Units={_allUnits.Count}");LoadData();}catch(Exception ex){MessageBox.Show(ex.Message,"Uložení jednotek",MessageBoxButton.OK,MessageBoxImage.Error);}}
+ private void Convert_Click(object sender,RoutedEventArgs e){if(CmbSource.SelectedItem is not UnitDefinition source||CmbTarget.SelectedItem is not UnitDefinition target)return;if(!decimal.TryParse(TxtValue.Text,NumberStyles.Number,CultureInfo.CurrentCulture,out var value)&&!decimal.TryParse(TxtValue.Text.Replace(',','.'),NumberStyles.Number,CultureInfo.InvariantCulture,out value)){MessageBox.Show("Zadej platnou číselnou hodnotu.","Přepočet",MessageBoxButton.OK,MessageBoxImage.Warning);return;}try{var result=new UnitConversionService().Convert(value,source,target);TxtResult.Text=$"{Math.Round(result,target.DecimalPlaces)} {target.Symbol}";}catch(Exception ex){MessageBox.Show(ex.Message,"Přepočet",MessageBoxButton.OK,MessageBoxImage.Error);}}
+}

@@ -4,35 +4,37 @@
              Background="{DynamicResource DmsBackgroundBrush}">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
+                  HorizontalScrollBarVisibility="Disabled"
+                  CanContentScroll="False">
 
         <StackPanel Margin="0">
 
-            <!-- Nadpis -->
-            <TextBlock Text="SYS01 - Nastavení systému DMS"
+            <TextBlock x:Name="TxtTitle"
+                       Text="SYS01 - Nastavení systému DMS"
                        Style="{StaticResource DmsTitleTextStyle}"/>
 
-            <!-- Karta -->
             <Border Style="{StaticResource DmsCardBorderStyle}"
                     Margin="0,0,0,12">
 
                 <StackPanel>
 
-                    <!-- Sekce dokumentového úložiště -->
-                    <TextBlock Text="Dokumentové úložiště"
+                    <TextBlock x:Name="TxtDocumentStorageTitle"
+                               Text="Dokumentové úložiště"
                                FontSize="18"
                                FontWeight="Bold"
                                Foreground="{DynamicResource DmsForegroundBrush}"
                                Margin="0,0,0,14"/>
 
-                    <TextBlock Text="Kořen dokumentů"
+                    <TextBlock x:Name="TxtDocumentsRootPathLabel"
+                               Text="Kořen dokumentů"
                                Foreground="{DynamicResource DmsForegroundBrush}"
                                Margin="0,0,0,4"/>
 
                     <TextBox x:Name="TxtDocumentsRootPath"
                              Margin="0,0,0,12"/>
 
-                    <TextBlock Text="Kořen složek SAP ID / artiklů"
+                    <TextBlock x:Name="TxtArticleFoldersRootPathLabel"
+                               Text="Kořen složek SAP ID / artiklů"
                                Foreground="{DynamicResource DmsForegroundBrush}"
                                Margin="0,0,0,4"/>
 
@@ -41,10 +43,11 @@
 
                     <CheckBox x:Name="ChkCreateArticleFoldersOnSapImport"
                               Content="Zakládat složky automaticky při SAP importu"
+                              Foreground="{DynamicResource DmsForegroundBrush}"
                               Margin="0,0,0,18"/>
 
-                    <!-- Podsložky -->
-                    <TextBlock Text="Podsložky artiklu"
+                    <TextBlock x:Name="TxtSubFoldersTitle"
+                               Text="Podsložky artiklu"
                                FontSize="16"
                                FontWeight="Bold"
                                Foreground="{DynamicResource DmsForegroundBrush}"
@@ -53,7 +56,9 @@
                     <DataGrid x:Name="GridSubFolders"
                               Style="{StaticResource DmsDataGridStyle}"
                               MinHeight="160"
-                              Margin="0,0,0,18">
+                              Margin="0,0,0,18"
+                              CanUserAddRows="True"
+                              CanUserDeleteRows="True">
 
                         <DataGrid.Columns>
 
@@ -88,14 +93,15 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <!-- Rozsahy SAP ID -->
-                    <TextBlock Text="Rozsahy SAP ID pro zakládání složek"
+                    <TextBlock x:Name="TxtMaterialRangesTitle"
+                               Text="Rozsahy SAP ID pro zakládání složek"
                                FontSize="16"
                                FontWeight="Bold"
                                Foreground="{DynamicResource DmsForegroundBrush}"
                                Margin="0,4,0,8"/>
 
-                    <TextBlock Text="Aktivní rozsahy určují, pro které SAP ID se budou zakládat složky. Výchozí doporučení je pouze rozsah 1000000000–1099999999 pro hlavní artikly / flakony."
+                    <TextBlock x:Name="TxtMaterialRangesHelp"
+                               Text="Aktivní rozsahy určují, pro které SAP ID se budou zakládat složky. Výchozí doporučení je pouze rozsah 1000000000–1099999999 pro hlavní artikly / flakony."
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource DmsMutedForegroundBrush}"
                                Margin="0,0,0,8"/>
@@ -103,7 +109,9 @@
                     <DataGrid x:Name="GridMaterialRanges"
                               Style="{StaticResource DmsDataGridStyle}"
                               MinHeight="150"
-                              Margin="0,0,0,18">
+                              Margin="0,0,0,18"
+                              CanUserAddRows="True"
+                              CanUserDeleteRows="True">
 
                         <DataGrid.Columns>
 
@@ -138,22 +146,126 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <!-- Tlačítka -->
+                    <TextBlock x:Name="TxtBrandingTitle"
+                               Text="Branding záhlaví"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,4,0,8"/>
+
+                    <TextBlock x:Name="TxtBrandingHelp"
+                               Text="Doplňkové logo v záhlaví se automaticky zmenší podle zadané maximální velikosti. Obrázek se uloží jako optimalizovaná kopie do Config\Branding."
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                               Margin="0,0,0,8"/>
+
+                    <Grid Margin="0,0,0,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="170"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock x:Name="TxtHeaderSecondaryLogoPathLabel"
+                                   Grid.Row="0"
+                                   Grid.Column="0"
+                                   Text="Cesta k logu"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,8"/>
+
+                        <TextBox x:Name="TxtHeaderSecondaryLogoPath"
+                                 Grid.Row="0"
+                                 Grid.Column="1"
+                                 IsReadOnly="True"
+                                 Margin="0,0,8,8"/>
+
+                        <Button x:Name="BtnBrowseHeaderLogo"
+                                Grid.Row="0"
+                                Grid.Column="2"
+                                Content="Vybrat..."
+                                MinWidth="100"
+                                Margin="0,0,0,8"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnBrowseHeaderLogo_Click"/>
+
+                        <TextBlock x:Name="TxtHeaderSecondaryLogoMaxWidthLabel"
+                                   Grid.Row="1"
+                                   Grid.Column="0"
+                                   Text="Max. šířka"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,8"/>
+
+                        <TextBox x:Name="TxtHeaderSecondaryLogoMaxWidth"
+                                 Grid.Row="1"
+                                 Grid.Column="1"
+                                 Width="120"
+                                 HorizontalAlignment="Left"
+                                 Margin="0,0,8,8"/>
+
+                        <TextBlock x:Name="TxtHeaderSecondaryLogoMaxHeightLabel"
+                                   Grid.Row="2"
+                                   Grid.Column="0"
+                                   Text="Max. výška"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,8"/>
+
+                        <TextBox x:Name="TxtHeaderSecondaryLogoMaxHeight"
+                                 Grid.Row="2"
+                                 Grid.Column="1"
+                                 Width="120"
+                                 HorizontalAlignment="Left"
+                                 Margin="0,0,8,8"/>
+
+                        <Border Grid.Row="3"
+                                Grid.Column="1"
+                                Grid.ColumnSpan="2"
+                                BorderBrush="{DynamicResource DmsBorderBrush}"
+                                Background="{DynamicResource DmsBackgroundBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="8"
+                                Margin="0,0,0,8"
+                                HorizontalAlignment="Left">
+
+                            <Image x:Name="ImgHeaderSecondaryLogoPreview"
+                                   Stretch="Uniform"
+                                   MaxWidth="360"
+                                   MaxHeight="70"
+                                   Visibility="Collapsed"/>
+                        </Border>
+                    </Grid>
+
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Right">
 
-                        <Button Content="Vygenerovat složky"
+                        <Button x:Name="BtnGenerateFolders"
+                                Content="Vygenerovat složky"
                                 MinWidth="160"
                                 Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
                                 Click="BtnGenerateFolders_Click"/>
 
-                        <Button Content="Test cest"
+                        <Button x:Name="BtnTestPaths"
+                                Content="Test cest"
                                 MinWidth="110"
                                 Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
                                 Click="BtnTestPaths_Click"/>
 
-                        <Button Content="Uložit"
+                        <Button x:Name="BtnSave"
+                                Content="Uložit"
                                 MinWidth="110"
+                                Style="{StaticResource DmsPrimaryButtonStyle}"
                                 Click="BtnSave_Click"/>
 
                     </StackPanel>
@@ -161,7 +273,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- Status -->
             <TextBlock x:Name="TxtStatus"
                        Foreground="{DynamicResource DmsMutedForegroundBrush}"
                        TextWrapping="Wrap"

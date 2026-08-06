@@ -10,18 +10,41 @@ namespace DMS.Desktop.Views.Sap;
 public partial class JsonRulesEditorView : UserControl
 {
     private readonly string _filePath;
+    private readonly Func<string, string>? _translate;
+    private readonly Action<string, string>? _logAction;
     private string _lastLoadedJson = string.Empty;
 
-    public JsonRulesEditorView(string title, string filePath)
+    // Konstruktor pro XAML designer / zpětnou kompatibilitu
+    public JsonRulesEditorView()
+        : this("Rules Editor", string.Empty)
+    {
+    }
+
+    public JsonRulesEditorView(
+        string title,
+        string filePath,
+        Func<string, string>? translate = null,
+        Action<string, string>? logAction = null)
     {
         InitializeComponent();
 
         _filePath = filePath;
+        _translate = translate;
+        _logAction = logAction;
 
         TxtTitle.Text = title;
         TxtFilePath.Text = filePath;
 
+        ApplyLocalization();
         LoadJson();
+    }
+
+    private void ApplyLocalization()
+    {
+        BtnReload.Content = T("JsonEditor.Reload");
+        BtnValidate.Content = T("JsonEditor.Validate");
+        BtnSave.Content = T("JsonEditor.Save");
+        BtnRevert.Content = T("JsonEditor.Revert");
     }
 
     private void BtnReload_Click(object sender, RoutedEventArgs e)
@@ -53,18 +76,24 @@ public partial class JsonRulesEditorView : UserControl
             WriteUtf8WithoutBom(_filePath, TxtJson.Text);
             _lastLoadedJson = TxtJson.Text;
 
-            TxtStatus.Text = $"Uloženo: {_filePath}";
+            TxtStatus.Text = TF("JsonEditor.Saved", _filePath);
+
+            _logAction?.Invoke("SaveRulesFile", $"File={_filePath}");
         }
         catch (Exception ex)
         {
-            TxtStatus.Text = $"Chyba při ukládání:\n{ex.Message}";
+            TxtStatus.Text = TF("JsonEditor.SaveFailed", ex.Message);
+
+            _logAction?.Invoke("SaveRulesFileFailed", $"File={_filePath}; Error={ex.Message}");
         }
     }
 
     private void BtnRevert_Click(object sender, RoutedEventArgs e)
     {
         TxtJson.Text = _lastLoadedJson;
-        TxtStatus.Text = "Změny byly vráceny na poslední načtenou verzi.";
+        TxtStatus.Text = T("JsonEditor.Reverted");
+
+        _logAction?.Invoke("RevertRulesFile", $"File={_filePath}");
     }
 
     private void LoadJson()
@@ -75,11 +104,7 @@ public partial class JsonRulesEditorView : UserControl
             {
                 TxtJson.Text = string.Empty;
                 _lastLoadedJson = string.Empty;
-
-                TxtStatus.Text =
-                    "Soubor zatím neexistuje.\n" +
-                    "Po vložení platného JSONu ho můžeš uložit.";
-
+                TxtStatus.Text = T("JsonEditor.FileNotFound");
                 return;
             }
 
@@ -88,11 +113,15 @@ public partial class JsonRulesEditorView : UserControl
             TxtJson.Text = FormatJson(json);
             _lastLoadedJson = TxtJson.Text;
 
-            TxtStatus.Text = $"Načteno: {_filePath}";
+            TxtStatus.Text = TF("JsonEditor.Loaded", _filePath);
+
+            _logAction?.Invoke("LoadRulesFile", $"File={_filePath}");
         }
         catch (Exception ex)
         {
-            TxtStatus.Text = $"Chyba při načítání:\n{ex.Message}";
+            TxtStatus.Text = TF("JsonEditor.LoadFailed", ex.Message);
+
+            _logAction?.Invoke("LoadRulesFileFailed", $"File={_filePath}; Error={ex.Message}");
         }
     }
 
@@ -104,20 +133,19 @@ public partial class JsonRulesEditorView : UserControl
 
             if (showSuccessMessage)
             {
-                TxtStatus.Text = "JSON je platný.";
+                TxtStatus.Text = T("JsonEditor.JsonValid");
             }
 
             return true;
         }
         catch (Exception ex)
         {
-            TxtStatus.Text =
-                "JSON není platný.\n\n" +
-                ex.Message;
-
+            TxtStatus.Text = TF("JsonEditor.JsonInvalid", ex.Message);
             return false;
         }
     }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private static string FormatJson(string json)
     {
@@ -141,7 +169,6 @@ public partial class JsonRulesEditorView : UserControl
     {
         try
         {
-            // Přísné UTF-8 čtení – pokud soubor není validní UTF-8, spadne to do catch.
             var utf8Strict = new UTF8Encoding(
                 encoderShouldEmitUTF8Identifier: false,
                 throwOnInvalidBytes: true);
@@ -150,9 +177,7 @@ public partial class JsonRulesEditorView : UserControl
         }
         catch (DecoderFallbackException)
         {
-            // Starší české soubory mohou být ve Windows-1250.
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
             return File.ReadAllText(filePath, Encoding.GetEncoding(1250));
         }
     }
@@ -164,4 +189,22 @@ public partial class JsonRulesEditorView : UserControl
             text,
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
+
+    private string T(string key)
+    {
+        var value = _translate?.Invoke(key) ?? key;
+        return IsMissing(value, key) ? key : value;
+    }
+
+    private string TF(string key, params object[] args)
+    {
+        var pattern = T(key);
+        try { return string.Format(pattern, args); }
+        catch { return pattern; }
+    }
+
+    private static bool IsMissing(string? value, string key)
+        => string.IsNullOrWhiteSpace(value)
+           || string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+           || string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase);
 }
