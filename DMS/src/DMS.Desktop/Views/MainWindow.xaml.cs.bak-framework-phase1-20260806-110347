@@ -560,7 +560,6 @@ public partial class MainWindow : Window
         var definitions = loader.LoadFromJson(configPath);
         definitions = DMS.Core.Checklists.ChecklistTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Quality.QualityMenuTransactionDefinitions.AddMissing(definitions);
-        definitions = DMS.Core.Framework.FrameworkTransactionDefinitions.AddMissing(definitions);
 
         if (definitions.Count == 0)
         {
@@ -587,8 +586,6 @@ public partial class MainWindow : Window
     new SimpleMessageTransactionHandler("ModuleManagement", "SprĂˇva modulĹŻ"),
     new SimpleMessageTransactionHandler("UserManagement", "SprĂˇva uĹľivatelĹŻ"),
     new SimpleMessageTransactionHandler("LogViewer", "Log aplikace"),
-    new SimpleMessageTransactionHandler("FrameworkHub", "DMS Framework"),
-    new SimpleMessageTransactionHandler("FrameworkDiagnostics", "DMS Framework diagnostics"),
 
     // Artikly / dokumenty
     new ArticleCreateTransactionHandler(),
@@ -1414,20 +1411,6 @@ public partial class MainWindow : Window
                 RenderModuleManagement();
                 break;
 
-            case "FW01":
-            case "FW02":
-            case "FW03":
-            case "FW05":
-            case "FW06":
-            case "FW07":
-            case "FW08":
-            case "FW09":
-                RenderFrameworkHub(result.TransactionCode);
-                break;
-
-            case "FW04":
-                RenderFrameworkDiagnostics();
-                break;
             case "LOG03":
                 RenderLogViewer();
                 break;

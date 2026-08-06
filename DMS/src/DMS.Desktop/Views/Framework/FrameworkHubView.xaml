@@ -1,0 +1,35 @@
+<UserControl x:Class="DMS.Desktop.Views.Framework.FrameworkHubView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="24">
+            <TextBlock x:Name="TitleText" FontSize="26" FontWeight="Bold" Margin="0,0,0,6"/>
+            <TextBlock x:Name="DescriptionText" TextWrapping="Wrap" Opacity="0.85" Margin="0,0,0,20"/>
+
+            <Border Padding="16" BorderThickness="1" CornerRadius="8">
+                <StackPanel>
+                    <TextBlock x:Name="LinksTitleText" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <ItemsControl x:Name="LinksItems">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding Caption}"
+                                        Tag="{Binding TransactionCode}"
+                                        ToolTip="{Binding Description}"
+                                        Click="OpenTransaction_Click"
+                                        MinWidth="230"
+                                        MinHeight="48"
+                                        Margin="0,0,10,10"
+                                        Padding="14,8"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
