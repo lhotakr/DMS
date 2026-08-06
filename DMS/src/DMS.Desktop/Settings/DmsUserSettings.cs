@@ -33,6 +33,12 @@ public sealed class DmsUserSettings
     };
 
     /// <summary>
+    /// Volitelná transakce spuštěná po otevření hlavního okna, například QAMENU.
+    /// Prázdná hodnota znamená bez automatického spuštění.
+    /// </summary>
+    public string StartupTransaction { get; set; } = string.Empty;
+
+    /// <summary>
     /// Light / Dark.
     /// </summary>
     public string ThemeMode { get; set; } = "Light";

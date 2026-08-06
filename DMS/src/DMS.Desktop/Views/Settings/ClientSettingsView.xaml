@@ -268,6 +268,23 @@
                                  Margin="0,0,0,14"/>
                     </StackPanel>
 
+                    <TextBlock x:Name="TxtStartupTransactionTitle"
+                               Text="Počáteční transakce"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,6"/>
+
+                    <TextBox x:Name="TxtStartupTransaction"
+                             Height="32"
+                             ToolTip="Například QAMENU. Prázdná hodnota automatické spuštění vypne."
+                             Margin="0,0,0,4"/>
+
+                    <TextBlock x:Name="TxtStartupTransactionHelp"
+                               Text="Transakce se automaticky otevře při spuštění DMS."
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                               Margin="0,0,0,14"/>
+
                     <TextBlock x:Name="TxtHistoryTitle"
                                Text="Historie transakcí"
                                FontWeight="Bold"

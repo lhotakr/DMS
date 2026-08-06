@@ -3,6 +3,7 @@ using DMS.Core.Security;
 using DMS.Core.Transactions;
 using DMS.Core.Transactions.Handlers;
 using DMS.Desktop.Configuration;
+using DMS.Desktop.Configuration.Modules;
 using DMS.Desktop.Configuration.SystemSettings;
 using DMS.Desktop.Localization;
 using DMS.Desktop.Logging;
@@ -17,6 +18,7 @@ using DMS.Desktop.Views.Documents;
 using DMS.Desktop.Views.Help;
 using DMS.Desktop.Views.Settings;
 using DMS.Desktop.Views.Mes;
+using DMS.Desktop.Views.SystemModules;
 using System.IO;
 using System.Security.Principal;
 using System.Windows;
@@ -55,6 +57,8 @@ public partial class MainWindow : Window
     private readonly Stack<string> _navigationForwardStack = new();
     private string? _currentTransactionCommand;
     private bool _isNavigatingFromHistory;
+    private bool _startupTransactionExecuted;
+    private IReadOnlyList<DmsModuleDefinition> _configuredModules = Array.Empty<DmsModuleDefinition>();
     public MainWindow()
     {
         InitializeComponent();
@@ -101,6 +105,20 @@ public partial class MainWindow : Window
 
         FocusTransactionInput();
         UpdateNavigationButtons();
+        Loaded += MainWindow_Loaded;
+    }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (_startupTransactionExecuted)
+            return;
+
+        _startupTransactionExecuted = true;
+        var startupTransaction = _userSettings.StartupTransaction?.Trim();
+        if (string.IsNullOrWhiteSpace(startupTransaction))
+            return;
+
+        Dispatcher.BeginInvoke(() => ExecuteTransaction(startupTransaction));
     }
 
     private void ApplyTheme()
@@ -541,6 +559,7 @@ public partial class MainWindow : Window
         var loader = new TransactionDefinitionLoader();
         var definitions = loader.LoadFromJson(configPath);
         definitions = DMS.Core.Checklists.ChecklistTransactionDefinitions.AddMissing(definitions);
+        definitions = DMS.Core.Quality.QualityMenuTransactionDefinitions.AddMissing(definitions);
 
         if (definitions.Count == 0)
         {
@@ -662,7 +681,7 @@ public partial class MainWindow : Window
         {
             var definition = _transactionDispatcher.FindDefinition(transactionCode);
 
-            if (definition is null)
+            if (definition is null || !UserCanSeeTransaction(definition))
             {
                 continue;
             }
@@ -686,6 +705,11 @@ public partial class MainWindow : Window
 
     private bool UserCanSeeTransaction(TransactionDefinition definition)
     {
+        if (!IsTransactionModuleActive(definition))
+        {
+            return false;
+        }
+
         if (definition.Roles.Count == 0)
         {
             return true;
@@ -696,18 +720,102 @@ public partial class MainWindow : Window
 
     private IReadOnlyList<TransactionDefinition> GetVisibleTransactionDefinitions()
     {
+        EnsureConfiguredModulesLoaded();
+
         return _transactionDispatcher
             .GetDefinitions()
             .Where(UserCanSeeTransaction)
-            .OrderBy(definition => definition.Module)
-            .ThenBy(definition => definition.Code)
+            .OrderBy(definition => GetModuleSortOrder(definition.Module))
+            .ThenBy(definition => DmsTransactionText.Name(definition, T))
             .ToList();
+    }
+
+    private void EnsureConfiguredModulesLoaded(bool forceReload = false)
+    {
+        if (!forceReload && _configuredModules.Count > 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var modulesPath = GetConfigPath("dms-modules.json");
+            _configuredModules = new DmsModuleManagementService(modulesPath)
+                .LoadAll()
+                .OrderBy(module => module.SortOrder)
+                .ThenBy(module => module.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            _logger?.Info($"DMS module configuration loaded: Path={modulesPath}; Count={_configuredModules.Count}; Active={_configuredModules.Count(module => module.IsActive)}");
+        }
+        catch (Exception ex)
+        {
+            _configuredModules = Array.Empty<DmsModuleDefinition>();
+            _logger?.Error("DMS module configuration load failed.", ex);
+        }
+    }
+
+    private DmsModuleDefinition? FindConfiguredModule(string? rawModule)
+    {
+        if (string.IsNullOrWhiteSpace(rawModule))
+        {
+            return null;
+        }
+
+        EnsureConfiguredModulesLoaded();
+        var value = rawModule.Trim();
+
+        return _configuredModules.FirstOrDefault(module =>
+            string.Equals(module.Code, value, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(module.Name, value, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(DmsModuleText.Name(module, T), value, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string ResolveModuleCode(string? rawModule)
+    {
+        var configured = FindConfiguredModule(rawModule);
+
+        if (configured is not null)
+        {
+            return configured.Code;
+        }
+
+        return string.IsNullOrWhiteSpace(rawModule)
+            ? string.Empty
+            : rawModule.Trim();
+    }
+
+    private string GetModuleDisplayName(string? rawModule)
+    {
+        var configured = FindConfiguredModule(rawModule);
+
+        if (configured is not null)
+        {
+            return DmsModuleText.Name(configured, T);
+        }
+
+        return DmsTransactionText.Module(rawModule ?? string.Empty, T);
+    }
+
+    private int GetModuleSortOrder(string? rawModule)
+    {
+        return FindConfiguredModule(rawModule)?.SortOrder ?? int.MaxValue;
+    }
+
+    private bool IsTransactionModuleActive(TransactionDefinition definition)
+    {
+        var configured = FindConfiguredModule(definition.Module);
+
+        // Backward-compatible fallback: a transaction whose module is not yet
+        // registered remains available until SYS13 receives its definition.
+        return configured?.IsActive ?? true;
     }
 
     private void RefreshLocalizedTransactionNavigation()
     {
         var selectedModuleName = GetSelectedModuleName();
 
+        EnsureConfiguredModulesLoaded(forceReload: true);
         RefreshFavoritesList();
         RefreshModulesList(selectedModuleName);
         RefreshModuleTransactionsList(GetSelectedModuleName());
@@ -715,6 +823,8 @@ public partial class MainWindow : Window
 
     private void RefreshModulesList(string? selectedModuleName = null)
     {
+        EnsureConfiguredModulesLoaded(forceReload: true);
+
         selectedModuleName = string.IsNullOrWhiteSpace(selectedModuleName)
             ? "VĹˇe"
             : selectedModuleName;
@@ -727,19 +837,47 @@ public partial class MainWindow : Window
             DisplayName = DmsTransactionText.AllModules(T)
         });
 
-        var modules = GetVisibleTransactionDefinitions()
-            .Select(definition => definition.Module)
-            .Where(module => !string.IsNullOrWhiteSpace(module))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(module => DmsTransactionText.Module(module, T))
-            .ToList();
+        var referencedModuleCodes = _transactionDispatcher
+            .GetDefinitions()
+            .Where(definition =>
+                definition.Roles.Count == 0 ||
+                _currentUser.HasAnyRole(definition.Roles))
+            .Select(definition => ResolveModuleCode(definition.Module))
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var module in modules)
+        foreach (var module in _configuredModules
+                     .Where(module => module.IsActive)
+                     .Where(module => referencedModuleCodes.Contains(module.Code))
+                     .OrderBy(module => module.SortOrder)
+                     .ThenBy(module => DmsModuleText.Name(module, T)))
         {
             LstModules.Items.Add(new ModuleMenuItem
             {
-                Name = module,
-                DisplayName = DmsTransactionText.Module(module, T)
+                Name = module.Code,
+                DisplayName = DmsModuleText.Name(module, T)
+            });
+        }
+
+        // Keep unknown runtime modules visible until they are formally added in SYS13.
+        var configuredCodes = _configuredModules
+            .Select(module => module.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var rawModule in _transactionDispatcher.GetDefinitions()
+                     .Where(definition =>
+                         definition.Roles.Count == 0 ||
+                         _currentUser.HasAnyRole(definition.Roles))
+                     .Select(definition => definition.Module)
+                     .Where(module => !string.IsNullOrWhiteSpace(module))
+                     .Distinct(StringComparer.OrdinalIgnoreCase)
+                     .Where(module => !configuredCodes.Contains(ResolveModuleCode(module)))
+                     .OrderBy(module => DmsTransactionText.Module(module, T)))
+        {
+            LstModules.Items.Add(new ModuleMenuItem
+            {
+                Name = ResolveModuleCode(rawModule),
+                DisplayName = DmsTransactionText.Module(rawModule, T)
             });
         }
 
@@ -769,20 +907,23 @@ public partial class MainWindow : Window
         {
             definitions = definitions
                 .Where(definition =>
-                    string.Equals(definition.Module, selectedModule, StringComparison.OrdinalIgnoreCase))
+                    string.Equals(
+                        ResolveModuleCode(definition.Module),
+                        selectedModule,
+                        StringComparison.OrdinalIgnoreCase))
                 .ToList();
         }
 
         foreach (var definition in definitions
-                     .OrderBy(definition => DmsTransactionText.Module(definition.Module, T))
+                     .OrderBy(definition => GetModuleSortOrder(definition.Module))
                      .ThenBy(definition => DmsTransactionText.Name(definition, T)))
         {
             LstModuleTransactions.Items.Add(new TransactionMenuItem
             {
                 Code = definition.Code,
                 Name = DmsTransactionText.Name(definition, T),
-                Module = definition.Module,
-                DisplayModule = DmsTransactionText.Module(definition.Module, T),
+                Module = ResolveModuleCode(definition.Module),
+                DisplayModule = GetModuleDisplayName(definition.Module),
                 Description = DmsTransactionText.Description(definition, T),
                 RequiresArticleNumber = definition.RequiresArticleNumber,
                 IsFavorite = IsFavoriteTransaction(definition.Code)
@@ -974,6 +1115,13 @@ public partial class MainWindow : Window
         if (definition is null)
         {
             message = $"NeznĂˇmĂˇ transakce: {transactionCode}";
+            return false;
+        }
+
+        if (!IsTransactionModuleActive(definition))
+        {
+            var module = FindConfiguredModule(definition.Module);
+            message = $"Modul {module?.Name ?? definition.Module} je v SYS13 deaktivovaný.";
             return false;
         }
 
@@ -1289,6 +1437,10 @@ public partial class MainWindow : Window
 
             case "TEC03":
                 RenderTechnicalArticleSummary(result.Parameter ?? string.Empty);
+                break;
+
+            case "QAMENU":
+                RenderQualityMenu();
                 break;
 
             case "QASET":

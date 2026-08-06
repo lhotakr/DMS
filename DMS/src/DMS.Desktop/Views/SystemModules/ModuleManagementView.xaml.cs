@@ -1,4 +1,4 @@
-using DMS.Core.Transactions;
+﻿using DMS.Core.Transactions;
 using DMS.Desktop.Configuration.Modules;
 using DMS.Desktop.Logging;
 using DMS.Desktop.UI;
@@ -152,15 +152,23 @@ public partial class ModuleManagementView : UserControl, IUnsavedChangesGuard
         {
             _modules.Clear();
 
-            foreach (var module in _service.LoadAll())
+            var persistedModules = _service.LoadAll();
+
+            foreach (var module in persistedModules)
             {
                 module.MarkUnchanged();
                 _modules.Add(module);
             }
 
-            _originalModules = _modules
+            // The original snapshot contains only modules physically stored in
+            // dms-modules.json. Modules discovered from active transactions are
+            // intentionally marked Added so SYS13 shows that the configuration
+            // is behind the actual transaction metadata and lets the user save it.
+            _originalModules = persistedModules
                 .Select(CloneModule)
                 .ToList();
+
+            AddModulesReferencedByTransactions();
 
             _view = CollectionViewSource.GetDefaultView(_modules);
             _view.Filter = FilterModule;
@@ -177,6 +185,129 @@ public partial class ModuleManagementView : UserControl, IUnsavedChangesGuard
         {
             _isLoading = false;
         }
+    }
+
+    private void AddModulesReferencedByTransactions()
+    {
+        if (string.IsNullOrWhiteSpace(_transactionsPath) ||
+            !System.IO.File.Exists(_transactionsPath))
+        {
+            return;
+        }
+
+        try
+        {
+            var loader = new TransactionDefinitionLoader();
+            var transactions = loader.LoadFromJson(_transactionsPath);
+
+            var referencedModules = transactions
+                .Where(transaction => !string.IsNullOrWhiteSpace(transaction.Module))
+                .Select(transaction => transaction.Module.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(module => module, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var referencedModule in referencedModules)
+            {
+                if (FindConfiguredModule(referencedModule) is not null)
+                {
+                    continue;
+                }
+
+                var discovered = CreateDiscoveredModule(referencedModule);
+                discovered.MarkAdded();
+                _modules.Add(discovered);
+
+                _logger?.AdminAction(
+                    Area,
+                    "DiscoverTransactionModule",
+                    _currentUserName,
+                    $"Module={referencedModule}; SuggestedCode={discovered.Code}; TransactionsPath={_transactionsPath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error("SYS13 transaction module discovery failed.", ex);
+        }
+    }
+
+    private DmsModuleDefinition? FindConfiguredModule(string value)
+    {
+        return _modules.FirstOrDefault(module =>
+            string.Equals(module.Code?.Trim(), value, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(module.Name?.Trim(), value, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(DmsModuleText.Name(module, T), value, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private DmsModuleDefinition CreateDiscoveredModule(string rawModule)
+    {
+        var code = NormalizeModuleCode(rawModule);
+
+        var known = code switch
+        {
+            "CHECKLISTS" => new
+            {
+                Name = "Checklisty",
+                Description = "Definice, vyplňování, kontrola a přehled checklistů.",
+                SortOrder = 45
+            },
+            "MES" => new
+            {
+                Name = "MES",
+                Description = "Výrobní systém, stanice, zařízení a živá provozní data.",
+                SortOrder = 90
+            },
+            "QUALITY" => new
+            {
+                Name = "Quality",
+                Description = "Quality vrstva, tiskové verze, úkoly a zákaznická data.",
+                SortOrder = 50
+            },
+            _ => new
+            {
+                Name = rawModule,
+                Description = $"Module discovered from active transaction metadata ({rawModule}).",
+                SortOrder = GetNextSortOrder()
+            }
+        };
+
+        return new DmsModuleDefinition
+        {
+            Code = code,
+            Name = known.Name,
+            Description = known.Description,
+            SortOrder = known.SortOrder,
+            IsActive = true
+        };
+    }
+
+    private int GetNextSortOrder()
+    {
+        if (_modules.Count == 0)
+        {
+            return 10;
+        }
+
+        var maximum = _modules.Max(module => module.SortOrder);
+        return ((maximum / 10) + 1) * 10;
+    }
+
+    private static string NormalizeModuleCode(string value)
+    {
+        var characters = value
+            .Trim()
+            .ToUpperInvariant()
+            .Select(character => char.IsLetterOrDigit(character) ? character : '_')
+            .ToArray();
+
+        var normalized = new string(characters);
+
+        while (normalized.Contains("__", StringComparison.Ordinal))
+        {
+            normalized = normalized.Replace("__", "_", StringComparison.Ordinal);
+        }
+
+        return normalized.Trim('_');
     }
 
     private bool FilterModule(object item)
@@ -523,19 +654,14 @@ public partial class ModuleManagementView : UserControl, IUnsavedChangesGuard
             var original = _originalModules.FirstOrDefault(x =>
                 string.Equals(x.Code, module.Code, StringComparison.OrdinalIgnoreCase));
 
-            var moduleNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var moduleIdentifiers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            if (!string.IsNullOrWhiteSpace(module.Name))
-            {
-                moduleNames.Add(module.Name.Trim());
-            }
+            AddModuleIdentifier(moduleIdentifiers, module.Code);
+            AddModuleIdentifier(moduleIdentifiers, module.Name);
+            AddModuleIdentifier(moduleIdentifiers, original?.Code);
+            AddModuleIdentifier(moduleIdentifiers, original?.Name);
 
-            if (!string.IsNullOrWhiteSpace(original?.Name))
-            {
-                moduleNames.Add(original.Name.Trim());
-            }
-
-            if (moduleNames.Count == 0)
+            if (moduleIdentifiers.Count == 0)
             {
                 return Enumerable.Empty<string>();
             }
@@ -544,7 +670,7 @@ public partial class ModuleManagementView : UserControl, IUnsavedChangesGuard
             var transactions = loader.LoadFromJson(_transactionsPath);
 
             return transactions
-                .Where(transaction => moduleNames.Contains(transaction.Module))
+                .Where(transaction => moduleIdentifiers.Contains(transaction.Module?.Trim() ?? string.Empty))
                 .OrderBy(transaction => transaction.Code)
                 .Select(transaction => transaction.Code)
                 .ToList();
@@ -553,6 +679,14 @@ public partial class ModuleManagementView : UserControl, IUnsavedChangesGuard
         {
             _logger?.Error("SYS13 module usage check failed.", ex);
             return Enumerable.Empty<string>();
+        }
+    }
+
+    private static void AddModuleIdentifier(HashSet<string> identifiers, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            identifiers.Add(value.Trim());
         }
     }
 

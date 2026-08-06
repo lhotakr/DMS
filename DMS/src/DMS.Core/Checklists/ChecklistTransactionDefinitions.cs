@@ -1,4 +1,4 @@
-﻿using DMS.Core.Transactions;
+using DMS.Core.Transactions;
 
 namespace DMS.Core.Checklists;
 
@@ -11,7 +11,10 @@ public static class ChecklistTransactionDefinitions
 
         foreach (var item in Create())
         {
-            if (!existing.Contains(item.Code)) result.Add(item);
+            if (!existing.Contains(item.Code))
+            {
+                result.Add(item);
+            }
         }
 
         return result;
@@ -33,7 +36,7 @@ public static class ChecklistTransactionDefinitions
     {
         Code = code,
         Name = name,
-        Module = "Checklisty",
+        Module = "CHECKLISTS",
         Description = description,
         HandlerKey = "ChecklistEngine",
         RequiresArticleNumber = false,

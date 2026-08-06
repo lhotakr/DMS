@@ -4,6 +4,7 @@ using DMS.Core.Domain.People;
 using DMS.Core.Domain.Units;
 using DMS.Core.Sap;
 using DMS.Desktop.Services.Checklists;
+using DMS.Desktop.Configuration.Roles;
 using DMS.Desktop.Services.MasterData;
 using DMS.Desktop.Views.Dialogs;
 using System.Collections.ObjectModel;
@@ -23,6 +24,7 @@ public partial class ChecklistWorkspaceView : UserControl
     private readonly string _displayName;
     private readonly Guid? _currentPersonId;
     private readonly IReadOnlyList<string> _currentRoles;
+    private readonly IReadOnlyList<DmsRoleDefinition> _availableRoles;
     private readonly Action<string> _executeTransaction;
     private readonly Action<string, string> _audit;
     private readonly Func<string, string> _translate;
@@ -45,6 +47,7 @@ public partial class ChecklistWorkspaceView : UserControl
         string displayName,
         Guid? currentPersonId,
         IReadOnlyList<string> currentRoles,
+        IReadOnlyList<DmsRoleDefinition> availableRoles,
         Action<string> executeTransaction,
         Action<string, string> audit,
         Func<string, string> translate)
@@ -56,6 +59,7 @@ public partial class ChecklistWorkspaceView : UserControl
         _displayName = displayName;
         _currentPersonId = currentPersonId;
         _currentRoles = currentRoles ?? Array.Empty<string>();
+        _availableRoles = availableRoles ?? Array.Empty<DmsRoleDefinition>();
         _executeTransaction = executeTransaction;
         _audit = audit;
         _translate = translate;
@@ -229,6 +233,41 @@ public partial class ChecklistWorkspaceView : UserControl
         flags.Children.Add(reviewCheck);
         FormPanel.Children.Add(CreateEditableCard("Chování", flags));
 
+        var allowOwnApprovalCheck = new CheckBox
+        {
+            Content = "Autor smí potvrdit kontrolu vlastního checklistu",
+            IsChecked = definition.AllowAuthorToApproveOwnChecklist,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+
+        var approvalRolesPanel = new StackPanel { Orientation = Orientation.Vertical };
+        approvalRolesPanel.Children.Add(new TextBlock
+        {
+            Text = "Pokud není vybrána žádná role, může kontrolu potvrdit každý uživatel oprávněný ke spuštění CHL06.",
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 8)
+        });
+        approvalRolesPanel.Children.Add(allowOwnApprovalCheck);
+
+        var approvalRoleChecks = new Dictionary<string, CheckBox>(StringComparer.OrdinalIgnoreCase);
+        foreach (var role in _availableRoles.Where(x => x.IsActive).OrderBy(x => x.Code))
+        {
+            var roleCheck = new CheckBox
+            {
+                Content = string.IsNullOrWhiteSpace(role.Name)
+                    ? role.Code
+                    : $"{role.Code} — {role.Name}",
+                IsChecked = definition.AllowedApprovalRoleCodes.Any(x =>
+                    string.Equals(x, role.Code, StringComparison.OrdinalIgnoreCase)),
+                Margin = new Thickness(0, 2, 0, 2),
+                ToolTip = role.Description
+            };
+            approvalRoleChecks[role.Code] = roleCheck;
+            approvalRolesPanel.Children.Add(roleCheck);
+        }
+
+        FormPanel.Children.Add(CreateEditableCard("Kdo může potvrdit kontrolu", approvalRolesPanel));
+
         FormPanel.Children.Add(CreateSectionHeader("Sekce a pole"));
 
         var rows = new ObservableCollection<DefinitionFieldRow>(
@@ -299,6 +338,12 @@ public partial class ChecklistWorkspaceView : UserControl
             definition.AllowMultipleInstancesPerSubject = multipleCheck.IsChecked == true;
             definition.SupportsCopy = copyCheck.IsChecked == true;
             definition.RequiresReview = reviewCheck.IsChecked == true;
+            definition.AllowAuthorToApproveOwnChecklist = allowOwnApprovalCheck.IsChecked == true;
+            definition.AllowedApprovalRoleCodes = approvalRoleChecks
+                .Where(x => x.Value.IsChecked == true)
+                .Select(x => x.Key)
+                .OrderBy(x => x)
+                .ToList();
             definition.Sections = BuildSections(rows);
         };
     }

@@ -49,6 +49,7 @@ public partial class ClientSettingsView : UserControl
             $"LanguageMode={_settings.LanguageMode}; " +
             $"CultureName={_settings.CultureName}; " +
             $"MaxTransactionHistoryItems={_settings.MaxTransactionHistoryItems}; " +
+            $"StartupTransaction={_settings.StartupTransaction}; " +
             $"BackgroundColor={_settings.BackgroundColor}; " +
             $"PanelColor={_settings.PanelColor}; " +
             $"ForegroundColor={_settings.ForegroundColor}; " +
@@ -70,6 +71,14 @@ public partial class ClientSettingsView : UserControl
         return _translateFormat(key, args);
     }
 
+    private string TranslateOr(string key, string fallback)
+    {
+        var value = _translate(key);
+        return string.IsNullOrWhiteSpace(value) || value.StartsWith("[[", StringComparison.Ordinal)
+            ? fallback
+            : value;
+    }
+
     private void LoadValues()
     {
         LoadThemeValue();
@@ -83,6 +92,7 @@ public partial class ClientSettingsView : UserControl
         TxtOnAccentColor.Text = _settings.OnAccentColor;
 
         TxtMaxHistory.Text = _settings.MaxTransactionHistoryItems.ToString();
+        TxtStartupTransaction.Text = _settings.StartupTransaction ?? string.Empty;
 
         LoadLanguageValues();
     }
@@ -111,6 +121,8 @@ public partial class ClientSettingsView : UserControl
         TxtAccentColorLabel.Text = T("CLSET.Color.Accent");
         TxtOnAccentColorLabel.Text = T("CLSET.Color.OnAccent");
 
+        TxtStartupTransactionTitle.Text = TranslateOr("CLSET.StartupTransaction", "Počáteční transakce");
+        TxtStartupTransactionHelp.Text = TranslateOr("CLSET.StartupTransactionHelp", "Transakce se automaticky otevře při spuštění DMS.");
         TxtHistoryTitle.Text = T("CLSET.TransactionHistory");
 
         BtnApply.Content = T("Common.Apply");
@@ -264,6 +276,7 @@ public partial class ClientSettingsView : UserControl
 
         _settings.ThemeMode = themeMode;
         _settings.MaxTransactionHistoryItems = maxHistory;
+        _settings.StartupTransaction = TxtStartupTransaction.Text.Trim();
 
         SaveLanguageValuesToSettings();
 

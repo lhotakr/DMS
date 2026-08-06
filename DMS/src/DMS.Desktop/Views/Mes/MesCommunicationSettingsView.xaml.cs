@@ -1,6 +1,7 @@
-using DMS.Core.Mes;
+﻿using DMS.Core.Mes;
 using DMS.Desktop.Configuration.Mes;
 using DMS.Desktop.Logging;
+using DMS.Desktop.Localization;
 using DMS.Desktop.Services.Mes;
 using DMS.Integration.Mes.Models;
 using DMS.Integration.Mes.Services;
@@ -76,6 +77,7 @@ public partial class MesCommunicationSettingsView : UserControl
         _currentUserDisplayName = currentUserDisplayName;
         _translate = translate;
         _translateFormat = translateFormat;
+        DmsEnumTextConverter.TranslationResolver = key => T(key, key);
 
         var integrationSettingsPath = Path.Combine(
             _configurationRootPath,

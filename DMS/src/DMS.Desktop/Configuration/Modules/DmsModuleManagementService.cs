@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text;
 using System.Text.Json;
 
@@ -170,6 +170,14 @@ public sealed class DmsModuleManagementService
             },
             new()
             {
+                Code = "CHECKLISTS",
+                Name = "Checklisty",
+                Description = "Definice, vyplňování, kontrola a přehled checklistů.",
+                SortOrder = 45,
+                IsActive = true
+            },
+            new()
+            {
                 Code = "QUALITY",
                 Name = "Quality",
                 Description = "Quality vrstva, tiskové verze, úkoly a zákaznická data.",
@@ -198,6 +206,14 @@ public sealed class DmsModuleManagementService
                 Name = "Zakázky",
                 Description = "Přehledy zakázek a návazná data.",
                 SortOrder = 80,
+                IsActive = true
+            },
+            new()
+            {
+                Code = "MES",
+                Name = "MES",
+                Description = "Výrobní systém, stanice, zařízení a živá provozní data.",
+                SortOrder = 90,
                 IsActive = true
             }
         };

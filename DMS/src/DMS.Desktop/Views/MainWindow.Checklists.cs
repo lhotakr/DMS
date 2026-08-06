@@ -1,4 +1,5 @@
 ﻿using DMS.Desktop.Views.Checklists;
+using DMS.Desktop.Configuration.Roles;
 
 namespace DMS.Desktop.Views;
 
@@ -16,6 +17,7 @@ public partial class MainWindow
             _currentUser.DisplayName,
             _currentUser.PersonId,
             _currentUser.Roles,
+            new DmsRoleManagementService(GetConfigPath("dms-roles.json")).LoadAll(),
             executeTransaction: ExecuteTransaction,
             audit: (action, details) => _logger.AdminAction(
                 transactionCode,
