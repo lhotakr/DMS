@@ -172,7 +172,7 @@ public partial class OrganizationUnitsView : UserControl
 
         if (string.IsNullOrWhiteSpace(_selected.Code) || string.IsNullOrWhiteSpace(_selected.Name))
         {
-            DmsMessage.Show(
+            MessageBox.Show(
                 T("SYS01.Organization.Validation.Required"),
                 T("SYS01.Organization.Title"),
                 MessageBoxButton.OK,
@@ -202,7 +202,7 @@ public partial class OrganizationUnitsView : UserControl
         }
         catch (Exception ex)
         {
-            DmsMessage.Show(ex.Message, T("SYS01.Organization.SaveErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, T("SYS01.Organization.SaveErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

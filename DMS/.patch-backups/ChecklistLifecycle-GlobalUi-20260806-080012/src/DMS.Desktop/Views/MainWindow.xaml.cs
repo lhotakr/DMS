@@ -168,12 +168,6 @@ public partial class MainWindow : Window
         SetApplicationBrush("DmsBorderBrush", borderBrush);
         SetApplicationBrush("DmsAccentBrush", accentBrush);
         SetApplicationBrush("DmsOnAccentBrush", onAccentBrush);
-        SetApplicationBrush("DmsDataGridAddedRowBrush",
-            CreateBrushFromHex(_userSettings.DataGridAddedRowColor, "#263A28"));
-        SetApplicationBrush("DmsDataGridModifiedRowBrush",
-            CreateBrushFromHex(_userSettings.DataGridModifiedRowColor, "#4A3820"));
-        SetApplicationBrush("DmsDataGridDeletedRowBrush",
-            CreateBrushFromHex(_userSettings.DataGridDeletedRowColor, "#4A2020"));
         DmsWindowChromeStyler.ApplyToAllOpenWindows();
 
         Application.Current.Resources[SystemColors.HighlightBrushKey] = accentBrush;
@@ -498,13 +492,12 @@ public partial class MainWindow : Window
             {
                 WindowsLogin = windowsLogin,
                 DisplayName = windowsLogin,
-                PersonId = null,
                 Roles = new[] { "DMS_READONLY" }
             };
 
             UpdateCurrentUserText();
 
-            DmsMessage.Show(
+            MessageBox.Show(
                 $"UĹľivatel nenĂ­ zaloĹľenĂ˝ v DMS.\n\nWindows login:\n{windowsLogin}\n\nBude pouĹľit reĹľim DMS_READONLY.",
                 "DMS - uĹľivatel nenalezen",
                 MessageBoxButton.OK,
@@ -517,7 +510,6 @@ public partial class MainWindow : Window
         {
             WindowsLogin = user.WindowsLogin,
             DisplayName = user.DisplayName,
-            PersonId = user.PersonId,
             Roles = user.Roles
         };
         _logger.Info($"AktuĂˇlnĂ­ uĹľivatel: {_currentUser.WindowsLogin}; DMS jmĂ©no: {_currentUser.DisplayName}; Role: {string.Join(", ", _currentUser.Roles)}");
@@ -544,7 +536,7 @@ public partial class MainWindow : Window
 
         if (definitions.Count == 0)
         {
-            DmsMessage.Show(
+            MessageBox.Show(
                 $"NenaÄŤetly se ĹľĂˇdnĂ© transakce.\n\nOÄŤekĂˇvanĂˇ cesta:\n{configPath}",
                 "DMS - konfigurace transakcĂ­",
                 MessageBoxButton.OK,

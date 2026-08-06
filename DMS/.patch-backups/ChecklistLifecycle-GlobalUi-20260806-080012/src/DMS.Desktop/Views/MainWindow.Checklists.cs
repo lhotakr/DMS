@@ -14,8 +14,6 @@ public partial class MainWindow
             GetDmsDataRootPath(),
             _currentUser.WindowsLogin,
             _currentUser.DisplayName,
-            _currentUser.PersonId,
-            _currentUser.Roles,
             executeTransaction: ExecuteTransaction,
             audit: (action, details) => _logger.AdminAction(
                 transactionCode,

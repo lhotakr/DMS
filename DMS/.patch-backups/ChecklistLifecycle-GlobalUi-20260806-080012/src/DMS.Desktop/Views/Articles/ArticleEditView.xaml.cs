@@ -102,7 +102,7 @@ public partial class ArticleEditView : UserControl
 
         if (!ArticleNumberValidator.IsValid(sapArticleNumber))
         {
-            DmsMessage.Show(
+            MessageBox.Show(
                 "SAP číslo artiklu musí být desetimístné číslo.",
                 "DMS - artikl",
                 MessageBoxButton.OK,

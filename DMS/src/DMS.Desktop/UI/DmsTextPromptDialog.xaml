@@ -1,0 +1,59 @@
+<Window x:Class="DMS.Desktop.UI.DmsTextPromptDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="520"
+        Height="310"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{DynamicResource DmsPanelBrush}"
+        Foreground="{DynamicResource DmsForegroundBrush}">
+    <Border Padding="20"
+            Background="{DynamicResource DmsPanelBrush}"
+            BorderBrush="{DynamicResource DmsBorderBrush}"
+            BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock x:Name="TxtTitle"
+                       Grid.Row="0"
+                       FontSize="20"
+                       FontWeight="Bold"
+                       Margin="0,0,0,10"/>
+
+            <TextBlock x:Name="TxtMessage"
+                       Grid.Row="1"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+
+            <TextBox x:Name="TxtValue"
+                     Grid.Row="2"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto"
+                     MinHeight="120"/>
+
+            <StackPanel Grid.Row="3"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,16,0,0">
+                <Button x:Name="BtnConfirm"
+                        Content="Potvrdit"
+                        MinWidth="100"
+                        Margin="0,0,8,0"
+                        Style="{StaticResource DmsPrimaryButtonStyle}"
+                        Click="BtnConfirm_Click"/>
+                <Button Content="Zrušit"
+                        MinWidth="100"
+                        Style="{StaticResource DmsFormButtonStyle}"
+                        Click="BtnCancel_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

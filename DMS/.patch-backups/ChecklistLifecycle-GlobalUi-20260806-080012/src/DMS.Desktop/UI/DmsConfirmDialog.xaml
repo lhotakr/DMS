@@ -16,36 +16,27 @@
             BorderThickness="1">
 
         <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="42"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock x:Name="TxtIcon"
-                       Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
-                       Text="?" FontSize="26" FontWeight="Bold"
-                       VerticalAlignment="Top" HorizontalAlignment="Center"/>
-
             <TextBlock x:Name="TxtTitle"
-                       Grid.Row="0" Grid.Column="1"
+                       Grid.Row="0"
                        FontSize="20"
                        FontWeight="Bold"
                        Margin="0,0,0,16"
                        Foreground="{DynamicResource DmsForegroundBrush}"/>
 
             <TextBlock x:Name="TxtMessage"
-                       Grid.Row="1" Grid.Column="1"
+                       Grid.Row="1"
                        FontSize="14"
                        TextWrapping="Wrap"
                        VerticalAlignment="Top"
                        Foreground="{DynamicResource DmsForegroundBrush}"/>
 
-            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+            <StackPanel Grid.Row="2"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Margin="0,18,0,0">

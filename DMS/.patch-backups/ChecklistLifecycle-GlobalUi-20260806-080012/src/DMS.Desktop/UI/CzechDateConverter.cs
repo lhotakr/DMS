@@ -56,7 +56,7 @@ public sealed class CzechDateConverter : IValueConverter
             return parsedDate.Date;
         }
 
-        DmsMessage.Show(
+        MessageBox.Show(
             "Datum zadej ve formátu DD.MM.RRRR.\n\n" +
             "Například: 06.01.2026",
             "Neplatný formát data",

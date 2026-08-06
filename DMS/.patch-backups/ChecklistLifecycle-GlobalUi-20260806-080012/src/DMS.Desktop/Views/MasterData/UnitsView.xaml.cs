@@ -176,7 +176,7 @@ public partial class UnitsView : UserControl
         }
         catch (Exception ex)
         {
-            DmsMessage.Show(ex.Message, T("SYS01.Units.SaveErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, T("SYS01.Units.SaveErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -195,7 +195,7 @@ public partial class UnitsView : UserControl
                 CultureInfo.InvariantCulture,
                 out value))
         {
-            DmsMessage.Show(
+            MessageBox.Show(
                 T("SYS01.Units.Validation.Number"),
                 T("SYS01.Units.TestConversion"),
                 MessageBoxButton.OK,
@@ -211,7 +211,7 @@ public partial class UnitsView : UserControl
         }
         catch (Exception ex)
         {
-            DmsMessage.Show(ex.Message, T("SYS01.Units.TestConversion"), MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, T("SYS01.Units.TestConversion"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

@@ -165,7 +165,7 @@ public partial class SapValidationRulesEditorView : UserControl
             return;
         }
 
-        var result = DmsMessage.Show(
+        var result = MessageBox.Show(
             TF("SAPSET.Validation.DeleteConfirm", _selectedRule.Name),
             T("SAPSET.Validation.Title"),
             MessageBoxButton.YesNo,
@@ -197,7 +197,7 @@ public partial class SapValidationRulesEditorView : UserControl
 
         if (errors.Count > 0)
         {
-            DmsMessage.Show(
+            MessageBox.Show(
                 string.Join("\n", errors.Take(20)),
                 T("SAPSET.Validation.Title"),
                 MessageBoxButton.OK,

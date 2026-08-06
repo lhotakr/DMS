@@ -9,14 +9,6 @@ public enum DmsDialogButtons
     YesNoCancel
 }
 
-public enum DmsDialogKind
-{
-    Information,
-    Warning,
-    Error,
-    Question
-}
-
 public partial class DmsConfirmDialog : Window
 {
     private readonly DmsDialogButtons _buttons;
@@ -28,8 +20,7 @@ public partial class DmsConfirmDialog : Window
         string okText = "OK",
         string yesText = "Ano",
         string noText = "Ne",
-        string cancelText = "Zrušit",
-        DmsDialogKind kind = DmsDialogKind.Question)
+        string cancelText = "Zrušit")
     {
         InitializeComponent();
 
@@ -37,7 +28,6 @@ public partial class DmsConfirmDialog : Window
 
         TxtTitle.Text = title;
         TxtMessage.Text = message;
-        ApplyKind(kind);
 
         ConfigureButtons(
             buttons,
@@ -49,28 +39,6 @@ public partial class DmsConfirmDialog : Window
 
     public MessageBoxResult Result { get; private set; }
         = MessageBoxResult.Cancel;
-
-
-    private void ApplyKind(DmsDialogKind kind)
-    {
-        TxtIcon.Text = kind switch
-        {
-            DmsDialogKind.Error => "✕",
-            DmsDialogKind.Warning => "!",
-            DmsDialogKind.Information => "i",
-            _ => "?"
-        };
-
-        TxtIcon.SetResourceReference(
-            System.Windows.Controls.TextBlock.ForegroundProperty,
-            kind switch
-            {
-                DmsDialogKind.Error => "DmsErrorBrush",
-                DmsDialogKind.Warning => "DmsWarningBrush",
-                DmsDialogKind.Information => "DmsAccentBrush",
-                _ => "DmsAccentBrush"
-            });
-    }
 
     private void ConfigureButtons(
         DmsDialogButtons buttons,
@@ -179,28 +147,6 @@ public partial class DmsConfirmDialog : Window
 
         dialog.ShowDialog();
 
-        return dialog.Result;
-    }
-
-    public static MessageBoxResult Show(
-        Window? owner,
-        string title,
-        string message,
-        DmsDialogButtons buttons,
-        DmsDialogKind kind)
-    {
-        var dialog = new DmsConfirmDialog(
-            title,
-            message,
-            buttons,
-            kind: kind);
-
-        if (owner is not null)
-        {
-            dialog.Owner = owner;
-        }
-
-        dialog.ShowDialog();
         return dialog.Result;
     }
 

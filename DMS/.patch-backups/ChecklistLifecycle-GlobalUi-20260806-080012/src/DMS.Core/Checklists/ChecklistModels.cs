@@ -54,10 +54,6 @@ public sealed class ChecklistDefinition
     public bool AllowMultipleInstancesPerSubject { get; set; } = true;
     public bool SupportsCopy { get; set; } = true;
     public bool RequiresReview { get; set; } = true;
-    public bool AllowAuthorToApproveOwnChecklist { get; set; }
-    public List<string> AllowedApprovalRoleCodes { get; set; } = new();
-    public List<Guid> AllowedApprovalPersonIds { get; set; } = new();
-    public List<Guid> AllowedApprovalOrganizationUnitIds { get; set; } = new();
     public List<ChecklistSectionDefinition> Sections { get; set; } = new();
 }
 
@@ -118,11 +114,6 @@ public sealed class ChecklistInstance
     public Guid? CheckedByPersonId { get; set; }
     public string? CheckedByDisplayName { get; set; }
     public DateTimeOffset? CheckedAt { get; set; }
-
-    public string? ReturnReason { get; set; }
-    public Guid? ReturnedByPersonId { get; set; }
-    public string? ReturnedByDisplayName { get; set; }
-    public DateTimeOffset? ReturnedAt { get; set; }
 
     public Dictionary<string, ChecklistFieldValue> Values { get; set; } =
         new(StringComparer.OrdinalIgnoreCase);

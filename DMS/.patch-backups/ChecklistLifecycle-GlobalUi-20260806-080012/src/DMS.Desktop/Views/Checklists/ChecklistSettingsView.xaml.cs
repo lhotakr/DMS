@@ -151,7 +151,7 @@ public partial class ChecklistSettingsView : UserControl
         // Keep the code in a local variable; _selected can legitimately become null during reload.
         var savedCatalogCode = _selected.Code;
 
-        DmsMessage.Show(
+        MessageBox.Show(
             $"Katalog {savedCatalogCode} byl uložen.",
             "DMS",
             MessageBoxButton.OK,

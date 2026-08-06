@@ -49,14 +49,6 @@ public sealed class DmsUserSettings
     public string OnAccentColor { get; set; } = "#FFFFFF";
 
     /// <summary>
-    /// Barevné zvýraznění stavů editovatelných řádků v DataGridu.
-    /// Používá se jednotně napříč celým klientem.
-    /// </summary>
-    public string DataGridAddedRowColor { get; set; } = "#263A28";
-    public string DataGridModifiedRowColor { get; set; } = "#4A3820";
-    public string DataGridDeletedRowColor { get; set; } = "#4A2020";
-
-    /// <summary>
     /// Auto = jazyk podle systému, Manual = uživatelem zvolený jazyk.
     /// </summary>
     public string LanguageMode { get; set; } = "Auto";

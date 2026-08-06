@@ -8,7 +8,6 @@ public sealed class DmsUserContext
 {
     public string WindowsLogin { get; init; } = string.Empty;
     public string DisplayName { get; init; } = string.Empty;
-    public Guid? PersonId { get; init; }
     public IReadOnlyList<string> Roles { get; init; } = Array.Empty<string>();
 
     public bool HasRole(string role)

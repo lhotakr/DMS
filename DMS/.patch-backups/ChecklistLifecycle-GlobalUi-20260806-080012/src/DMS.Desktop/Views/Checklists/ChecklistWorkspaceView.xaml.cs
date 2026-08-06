@@ -21,8 +21,6 @@ public partial class ChecklistWorkspaceView : UserControl
     private readonly List<string> _arguments;
     private readonly string _windowsLogin;
     private readonly string _displayName;
-    private readonly Guid? _currentPersonId;
-    private readonly IReadOnlyList<string> _currentRoles;
     private readonly Action<string> _executeTransaction;
     private readonly Action<string, string> _audit;
     private readonly Func<string, string> _translate;
@@ -43,8 +41,6 @@ public partial class ChecklistWorkspaceView : UserControl
         string dmsDataRootPath,
         string windowsLogin,
         string displayName,
-        Guid? currentPersonId,
-        IReadOnlyList<string> currentRoles,
         Action<string> executeTransaction,
         Action<string, string> audit,
         Func<string, string> translate)
@@ -54,8 +50,6 @@ public partial class ChecklistWorkspaceView : UserControl
         _arguments = arguments.ToList();
         _windowsLogin = windowsLogin;
         _displayName = displayName;
-        _currentPersonId = currentPersonId;
-        _currentRoles = currentRoles ?? Array.Empty<string>();
         _executeTransaction = executeTransaction;
         _audit = audit;
         _translate = translate;
@@ -459,11 +453,8 @@ public partial class ChecklistWorkspaceView : UserControl
         _definition = _service.FindDefinition(direct.DefinitionCode)
             ?? throw new InvalidOperationException($"Definition {direct.DefinitionCode} was not found.");
         ShowForm(_definition, direct, editable: false, isNew: false);
-        var canApprove = CanCurrentUserApprove(_definition, direct, out var approvalReason);
         BtnPrimary.Content = "Potvrdit kontrolu";
         BtnPrimary.Visibility = Visibility.Visible;
-        BtnPrimary.IsEnabled = canApprove;
-        BtnPrimary.ToolTip = canApprove ? null : approvalReason;
         BtnPrimary.Tag = "REVIEW";
         BtnSecondary.Content = "Vrátit k opravě";
         BtnSecondary.Visibility = Visibility.Visible;
@@ -568,11 +559,7 @@ public partial class ChecklistWorkspaceView : UserControl
         BtnPrimary.Content = isNew ? "Uložit koncept" : "Uložit změny";
         BtnPrimary.Visibility = editable ? Visibility.Visible : Visibility.Collapsed;
         BtnPrimary.Tag = "SAVE";
-        BtnSecondary.Content = "Odeslat ke kontrole";
-        BtnSecondary.Tag = "SUBMIT";
-        BtnSecondary.Visibility = editable && definition.RequiresReview
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        BtnSecondary.Visibility = Visibility.Collapsed;
     }
 
     private FrameworkElement CreateFieldEditor(ChecklistFieldDefinition field, ChecklistInstance instance, bool editable)
@@ -1124,7 +1111,7 @@ public partial class ChecklistWorkspaceView : UserControl
                 _definitionSaveAction?.Invoke();
                 _service.SaveDefinition(_definition);
                 _audit("AUDIT", $"ChecklistDefinition={_definition.Code}; Version={_definition.Version}; NumberPrefix={_definition.NumberPrefix}");
-                DmsMessage.Show($"Definice {_definition.Code} byla uložena.", "DMS", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Definice {_definition.Code} byla uložena.", "DMS", MessageBoxButton.OK, MessageBoxImage.Information);
                 _executeTransaction($"CHL00 {_definition.Code}");
                 return;
             }
@@ -1135,129 +1122,32 @@ public partial class ChecklistWorkspaceView : UserControl
                 var isCreate = string.IsNullOrWhiteSpace(_instance.ChecklistNumber);
                 _service.SaveDraft(_instance, _displayName);
                 _audit(isCreate ? "AUDIT_CREATE" : "AUDIT", $"Checklist={_instance.ChecklistNumber}; Definition={_instance.DefinitionCode}; Subject={_instance.SubjectReference}; Status={_instance.Status}");
-                DmsMessage.Show($"Checklist {_instance.ChecklistNumber} byl uložen.", "DMS", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Checklist {_instance.ChecklistNumber} byl uložen.", "DMS", MessageBoxButton.OK, MessageBoxImage.Information);
                 _executeTransaction($"CHL03 {_instance.ChecklistNumber}");
                 return;
             }
 
-            if (Equals(BtnPrimary.Tag, "REVIEW") && _instance is not null && _definition is not null)
+            if (Equals(BtnPrimary.Tag, "REVIEW") && _instance is not null)
             {
-                if (!CanCurrentUserApprove(_definition, _instance, out var reason))
-                {
-                    DmsMessage.Warning("Schválení checklistu", reason, Window.GetWindow(this));
-                    return;
-                }
-
-                if (!DmsMessage.Confirm("Schválení checklistu", $"Opravdu schválit checklist {_instance.ChecklistNumber}?", Window.GetWindow(this)))
-                    return;
-
                 _instance.Status = ChecklistStatus.Checked;
-                _instance.CheckedByPersonId = _currentPersonId;
-                _instance.CheckedByDisplayName = _displayName;
-                _instance.CheckedAt = DateTimeOffset.Now;
                 _service.SaveDraft(_instance, _displayName);
-                _audit("CHECKLIST_APPROVED", $"Checklist={_instance.ChecklistNumber}; OldStatus=SubmittedForReview; NewStatus=Checked; ApprovedBy={_displayName}");
+                _audit("CHECKLIST_CHECK", $"Checklist={_instance.ChecklistNumber}; Result=Checked");
                 _executeTransaction($"CHL03 {_instance.ChecklistNumber}");
             }
         }
         catch (Exception ex)
         {
-            DmsMessage.Show(ex.Message, "DMS", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, "DMS", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
     private void BtnSecondary_Click(object sender, RoutedEventArgs e)
     {
-        if (_instance is null) return;
-
-        if (Equals(BtnSecondary.Tag, "SUBMIT"))
-        {
-            try
-            {
-                SaveEditors();
-                _service.SaveDraft(_instance, _displayName);
-
-                if (!DmsMessage.Confirm(
-                        "Odeslání checklistu",
-                        $"Odeslat checklist {_instance.ChecklistNumber} ke kontrole? Po odeslání jej nebude možné běžně upravovat.",
-                        Window.GetWindow(this)))
-                    return;
-
-                _instance.Status = ChecklistStatus.SubmittedForReview;
-                _instance.SubmittedByPersonId = _currentPersonId;
-                _instance.SubmittedByDisplayName = _displayName;
-                _instance.SubmittedAt = DateTimeOffset.Now;
-                _service.SaveDraft(_instance, _displayName);
-                _audit("CHECKLIST_SUBMITTED", $"Checklist={_instance.ChecklistNumber}; OldStatus=InProgress; NewStatus=SubmittedForReview; SubmittedBy={_displayName}");
-                _executeTransaction($"CHL03 {_instance.ChecklistNumber}");
-            }
-            catch (Exception ex)
-            {
-                DmsMessage.Error("Odeslání checklistu", ex.Message, Window.GetWindow(this));
-            }
-            return;
-        }
-
-        if (!Equals(BtnSecondary.Tag, "RETURN")) return;
-
-        var reason = DmsTextPromptDialog.Show(
-            Window.GetWindow(this),
-            "Vrácení checklistu",
-            "Uveď důvod vrácení checklistu k opravě:");
-
-        if (reason is null) return;
-
+        if (!Equals(BtnSecondary.Tag, "RETURN") || _instance is null) return;
         _instance.Status = ChecklistStatus.ReturnedForCorrection;
-        _instance.ReturnReason = reason;
-        _instance.ReturnedByPersonId = _currentPersonId;
-        _instance.ReturnedByDisplayName = _displayName;
-        _instance.ReturnedAt = DateTimeOffset.Now;
         _service.SaveDraft(_instance, _displayName);
-        _audit("CHECKLIST_RETURNED", $"Checklist={_instance.ChecklistNumber}; OldStatus=SubmittedForReview; NewStatus=ReturnedForCorrection; ReturnedBy={_displayName}; Reason={reason}");
+        _audit("CHECKLIST_RETURN", $"Checklist={_instance.ChecklistNumber}; Result=ReturnedForCorrection");
         _executeTransaction($"CHL03 {_instance.ChecklistNumber}");
-    }
-
-    private bool CanCurrentUserApprove(ChecklistDefinition definition, ChecklistInstance instance, out string reason)
-    {
-        reason = string.Empty;
-
-        if (!definition.RequiresReview)
-        {
-            reason = "Tento typ checklistu nevyžaduje kontrolu.";
-            return false;
-        }
-
-        if (!definition.AllowAuthorToApproveOwnChecklist &&
-            string.Equals(instance.CreatedByLogin, _windowsLogin, StringComparison.OrdinalIgnoreCase))
-        {
-            reason = "Autor nemůže schválit vlastní checklist.";
-            return false;
-        }
-
-        var hasConfiguredRestriction =
-            definition.AllowedApprovalRoleCodes.Count > 0 ||
-            definition.AllowedApprovalPersonIds.Count > 0 ||
-            definition.AllowedApprovalOrganizationUnitIds.Count > 0;
-
-        if (!hasConfiguredRestriction)
-            return true;
-
-        if (_currentPersonId.HasValue && definition.AllowedApprovalPersonIds.Contains(_currentPersonId.Value))
-            return true;
-
-        if (definition.AllowedApprovalRoleCodes.Any(role =>
-            _currentRoles.Any(current => string.Equals(current, role, StringComparison.OrdinalIgnoreCase))))
-            return true;
-
-        if (_currentPersonId.HasValue && definition.AllowedApprovalOrganizationUnitIds.Count > 0)
-        {
-            var person = _masterData.LoadPeople().FirstOrDefault(x => x.PersonId == _currentPersonId.Value);
-            if (person is not null && definition.AllowedApprovalOrganizationUnitIds.Contains(person.OrganizationUnitId))
-                return true;
-        }
-
-        reason = "Nejsi mezi povolenými schvalovateli tohoto typu checklistu.";
-        return false;
     }
 
     private void GridItems_MouseDoubleClick(object sender, MouseButtonEventArgs e)

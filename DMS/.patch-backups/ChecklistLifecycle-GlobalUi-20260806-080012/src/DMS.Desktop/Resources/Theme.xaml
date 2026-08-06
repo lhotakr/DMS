@@ -1,10 +1,5 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <SolidColorBrush x:Key="DmsErrorBrush" Color="#E57373"/>
-    <SolidColorBrush x:Key="DmsWarningBrush" Color="#FFB74D"/>
-    <SolidColorBrush x:Key="DmsDataGridAddedRowBrush" Color="#263A28"/>
-    <SolidColorBrush x:Key="DmsDataGridModifiedRowBrush" Color="#4A3820"/>
-    <SolidColorBrush x:Key="DmsDataGridDeletedRowBrush" Color="#4A2020"/>
 
     <!-- =========================================================
          BARVY
@@ -1378,35 +1373,6 @@
         <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
         <Setter Property="MinHeight" Value="26"/>
-        <Style.Triggers>
-            <DataTrigger Binding="{Binding IsNew}" Value="True">
-                <Setter Property="Background" Value="{DynamicResource DmsDataGridAddedRowBrush}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding IsModified}" Value="True">
-                <Setter Property="Background" Value="{DynamicResource DmsDataGridModifiedRowBrush}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding IsDeleted}" Value="True">
-                <Setter Property="Background" Value="{DynamicResource DmsDataGridDeletedRowBrush}"/>
-                <Setter Property="Opacity" Value="0.65"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding State}" Value="Added">
-                <Setter Property="Background" Value="{DynamicResource DmsDataGridAddedRowBrush}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding State}" Value="Modified">
-                <Setter Property="Background" Value="{DynamicResource DmsDataGridModifiedRowBrush}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding State}" Value="Deleted">
-                <Setter Property="Background" Value="{DynamicResource DmsDataGridDeletedRowBrush}"/>
-                <Setter Property="Opacity" Value="0.65"/>
-            </DataTrigger>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="BorderBrush" Value="{DynamicResource DmsAccentBrush}"/>
-            </Trigger>
-            <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
-                <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
-            </Trigger>
-        </Style.Triggers>
     </Style>
 
     <Style x:Key="DmsDataGridTextBlockElementStyle"
@@ -1483,21 +1449,21 @@
             <!-- Nový záznam -->
             <DataTrigger Binding="{Binding State}"
                      Value="Added">
-                <Setter Property="Background" Value="{DynamicResource DmsDataGridAddedRowBrush}"/>
+                <Setter Property="Background" Value="#263A28"/>
                 <Setter Property="ToolTip" Value="Nový záznam"/>
             </DataTrigger>
 
             <!-- Změněný záznam -->
             <DataTrigger Binding="{Binding State}"
                      Value="Modified">
-                <Setter Property="Background" Value="{DynamicResource DmsDataGridModifiedRowBrush}"/>
+                <Setter Property="Background" Value="#4A3820"/>
                 <Setter Property="ToolTip" Value="Změněný záznam"/>
             </DataTrigger>
 
             <!-- Záznam označený ke smazání -->
             <DataTrigger Binding="{Binding State}"
                      Value="Deleted">
-                <Setter Property="Background" Value="{DynamicResource DmsDataGridDeletedRowBrush}"/>
+                <Setter Property="Background" Value="#4A2020"/>
                 <Setter Property="Opacity" Value="0.65"/>
                 <Setter Property="ToolTip" Value="Záznam označený ke smazání"/>
             </DataTrigger>

@@ -238,7 +238,7 @@ public partial class PeopleView : UserControl
             || string.IsNullOrWhiteSpace(_selected.LastName)
             || _selected.OrganizationUnitId == Guid.Empty)
         {
-            DmsMessage.Show(
+            MessageBox.Show(
                 T("SYS01.People.Validation.Required"),
                 T("SYS01.People.Title"),
                 MessageBoxButton.OK,
@@ -268,7 +268,7 @@ public partial class PeopleView : UserControl
         }
         catch (Exception ex)
         {
-            DmsMessage.Show(ex.Message, T("SYS01.People.SaveErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, T("SYS01.People.SaveErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

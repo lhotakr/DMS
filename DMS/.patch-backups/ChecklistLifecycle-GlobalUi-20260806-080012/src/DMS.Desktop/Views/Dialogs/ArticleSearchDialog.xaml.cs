@@ -116,7 +116,7 @@ public partial class ArticleSearchDialog : Window
     {
         if (DgvArticles.SelectedItem is not ArticleSearchRow row)
         {
-            DmsMessage.Show(
+            MessageBox.Show(
                 "Nejdřív vyber artikl.",
                 "DMS - výběr artiklu",
                 MessageBoxButton.OK,
