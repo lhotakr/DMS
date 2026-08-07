@@ -13,12 +13,6 @@ public sealed class DmsLogEntry
 
     public string OperationId { get; set; } = string.Empty;
 
-    public string CorrelationId { get; set; } = string.Empty;
-
-    public string Module { get; set; } = string.Empty;
-
-    public string PersonId { get; set; } = string.Empty;
-
     public string Code { get; set; } = string.Empty;
 
     public string Text { get; set; } = string.Empty;
@@ -75,7 +69,7 @@ public sealed class DmsLogEntry
                     ? "Transaction completed"
                     : $"Transaction {Code} completed",
 
-                "TX_ERROR" or "TX_FAIL" => string.IsNullOrWhiteSpace(Code)
+                "TX_ERROR" => string.IsNullOrWhiteSpace(Code)
                     ? BuildMessage("Transaction failed", NormalizeLogText(Message))
                     : BuildMessage($"Transaction {Code} failed", NormalizeLogText(Message)),
 
@@ -88,11 +82,6 @@ public sealed class DmsLogEntry
                     : BuildMessage($"Transaction {Code} validation failed", NormalizeLogText(Reason)),
 
                 "ADMIN" => JoinNonEmpty(": ", Area, Action),
-                "CONFIG_CHANGED" => BuildFrameworkSummary("Configuration changed"),
-                "WORKFLOW_CHANGED" => BuildFrameworkSummary("Workflow changed"),
-                "SECURITY_CHANGED" => BuildFrameworkSummary("Security changed"),
-                "FRAMEWORK_DIAGNOSTIC" => BuildFrameworkSummary("Framework diagnostic"),
-                "FRAMEWORK_HEALTH" => BuildFrameworkSummary("Framework health check"),
                 "DATA" => JoinNonEmpty(": ", Area, JoinNonEmpty(" ", Action, Entity, EntityId)),
                 "AUDIT" => BuildAuditChangeText(),
                 "AUDIT_CREATE" => BuildAuditCreateText(),
@@ -255,16 +244,6 @@ public sealed class DmsLogEntry
         }
 
         return text;
-    }
-
-    private string BuildFrameworkSummary(string title)
-    {
-        var subject = JoinNonEmpty(" ", Module, Area, Entity, EntityId);
-        var summary = string.IsNullOrWhiteSpace(subject)
-            ? title
-            : $"{title}: {subject}";
-
-        return BuildMessage(summary, NormalizeLogText(Detail));
     }
 
     private static string ReplacePrefix(string text, string oldPrefix, string newPrefix)

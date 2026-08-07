@@ -1442,8 +1442,8 @@ public partial class MainWindow : Window
                 RenderModuleManagement();
                 break;
 
-            case "FW01":                 RenderFrameworkLocalization();                 break; 
-            case "FW02":                 RenderFrameworkUiStandards();                 break; 
+            case "FW01":
+            case "FW02":
                 RenderFrameworkHub(result.TransactionCode);
                 break;
 
@@ -1459,7 +1459,7 @@ public partial class MainWindow : Window
                 RenderFrameworkPerformance();
                 break;
 
-            case "FW09":                 RenderFrameworkMasterData();                 break; 
+            case "FW09":
                 RenderFrameworkHub(result.TransactionCode);
                 break;
 

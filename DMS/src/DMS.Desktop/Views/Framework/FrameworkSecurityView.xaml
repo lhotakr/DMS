@@ -1,0 +1,164 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Framework.FrameworkSecurityView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock x:Name="TitleText"
+                       FontSize="26"
+                       FontWeight="Bold"/>
+            <TextBlock x:Name="SubtitleText"
+                       Margin="0,6,0,0"
+                       TextWrapping="Wrap"
+                       Opacity="0.85"/>
+        </StackPanel>
+
+        <WrapPanel Grid.Row="1" Margin="0,16,0,12">
+            <Button x:Name="ReloadButton"
+                    Click="ReloadButton_Click"
+                    MinWidth="130"
+                    Padding="14,8"
+                    Margin="0,0,8,0"/>
+            <Button x:Name="UsersButton"
+                    Click="UsersButton_Click"
+                    MinWidth="130"
+                    Padding="14,8"
+                    Margin="0,0,8,0"/>
+            <Button x:Name="RolesButton"
+                    Click="RolesButton_Click"
+                    MinWidth="130"
+                    Padding="14,8"
+                    Margin="0,0,8,0"/>
+            <Button x:Name="TransactionsButton"
+                    Click="TransactionsButton_Click"
+                    MinWidth="150"
+                    Padding="14,8"/>
+        </WrapPanel>
+
+        <Grid Grid.Row="2" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="360"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="UserLabel"
+                       Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"
+                       FontWeight="SemiBold"/>
+
+            <ComboBox x:Name="UserCombo"
+                      Grid.Column="1"
+                      SelectionChanged="UserCombo_SelectionChanged"
+                      MinHeight="30">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding DisplayText}"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock x:Name="SummaryLabel"
+                       Grid.Column="3"
+                       VerticalAlignment="Center"
+                       Margin="0,0,8,0"
+                       FontWeight="SemiBold"/>
+
+            <TextBlock x:Name="SummaryText"
+                       Grid.Column="4"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"/>
+        </Grid>
+
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <DataGrid x:Name="PermissionGrid"
+                      Grid.Column="0"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeColumns="True"
+                      CanUserReorderColumns="True"
+                      EnableRowVirtualization="True"
+                      EnableColumnVirtualization="True"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+                <DataGrid.Columns>
+                    <DataGridTextColumn x:Name="CodeColumn"
+                                        Binding="{Binding Code}"
+                                        Width="115"
+                                        MinWidth="95"/>
+                    <DataGridTextColumn x:Name="ModuleColumn"
+                                        Binding="{Binding Module}"
+                                        Width="135"
+                                        MinWidth="110"/>
+                    <DataGridTextColumn x:Name="NameColumn"
+                                        Binding="{Binding Name}"
+                                        Width="2*"
+                                        MinWidth="220"/>
+                    <DataGridTextColumn x:Name="RequiredColumn"
+                                        Binding="{Binding RequiredRoles}"
+                                        Width="2*"
+                                        MinWidth="220"/>
+                    <DataGridCheckBoxColumn x:Name="AllowedColumn"
+                                            Binding="{Binding Allowed}"
+                                            Width="90"/>
+                    <DataGridTextColumn x:Name="ReasonColumn"
+                                        Binding="{Binding Reason}"
+                                        Width="170"
+                                        MinWidth="140"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <DataGrid x:Name="DiagnosticsGrid"
+                      Grid.Column="2"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeColumns="True"
+                      CanUserReorderColumns="True"
+                      EnableRowVirtualization="True"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+                <DataGrid.Columns>
+                    <DataGridTextColumn x:Name="SeverityColumn"
+                                        Binding="{Binding Severity}"
+                                        Width="95"
+                                        MinWidth="80"/>
+                    <DataGridTextColumn x:Name="CheckColumn"
+                                        Binding="{Binding Check}"
+                                        Width="170"
+                                        MinWidth="135"/>
+                    <DataGridTextColumn x:Name="DetailsColumn"
+                                        Binding="{Binding Details}"
+                                        Width="2*"
+                                        MinWidth="260"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+
+        <TextBlock Grid.Row="4"
+                   x:Name="FooterText"
+                   Margin="0,10,0,0"
+                   TextWrapping="Wrap"
+                   Opacity="0.75"/>
+    </Grid>
+</UserControl>

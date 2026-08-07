@@ -83,14 +83,6 @@ public sealed class DmsLogReader
         var values = ParseKeyValues(message);
 
         entry.OperationId = Get(values, "OperationId");
-        entry.CorrelationId = Get(values, "CorrelationId");
-        if (string.IsNullOrWhiteSpace(entry.CorrelationId))
-        {
-            entry.CorrelationId = entry.OperationId;
-        }
-
-        entry.Module = Get(values, "Module");
-        entry.PersonId = Get(values, "PersonId");
         entry.Code = Get(values, "Code");
         entry.Text = Get(values, "Text");
         entry.Area = Get(values, "Area");

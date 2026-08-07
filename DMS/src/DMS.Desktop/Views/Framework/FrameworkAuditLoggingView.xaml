@@ -1,0 +1,159 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Framework.FrameworkAuditLoggingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock x:Name="TitleText"
+                       FontSize="26"
+                       FontWeight="Bold"/>
+            <TextBlock x:Name="SubtitleText"
+                       Margin="0,6,0,0"
+                       TextWrapping="Wrap"
+                       Opacity="0.85"/>
+        </StackPanel>
+
+        <WrapPanel Grid.Row="1" Margin="0,16,0,12">
+            <Button x:Name="ReloadButton"
+                    Click="ReloadButton_Click"
+                    MinWidth="130"
+                    Padding="14,8"
+                    Margin="0,0,8,0"/>
+            <Button x:Name="OpenLogButton"
+                    Click="OpenLogButton_Click"
+                    MinWidth="130"
+                    Padding="14,8"
+                    Margin="0,0,8,0"/>
+            <Button x:Name="CopyButton"
+                    Click="CopyButton_Click"
+                    MinWidth="130"
+                    Padding="14,8"
+                    Margin="0,0,8,0"/>
+            <Button x:Name="TestButton"
+                    Click="TestButton_Click"
+                    MinWidth="150"
+                    Padding="14,8"/>
+        </WrapPanel>
+
+        <UniformGrid Grid.Row="2"
+                     Columns="4"
+                     Margin="0,0,0,12">
+            <Border Margin="0,0,8,0"
+                    Padding="12"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                <StackPanel>
+                    <TextBlock x:Name="TodayLabel" Opacity="0.75"/>
+                    <TextBlock x:Name="TodayValue" FontSize="22" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+            <Border Margin="0,0,8,0"
+                    Padding="12"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                <StackPanel>
+                    <TextBlock x:Name="ErrorsLabel" Opacity="0.75"/>
+                    <TextBlock x:Name="ErrorsValue" FontSize="22" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+            <Border Margin="0,0,8,0"
+                    Padding="12"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                <StackPanel>
+                    <TextBlock x:Name="AuditLabel" Opacity="0.75"/>
+                    <TextBlock x:Name="AuditValue" FontSize="22" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+            <Border Padding="12"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="6">
+                <StackPanel>
+                    <TextBlock x:Name="WriteLabel" Opacity="0.75"/>
+                    <TextBlock x:Name="WriteValue" FontSize="18" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <DataGrid Grid.Row="3"
+                  x:Name="LevelsGrid"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  EnableRowVirtualization="True"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto">
+            <DataGrid.Columns>
+                <DataGridTextColumn x:Name="LevelColumn"
+                                    Binding="{Binding Level}"
+                                    Width="180"
+                                    MinWidth="130"/>
+                <DataGridTextColumn x:Name="CountColumn"
+                                    Binding="{Binding Count}"
+                                    Width="110"
+                                    MinWidth="90"/>
+                <DataGridTextColumn x:Name="LastColumn"
+                                    Binding="{Binding LastOccurrence}"
+                                    Width="180"
+                                    MinWidth="150"/>
+                <DataGridTextColumn x:Name="DescriptionColumn"
+                                    Binding="{Binding Description}"
+                                    Width="2*"
+                                    MinWidth="320"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DataGrid Grid.Row="4"
+                  x:Name="RecentGrid"
+                  Margin="0,12,0,0"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  EnableRowVirtualization="True"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto">
+            <DataGrid.Columns>
+                <DataGridTextColumn x:Name="TimeColumn"
+                                    Binding="{Binding TimestampText}"
+                                    Width="105"
+                                    MinWidth="90"/>
+                <DataGridTextColumn x:Name="RecentLevelColumn"
+                                    Binding="{Binding Level}"
+                                    Width="140"
+                                    MinWidth="110"/>
+                <DataGridTextColumn x:Name="RecentSummaryColumn"
+                                    Binding="{Binding HumanText}"
+                                    Width="2*"
+                                    MinWidth="360"/>
+                <DataGridTextColumn x:Name="RecentUserColumn"
+                                    Binding="{Binding User}"
+                                    Width="180"
+                                    MinWidth="140"/>
+                <DataGridTextColumn x:Name="CorrelationColumn"
+                                    Binding="{Binding CorrelationId}"
+                                    Width="135"
+                                    MinWidth="110"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock Grid.Row="5"
+                   x:Name="FooterText"
+                   Margin="0,10,0,0"
+                   TextWrapping="Wrap"
+                   Opacity="0.75"/>
+    </Grid>
+</UserControl>

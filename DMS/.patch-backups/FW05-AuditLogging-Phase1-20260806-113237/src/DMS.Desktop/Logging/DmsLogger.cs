@@ -14,46 +14,6 @@ public sealed class DmsLogger
         _logsRootPath = logsRootPath;
     }
 
-    public string LogsRootPath => _logsRootPath;
-
-    public string GetLogFilePath(DateTime day) =>
-        Path.Combine(_logsRootPath, $"dms-{day:yyyy-MM-dd}.log");
-
-    public bool TryWriteProbe(out string detail)
-    {
-        var probePath = Path.Combine(
-            _logsRootPath,
-            $".dms-log-write-test-{Guid.NewGuid():N}.tmp");
-
-        try
-        {
-            Directory.CreateDirectory(_logsRootPath);
-            File.WriteAllText(probePath, "DMS logging write test", Encoding.UTF8);
-            File.Delete(probePath);
-            detail = "Logging directory is writable.";
-            return true;
-        }
-        catch (Exception ex)
-        {
-            detail = ex.Message;
-            return false;
-        }
-        finally
-        {
-            try
-            {
-                if (File.Exists(probePath))
-                {
-                    File.Delete(probePath);
-                }
-            }
-            catch
-            {
-                // Probe cleanup must never affect the client.
-            }
-        }
-    }
-
     public static string NewOperationId()
     {
         return Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
@@ -112,7 +72,7 @@ public sealed class DmsLogger
         Exception? exception = null)
     {
         Write(
-            DmsAuditEventNames.TransactionFailed,
+            "TX_ERROR",
             $"OperationId={operationId}; Code={Safe(transactionCode)}; User={Safe(user)}; Message={Safe(message)}",
             exception);
     }
@@ -189,52 +149,6 @@ public sealed class DmsLogger
             $"Action=Closed; User={Safe(user)}",
             null);
     }
-
-    public void FrameworkEvent(
-        string eventName,
-        DmsAuditContext context,
-        string action,
-        string detail,
-        Exception? exception = null)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
-        ArgumentNullException.ThrowIfNull(context);
-
-        Write(
-            eventName.Trim().ToUpperInvariant(),
-            $"CorrelationId={Safe(context.CorrelationId)}; Code={Safe(context.TransactionCode)}; Module={Safe(context.ModuleCode)}; Area={Safe(context.Area)}; Entity={Safe(context.Entity)}; EntityId={Safe(context.EntityId)}; PersonId={Safe(context.PersonId)}; User={Safe(context.User)}; Action={Safe(action)}; Detail={Safe(detail)}",
-            exception);
-    }
-
-    public void ConfigurationChanged(
-        DmsAuditContext context,
-        string action,
-        string detail) =>
-        FrameworkEvent(
-            DmsAuditEventNames.ConfigurationChanged,
-            context,
-            action,
-            detail);
-
-    public void WorkflowChanged(
-        DmsAuditContext context,
-        string action,
-        string detail) =>
-        FrameworkEvent(
-            DmsAuditEventNames.WorkflowChanged,
-            context,
-            action,
-            detail);
-
-    public void SecurityChanged(
-        DmsAuditContext context,
-        string action,
-        string detail) =>
-        FrameworkEvent(
-            DmsAuditEventNames.SecurityChanged,
-            context,
-            action,
-            detail);
 
     private void Write(string level, string message, Exception? exception)
     {

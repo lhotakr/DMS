@@ -1442,8 +1442,8 @@ public partial class MainWindow : Window
                 RenderModuleManagement();
                 break;
 
-            case "FW01":                 RenderFrameworkLocalization();                 break; 
-            case "FW02":                 RenderFrameworkUiStandards();                 break; 
+            case "FW01":
+            case "FW02":
                 RenderFrameworkHub(result.TransactionCode);
                 break;
 

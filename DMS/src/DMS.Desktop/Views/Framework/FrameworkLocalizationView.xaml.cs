@@ -1,0 +1,348 @@
+﻿using System.IO;
+using System.Text;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace DMS.Desktop.Views.Framework;
+
+public partial class FrameworkLocalizationView : UserControl
+{
+    private readonly string _localizationRoot;
+    private readonly Func<string, string> _translate;
+    private readonly Action<string> _executeTransaction;
+    private readonly Action<string, string> _log;
+    private List<LocalizationIssueRow> _issues = new();
+
+    public FrameworkLocalizationView(
+        string localizationRoot,
+        Func<string, string> translate,
+        Action<string> executeTransaction,
+        Action<string, string> log)
+    {
+        InitializeComponent();
+
+        _localizationRoot = localizationRoot;
+        _translate = translate;
+        _executeTransaction = executeTransaction;
+        _log = log;
+
+        ApplyLocalization();
+        Loaded += (_, _) => Reload();
+    }
+
+    private string T(string key, string fallback)
+    {
+        var value = _translate(key);
+        return string.IsNullOrWhiteSpace(value) ||
+               value.StartsWith("[[", StringComparison.Ordinal)
+            ? fallback
+            : value;
+    }
+
+    private void ApplyLocalization()
+    {
+        TitleText.Text = T("Framework.FW01.Title", "FW01 — Localization framework");
+        SubtitleText.Text = T("Framework.FW01.Description", "Validates localization dictionaries, culture parity and damaged text encoding.");
+
+        ReloadButton.Content = T("Framework.FW01.Reload", "Reload");
+        ClientSettingsButton.Content = T("Framework.FW01.OpenClset", "Open CLSET");
+        SystemSettingsButton.Content = T("Framework.FW01.OpenSys01", "Open SYS01");
+        CopyButton.Content = T("Framework.FW01.Copy", "Copy report");
+
+        CulturesLabel.Text = T("Framework.FW01.Cultures", "Cultures");
+        KeysLabel.Text = T("Framework.FW01.Keys", "Reference keys");
+        MissingLabel.Text = T("Framework.FW01.Missing", "Missing keys");
+        EncodingLabel.Text = T("Framework.FW01.Encoding", "Encoding issues");
+        HealthLabel.Text = T("Framework.FW01.Health", "Health");
+
+        CultureColumn.Header = T("Framework.FW01.Column.Culture", "Culture");
+        FileColumn.Header = T("Framework.FW01.Column.File", "File");
+        CountColumn.Header = T("Framework.FW01.Column.Keys", "Keys");
+        MissingColumn.Header = T("Framework.FW01.Column.Missing", "Missing");
+        ExtraColumn.Header = T("Framework.FW01.Column.Extra", "Extra");
+        EncodingColumn.Header = T("Framework.FW01.Column.Encoding", "Encoding");
+        StatusColumn.Header = T("Framework.FW01.Column.Status", "Status");
+        PathColumn.Header = T("Framework.FW01.Column.Path", "Path");
+
+        SeverityColumn.Header = T("Framework.FW01.Column.Severity", "Severity");
+        IssueCultureColumn.Header = T("Framework.FW01.Column.Culture", "Culture");
+        IssueTypeColumn.Header = T("Framework.FW01.Column.Issue", "Issue");
+        KeyColumn.Header = T("Framework.FW01.Column.Key", "Key");
+        DetailsColumn.Header = T("Framework.FW01.Column.Details", "Details");
+
+        FooterText.Text = T("Framework.FW01.Footer", "FW01 is read-only. Dictionary editing remains in SYS01; client language selection remains in CLSET.");
+    }
+
+    private void ReloadButton_Click(object sender, RoutedEventArgs e) => Reload();
+    private void ClientSettingsButton_Click(object sender, RoutedEventArgs e) => _executeTransaction("CLSET");
+    private void SystemSettingsButton_Click(object sender, RoutedEventArgs e) => _executeTransaction("SYS01");
+
+    private void CopyButton_Click(object sender, RoutedEventArgs e)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine(TitleText.Text);
+        builder.AppendLine($"LocalizationRoot={_localizationRoot}");
+
+        foreach (var issue in _issues)
+        {
+            builder.AppendLine($"{issue.Severity}\t{issue.Culture}\t{issue.IssueType}\t{issue.Key}\t{issue.Details}");
+        }
+
+        Clipboard.SetText(builder.ToString());
+        _log("LOCALIZATION_REPORT_COPY", $"Issues={_issues.Count}");
+    }
+
+    private void Reload()
+    {
+        var cultures = LoadCultureNames();
+        var dictionaries = cultures.ToDictionary(
+            culture => culture,
+            culture => LoadDictionary(culture),
+            StringComparer.OrdinalIgnoreCase);
+
+        var referenceCulture = ResolveReferenceCulture(cultures);
+        var reference = dictionaries.TryGetValue(referenceCulture, out var referenceDictionary)
+            ? referenceDictionary
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        _issues = new List<LocalizationIssueRow>();
+        var rows = new List<CultureRow>();
+
+        foreach (var culture in cultures)
+        {
+            var dictionary = dictionaries[culture];
+            var missing = reference.Keys
+                .Except(dictionary.Keys, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x)
+                .ToList();
+
+            var extra = dictionary.Keys
+                .Except(reference.Keys, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x)
+                .ToList();
+
+            var encodingIssues = dictionary
+                .Where(pair => LooksCorrupted(pair.Value))
+                .ToList();
+
+            foreach (var key in missing.Take(250))
+            {
+                _issues.Add(new LocalizationIssueRow(
+                    "ERROR",
+                    culture,
+                    "MISSING_KEY",
+                    key,
+                    $"Missing compared with {referenceCulture}."));
+            }
+
+            foreach (var pair in encodingIssues.Take(250))
+            {
+                _issues.Add(new LocalizationIssueRow(
+                    "ERROR",
+                    culture,
+                    "ENCODING",
+                    pair.Key,
+                    pair.Value));
+            }
+
+            foreach (var key in extra.Take(250))
+            {
+                _issues.Add(new LocalizationIssueRow(
+                    "WARNING",
+                    culture,
+                    "EXTRA_KEY",
+                    key,
+                    $"Key does not exist in reference culture {referenceCulture}."));
+            }
+
+            var path = Path.Combine(_localizationRoot, $"{culture}.json");
+            rows.Add(new CultureRow(
+                culture,
+                Path.GetFileName(path),
+                dictionary.Count,
+                missing.Count,
+                extra.Count,
+                encodingIssues.Count,
+                missing.Count == 0 && encodingIssues.Count == 0 ? "OK" : "ERROR",
+                path));
+        }
+
+        CultureGrid.ItemsSource = rows;
+        IssueGrid.ItemsSource = _issues;
+
+        CulturesValue.Text = cultures.Count.ToString();
+        KeysValue.Text = reference.Count.ToString();
+        MissingValue.Text = rows.Sum(x => x.MissingCount).ToString();
+        EncodingValue.Text = rows.Sum(x => x.EncodingIssues).ToString();
+
+        var errors = _issues.Count(x => x.Severity == "ERROR");
+        var warnings = _issues.Count(x => x.Severity == "WARNING");
+        HealthValue.Text = errors == 0 && warnings == 0 ? "OK" : $"{errors}E / {warnings}W";
+
+        _log(
+            "LOCALIZATION_OVERVIEW",
+            $"Cultures={cultures.Count}; Reference={referenceCulture}; Keys={reference.Count}; Errors={errors}; Warnings={warnings}");
+    }
+
+    private List<string> LoadCultureNames()
+    {
+        var result = new List<string>();
+        var indexPath = Path.Combine(_localizationRoot, "localization.index.json");
+
+        try
+        {
+            if (File.Exists(indexPath))
+            {
+                using var document = JsonDocument.Parse(ReadText(indexPath));
+                if (document.RootElement.TryGetProperty("supportedCultures", out var supported) ||
+                    document.RootElement.TryGetProperty("SupportedCultures", out supported))
+                {
+                    foreach (var item in supported.EnumerateArray())
+                    {
+                        if ((item.TryGetProperty("culture", out var cultureElement) ||
+                             item.TryGetProperty("Culture", out cultureElement)) &&
+                            cultureElement.ValueKind == JsonValueKind.String)
+                        {
+                            var culture = cultureElement.GetString();
+                            if (!string.IsNullOrWhiteSpace(culture))
+                            {
+                                result.Add(culture);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Fall back to dictionary file discovery.
+        }
+
+        result.AddRange(
+            Directory.Exists(_localizationRoot)
+                ? Directory.EnumerateFiles(_localizationRoot, "*.json", SearchOption.TopDirectoryOnly)
+                    .Select(Path.GetFileNameWithoutExtension)
+                    .Where(x => !string.Equals(x, "localization.index", StringComparison.OrdinalIgnoreCase))
+                    .Where(x => x is not null)
+                    .Cast<string>()
+                : Array.Empty<string>());
+
+        return result
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .ToList();
+    }
+
+    private string ResolveReferenceCulture(IReadOnlyList<string> cultures)
+    {
+        var indexPath = Path.Combine(_localizationRoot, "localization.index.json");
+
+        try
+        {
+            if (File.Exists(indexPath))
+            {
+                using var document = JsonDocument.Parse(ReadText(indexPath));
+                if ((document.RootElement.TryGetProperty("defaultCulture", out var value) ||
+                     document.RootElement.TryGetProperty("DefaultCulture", out value)) &&
+                    value.ValueKind == JsonValueKind.String)
+                {
+                    var culture = value.GetString();
+                    if (!string.IsNullOrWhiteSpace(culture) &&
+                        cultures.Contains(culture, StringComparer.OrdinalIgnoreCase))
+                    {
+                        return culture;
+                    }
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return cultures.FirstOrDefault(x =>
+                   string.Equals(x, "en-US", StringComparison.OrdinalIgnoreCase))
+               ?? cultures.FirstOrDefault()
+               ?? "en-US";
+    }
+
+    private Dictionary<string, string> LoadDictionary(string culture)
+    {
+        var path = Path.Combine(_localizationRoot, $"{culture}.json");
+
+        try
+        {
+            if (!File.Exists(path))
+            {
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(
+                       ReadText(path),
+                       new JsonSerializerOptions
+                       {
+                           PropertyNameCaseInsensitive = true
+                       })
+                   ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            _issues.Add(new LocalizationIssueRow(
+                "ERROR",
+                culture,
+                "INVALID_JSON",
+                string.Empty,
+                ex.Message));
+
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static string ReadText(string path)
+    {
+        using var reader = new StreamReader(path, detectEncodingFromByteOrderMarks: true);
+        return reader.ReadToEnd();
+    }
+
+    private static bool LooksCorrupted(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        // Do not treat legitimate Unicode letters such as German Ä/Ö/Ü as
+        // encoding damage. Detect only sequences that are characteristic of
+        // UTF-8/Windows-1252 mojibake or the Unicode replacement character.
+        string[] markers =
+        {
+            "Ã„", "Ã–", "Ãœ", "Ã¤", "Ã¶", "Ã¼", "ÃŸ",
+            "ÄŤ", "Ä›", "Ä™", "Äľ", "Äĺ", "ÄŤ", "ÄŹ", "Ä›",
+            "Å™", "Å¡", "Å¾", "Åˆ", "Å¯", "Å¥", "Å¾",
+            "â€", "â€“", "â€”", "â€¦", "â€ž", "â€œ", "â€ť",
+            "ï»¿", "\uFFFD"
+        };
+
+        return markers.Any(marker =>
+            value.Contains(
+                marker,
+                StringComparison.Ordinal));
+    }
+
+    private sealed record CultureRow(
+        string Culture,
+        string FileName,
+        int KeyCount,
+        int MissingCount,
+        int ExtraCount,
+        int EncodingIssues,
+        string Status,
+        string Path);
+
+    private sealed record LocalizationIssueRow(
+        string Severity,
+        string Culture,
+        string IssueType,
+        string Key,
+        string Details);
+}

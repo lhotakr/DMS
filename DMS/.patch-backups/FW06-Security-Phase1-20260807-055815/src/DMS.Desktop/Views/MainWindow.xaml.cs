@@ -11,8 +11,6 @@ using DMS.Desktop.Models;
 using DMS.Desktop.Repositories;
 using DMS.Desktop.Services;
 using DMS.Desktop.Settings;
-using DMS.Desktop.Performance;
-using System.Diagnostics;
 using DMS.Desktop.Views.Admin;
 using DMS.Desktop.Views.Articles;
 using DMS.Desktop.Views.Dialogs;
@@ -1057,29 +1055,19 @@ public partial class MainWindow : Window
     }
     private void ExecuteTransaction(string input)
     {
-        var performanceStarted = Stopwatch.GetTimestamp();
-        var performanceTransactionCode = TryGetTransactionCode(input);
-        var performanceResult = "CANCELLED";
-
         try
         {
             var command = TransactionParser.Parse(input);
 
-            performanceTransactionCode = command.Code;
             _logger.Transaction(input, _currentUser.DisplayName);
 
             if (!TryCompleteMissingParameter(command, out var completedCommand))
             {
-                performanceResult = "CANCELLED";
                 return;
             }
 
-            performanceTransactionCode = completedCommand.Code;
-
             if (!UserCanExecuteTransaction(completedCommand.Code, out var authorizationMessage))
             {
-                performanceResult = "DENIED";
-
                 _logger.Warning($"ZamĂ­tnutĂ© spuĹˇtÄ›nĂ­ transakce {completedCommand.Code}: {authorizationMessage}");
 
                 RenderTransactionResult(TransactionResult.Fail(
@@ -1099,24 +1087,15 @@ public partial class MainWindow : Window
             if (completedCommand.Mode == "NewWindow")
             {
                 OpenTransactionInNewWindow(completedCommand);
-                performanceResult = "OK";
                 return;
             }
 
             var result = _transactionDispatcher.Dispatch(completedCommand);
             RenderTransactionResult(result);
-
-            performanceResult =
-                result.Success
-                    ? "OK"
-                    : "FAIL";
         }
         catch (Exception ex)
         {
-            performanceResult = "EXCEPTION";
-
             var transactionCode = TryGetTransactionCode(input);
-            performanceTransactionCode = transactionCode;
 
             _logger.Error(
                 $"NeoÄŤekĂˇvanĂˇ chyba pĹ™i spuĹˇtÄ›nĂ­ transakce {transactionCode}: {ex.Message}",
@@ -1127,13 +1106,6 @@ public partial class MainWindow : Window
                 $"NeoÄŤekĂˇvanĂˇ chyba pĹ™i spuĹˇtÄ›nĂ­ transakce:\n\n{ex.Message}"));
 
             ClearTransactionInput();
-        }
-        finally
-        {
-            DmsPerformanceService.Current.RecordTransaction(
-                performanceTransactionCode,
-                Stopwatch.GetElapsedTime(performanceStarted).TotalMilliseconds,
-                performanceResult);
         }
     }
 
@@ -1442,24 +1414,12 @@ public partial class MainWindow : Window
                 RenderModuleManagement();
                 break;
 
-            case "FW01":                 RenderFrameworkLocalization();                 break; 
-            case "FW02":                 RenderFrameworkUiStandards();                 break; 
-                RenderFrameworkHub(result.TransactionCode);
-                break;
-
+            case "FW01":
+            case "FW02":
             case "FW06":
-                RenderFrameworkSecurity();
-                break;
-
             case "FW07":
-                RenderFrameworkWorkflow();
-                break;
-
             case "FW08":
-                RenderFrameworkPerformance();
-                break;
-
-            case "FW09":                 RenderFrameworkMasterData();                 break; 
+            case "FW09":
                 RenderFrameworkHub(result.TransactionCode);
                 break;
 
