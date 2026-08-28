@@ -208,6 +208,7 @@ public partial class MainWindow : Window
         LeftMenuPanel.Background = panelBrush;
         WorkspaceHost.Background = panelBrush;
         WorkspaceHost.BorderBrush = borderBrush;
+        ApplyUiProfileGlobalOverrides();
     }
     private void ApplyHeaderBranding()
     {
@@ -563,6 +564,7 @@ public partial class MainWindow : Window
         definitions = DMS.Core.Checklists.ChecklistTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Quality.QualityMenuTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Framework.FrameworkTransactionDefinitions.AddMissing(definitions);
+        definitions = DMS.Core.Administration.DmsThemeDesignerTransactionDefinitions.AddMissing(definitions);
 
         if (definitions.Count == 0)
         {
@@ -587,6 +589,7 @@ public partial class MainWindow : Window
     new SimpleMessageTransactionHandler("TransactionManagement", "SprĂˇva transakcĂ­"),
     new SimpleMessageTransactionHandler("RoleManagement", "SprĂˇva rolĂ­"),
     new SimpleMessageTransactionHandler("ModuleManagement", "SprĂˇva modulĹŻ"),
+    new SimpleMessageTransactionHandler("ThemeDesigner", "Theme & UI Designer"),
     new SimpleMessageTransactionHandler("UserManagement", "SprĂˇva uĹľivatelĹŻ"),
     new SimpleMessageTransactionHandler("LogViewer", "Log aplikace"),
     new SimpleMessageTransactionHandler("FrameworkHub", "DMS Framework"),
@@ -1367,6 +1370,8 @@ public partial class MainWindow : Window
             return;
         }
 
+        PrepareUiScopeForTransaction(result.TransactionCode);
+
         switch (result.TransactionCode)
         {
             case "ART01":
@@ -1442,10 +1447,12 @@ public partial class MainWindow : Window
                 RenderModuleManagement();
                 break;
 
+
+            case "SYS14":
+                RenderThemeDesigner();
+                break;
             case "FW01":                 RenderFrameworkLocalization();                 break; 
             case "FW02":                 RenderFrameworkUiStandards();                 break; 
-                RenderFrameworkHub(result.TransactionCode);
-                break;
 
             case "FW06":
                 RenderFrameworkSecurity();
@@ -1460,9 +1467,8 @@ public partial class MainWindow : Window
                 break;
 
             case "FW09":                 RenderFrameworkMasterData();                 break; 
-                RenderFrameworkHub(result.TransactionCode);
-                break;
 
+            case "FW11":                 RenderFrameworkReleaseHealth();                 break; 
             case "FW03":
                 RenderFrameworkRuntimeConfiguration();
                 break;
@@ -1585,6 +1591,7 @@ public partial class MainWindow : Window
                 RenderSimplePage(result.TransactionCode, result.Message);
                 break;
         }
+        ApplyUiPropertyOverrides(result.TransactionCode);
         ResetWorkspaceScroll();
     }
     private void RenderTypedSapMaterialDisplay(

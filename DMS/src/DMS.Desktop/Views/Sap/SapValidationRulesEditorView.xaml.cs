@@ -1,4 +1,5 @@
-﻿using ClosedXML.Excel;
+﻿using DMS.Desktop.Configuration;
+using ClosedXML.Excel;
 using DMS.Core.Sap.Validation;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -22,7 +23,7 @@ public partial class SapValidationRulesEditorView : UserControl
     // Zachováno pro XAML designer
     public SapValidationRulesEditorView()
         : this(Path.Combine(
-            @"Z:\SAP\DMS-db\DEV",
+            DmsStoragePathPolicy.GetEnvironmentRoot("DEV"),
             "Config",
             "sap-validation-rules.json"))
     {

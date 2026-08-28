@@ -1,0 +1,51 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Framework.FrameworkReleaseHealthView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock x:Name="TitleText" FontSize="26" FontWeight="Bold"/>
+            <TextBlock x:Name="SubtitleText" Margin="0,6,0,0" TextWrapping="Wrap" Opacity="0.85"/>
+        </StackPanel>
+        <WrapPanel Grid.Row="1" Margin="0,16,0,12">
+            <Button x:Name="RunButton" Click="RunButton_Click" MinWidth="150" Padding="14,8" Margin="0,0,8,0"/>
+            <Button x:Name="OpenRelatedButton" Click="OpenRelatedButton_Click" MinWidth="165" Padding="14,8" Margin="0,0,8,0"/>
+            <Button x:Name="CopyButton" Click="CopyButton_Click" MinWidth="135" Padding="14,8" Margin="0,0,8,0"/>
+            <Button x:Name="ExportHtmlButton" Click="ExportHtmlButton_Click" MinWidth="130" Padding="14,8" Margin="0,0,8,0"/>
+            <Button x:Name="ExportJsonButton" Click="ExportJsonButton_Click" MinWidth="130" Padding="14,8" Margin="0,0,8,0"/>
+            <Button x:Name="SupportZipButton" Click="SupportZipButton_Click" MinWidth="145" Padding="14,8" Margin="0,0,8,0"/>
+            <Button x:Name="LogButton" Click="LogButton_Click" MinWidth="125" Padding="14,8"/>
+        </WrapPanel>
+        <Grid Grid.Row="2" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Padding="16" BorderBrush="{DynamicResource DmsBorderBrush}" BorderThickness="1" CornerRadius="6">
+                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <StackPanel><TextBlock x:Name="VerdictLabel" Opacity="0.75"/><TextBlock x:Name="VerdictValue" Margin="0,4,0,0" FontSize="30" FontWeight="Bold"/><TextBlock x:Name="GateValue" Margin="0,8,0,0" FontSize="16" FontWeight="SemiBold"/></StackPanel>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Right"><TextBlock x:Name="RqiLabel" HorizontalAlignment="Right" Opacity="0.75"/><TextBlock x:Name="RqiValue" HorizontalAlignment="Right" Margin="0,4,0,0" FontSize="30" FontWeight="Bold"/><TextBlock x:Name="VersionValue" HorizontalAlignment="Right" Margin="0,8,0,0" Opacity="0.75"/></StackPanel>
+                </Grid>
+            </Border>
+            <StackPanel Grid.Column="2"><TextBlock x:Name="FilterLabel" Margin="0,0,0,4" FontWeight="SemiBold"/><ComboBox x:Name="SeverityFilter" SelectionChanged="SeverityFilter_SelectionChanged" MinHeight="30"/><TextBlock x:Name="GeneratedValue" Margin="0,12,0,0" TextWrapping="Wrap" Opacity="0.75"/></StackPanel>
+        </Grid>
+        <UniformGrid Grid.Row="3" Columns="5" Margin="0,0,0,12">
+            <Border Margin="0,0,8,0" Padding="10" BorderBrush="{DynamicResource DmsBorderBrush}" BorderThickness="1" CornerRadius="6"><StackPanel><TextBlock x:Name="CriticalLabel" Opacity="0.75"/><TextBlock x:Name="CriticalValue" FontSize="20" FontWeight="Bold"/></StackPanel></Border>
+            <Border Margin="0,0,8,0" Padding="10" BorderBrush="{DynamicResource DmsBorderBrush}" BorderThickness="1" CornerRadius="6"><StackPanel><TextBlock x:Name="ErrorsLabel" Opacity="0.75"/><TextBlock x:Name="ErrorsValue" FontSize="20" FontWeight="Bold"/></StackPanel></Border>
+            <Border Margin="0,0,8,0" Padding="10" BorderBrush="{DynamicResource DmsBorderBrush}" BorderThickness="1" CornerRadius="6"><StackPanel><TextBlock x:Name="WarningsLabel" Opacity="0.75"/><TextBlock x:Name="WarningsValue" FontSize="20" FontWeight="Bold"/></StackPanel></Border>
+            <Border Margin="0,0,8,0" Padding="10" BorderBrush="{DynamicResource DmsBorderBrush}" BorderThickness="1" CornerRadius="6"><StackPanel><TextBlock x:Name="PassedLabel" Opacity="0.75"/><TextBlock x:Name="PassedValue" FontSize="20" FontWeight="Bold"/></StackPanel></Border>
+            <Border Padding="10" BorderBrush="{DynamicResource DmsBorderBrush}" BorderThickness="1" CornerRadius="6"><StackPanel><TextBlock x:Name="InfoLabel" Opacity="0.75"/><TextBlock x:Name="InfoValue" FontSize="20" FontWeight="Bold"/></StackPanel></Border>
+        </UniformGrid>
+        <DataGrid x:Name="ResultsGrid" Grid.Row="4" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserResizeColumns="True" CanUserReorderColumns="True" EnableRowVirtualization="True" SelectionMode="Single" SelectionChanged="ResultsGrid_SelectionChanged" MouseDoubleClick="ResultsGrid_MouseDoubleClick">
+            <DataGrid.Columns>
+                <DataGridTextColumn x:Name="SeverityColumn" CanUserResize="True" Binding="{Binding Severity}" Width="105"/>
+                <DataGridTextColumn x:Name="FrameworkColumn" CanUserResize="True" Binding="{Binding FrameworkCode}" Width="90"/>
+                <DataGridTextColumn x:Name="CategoryColumn" CanUserResize="True" Binding="{Binding Category}" Width="150"/>
+                <DataGridTextColumn x:Name="CheckColumn" CanUserResize="True" Binding="{Binding Name}" Width="300"/>
+                <DataGridTextColumn x:Name="DetailsColumn" CanUserResize="True" Binding="{Binding Details}" Width="2*" MinWidth="420"/>
+                <DataGridTextColumn x:Name="SourceColumn" CanUserResize="True" Binding="{Binding Source}" Width="2*" MinWidth="260"/>
+                <DataGridTextColumn x:Name="FixColumn" CanUserResize="True" Binding="{Binding FixTransaction}" Width="110"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <TextBlock x:Name="FooterText" Grid.Row="5" Margin="0,10,0,0" TextWrapping="Wrap" Opacity="0.75"/>
+    </Grid>
+</UserControl>

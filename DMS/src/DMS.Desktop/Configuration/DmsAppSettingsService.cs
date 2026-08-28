@@ -12,25 +12,40 @@ public sealed class DmsAppSettingsService
             "Config",
             "appsettings.json");
 
+        DmsAppSettings settings;
+
         if (!File.Exists(localPath))
         {
-            return new DmsAppSettings();
+            settings = new DmsAppSettings();
+            DmsStoragePathPolicy.Normalize(settings);
+            return settings;
         }
 
         try
         {
-            var json = File.ReadAllText(localPath);
+            var json =
+                File.ReadAllText(localPath);
 
-            return JsonSerializer.Deserialize<DmsAppSettings>(
-                json,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                }) ?? new DmsAppSettings();
+            settings =
+                JsonSerializer.Deserialize<DmsAppSettings>(
+                    json,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    })
+                ?? new DmsAppSettings();
         }
         catch
         {
-            return new DmsAppSettings();
+            settings =
+                new DmsAppSettings();
         }
+
+        // Runtime canonicalization is intentional:
+        // even an old appsettings.json containing Z: or Y:
+        // resolves to the UNC namespace.
+        DmsStoragePathPolicy.Normalize(settings);
+
+        return settings;
     }
 }

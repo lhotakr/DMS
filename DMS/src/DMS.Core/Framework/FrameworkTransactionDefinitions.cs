@@ -1,4 +1,4 @@
-using DMS.Core.Transactions;
+﻿using DMS.Core.Transactions;
 
 namespace DMS.Core.Framework;
 
@@ -29,8 +29,9 @@ public static class FrameworkTransactionDefinitions
         yield return Create("FW05", "Audit and logging", "Application logs, audit actions and emergency diagnostics.");
         yield return Create("FW06", "Security framework", "Users, roles, permissions and approval policies.");
         yield return Create("FW07", "Workflow framework", "Workflow states, approvals and lifecycle administration.");
-        yield return Create("FW08", "Form framework", "Checklist definitions, catalogs and dynamic forms.");
+        yield return Create("FW08", "Performance monitor", "Runtime performance, transaction timing, memory and JSON probes.");
         yield return Create("FW09", "Core master data", "People, organization units, units and shared entities.");
+        yield return Create("FW11", "Release health", "Final production readiness, release quality index and build gate.");
     }
 
     private static TransactionDefinition Create(

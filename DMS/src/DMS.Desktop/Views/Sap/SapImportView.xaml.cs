@@ -1,3 +1,4 @@
+﻿using DMS.Desktop.Configuration;
 using DMS.Core.Sap;
 using DMS.Desktop.UI;
 using Microsoft.Win32;
@@ -17,7 +18,7 @@ public partial class SapImportView : UserControl
 
     public SapImportView()
         : this(
-            new SapStoragePaths(@"Z:\SAP\DMS-db\DEV"),
+            new SapStoragePaths(DmsStoragePathPolicy.GetEnvironmentRoot("DEV")),
             Path.Combine(AppContext.BaseDirectory, "Config", "sap-material-rules.json"))
     {
     }

@@ -289,6 +289,7 @@ public sealed class DmsMasterDataInspector
                 string.IsNullOrWhiteSpace(dimension.BaseUnitCode) ||
                 !units.Any(unit =>
                     unit.UnitDimensionId == dimension.UnitDimensionId &&
+                    unit.IsActive &&
                     string.Equals(
                         unit.Code,
                         dimension.BaseUnitCode,
@@ -302,6 +303,36 @@ public sealed class DmsMasterDataInspector
             "Units",
             "Dimensions with missing base unit",
             missingBaseUnits);
+
+        var invalidBaseUnits = dimensions
+            .Where(x =>
+                x.IsActive &&
+                !string.IsNullOrWhiteSpace(x.BaseUnitCode))
+            .Select(dimension => new
+            {
+                Dimension = dimension,
+                BaseUnit = units.FirstOrDefault(unit =>
+                    unit.UnitDimensionId == dimension.UnitDimensionId &&
+                    unit.IsActive &&
+                    string.Equals(
+                        unit.Code,
+                        dimension.BaseUnitCode,
+                        StringComparison.OrdinalIgnoreCase))
+            })
+            .Where(x =>
+                x.BaseUnit is not null &&
+                (x.BaseUnit.ScaleToBase != 1m ||
+                 x.BaseUnit.OffsetToBase != 0m))
+            .Select(x =>
+                $"{x.Dimension.Code}->{x.BaseUnit!.Code}")
+            .OrderBy(x => x)
+            .ToList();
+
+        AddListCheck(
+            results,
+            "Units",
+            "Base units with invalid conversion identity",
+            invalidBaseUnits);
     }
 
     private static void CheckUserLinks(

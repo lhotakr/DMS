@@ -66,4 +66,11 @@ public sealed class TransactionDispatcher
             .ThenBy(item => item.Code)
             .ToList();
     }
+
+    public IReadOnlyList<string> GetRegisteredHandlerKeys()
+    {
+        return _handlers.Keys
+            .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
 }

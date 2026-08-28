@@ -1,4 +1,5 @@
-﻿using DMS.Core.Sap;
+﻿using DMS.Desktop.Configuration;
+using DMS.Core.Sap;
 using Microsoft.Win32;
 using System.IO;
 using System.Windows;
@@ -16,7 +17,7 @@ public partial class SapRoutingImportView : UserControl
     private readonly Action<string, string>? _logAction;
 
     public SapRoutingImportView()
-        : this(new SapStoragePaths(@"Z:\SAP\DMS-db\DEV"))
+        : this(new SapStoragePaths(DmsStoragePathPolicy.GetEnvironmentRoot("DEV")))
     {
     }
 

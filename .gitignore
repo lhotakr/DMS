@@ -361,3 +361,20 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# DMS patch backups
+**/.patch-backups/
+**/.dms-patch-backups/
+*.bak-*
+*.bak-*
+
+# Visual Studio / build
+.vs/
+**/bin/
+**/obj/
+
+.patch-backups/
+**/.patch-backups/
+.dms-patch-backups/
+**/.dms-patch-backups/
+*.bak-*

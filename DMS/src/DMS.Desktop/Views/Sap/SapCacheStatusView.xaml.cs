@@ -1,3 +1,4 @@
+﻿using DMS.Desktop.Configuration;
 using DMS.Core.Sap.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,8 +15,8 @@ public partial class SapCacheStatusView : UserControl
 
     public SapCacheStatusView()
         : this(
-            @"Z:\SAP\DMS-db\DEV",
-            System.IO.Path.Combine(@"Z:\SAP\DMS-db\DEV", "Config"))
+            DmsStoragePathPolicy.GetEnvironmentRoot("DEV"),
+            System.IO.Path.Combine(DmsStoragePathPolicy.GetEnvironmentRoot("DEV"), "Config"))
     {
     }
 

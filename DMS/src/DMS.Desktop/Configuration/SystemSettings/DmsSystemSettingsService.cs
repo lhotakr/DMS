@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using DMS.Desktop.Configuration;
 using System.Text.Json;
 
 namespace DMS.Desktop.Configuration.SystemSettings;
@@ -29,12 +30,21 @@ public sealed class DmsSystemSettingsService
 
         var json = File.ReadAllText(_settingsPath);
 
-        return JsonSerializer.Deserialize<DmsSystemSettings>(json, JsonOptions)
-               ?? CreateDefault();
+        var settings =
+            JsonSerializer.Deserialize<DmsSystemSettings>(
+                json,
+                JsonOptions)
+            ?? CreateDefault();
+
+        NormalizeStoragePaths(settings);
+
+        return settings;
     }
 
     public void Save(DmsSystemSettings settings)
     {
+        NormalizeStoragePaths(settings);
+
         var directory = Path.GetDirectoryName(_settingsPath);
 
         if (!string.IsNullOrWhiteSpace(directory))
@@ -46,13 +56,65 @@ public sealed class DmsSystemSettingsService
         File.WriteAllText(_settingsPath, json);
     }
 
-    private static DmsSystemSettings CreateDefault()
+
+    private void NormalizeStoragePaths(
+        DmsSystemSettings settings)
     {
+        var environmentRoot =
+            DmsStoragePathPolicy
+                .GetEnvironmentRootFromConfigurationPath(
+                    _settingsPath);
+
+        settings.DocumentsRootPath =
+            string.IsNullOrWhiteSpace(
+                settings.DocumentsRootPath)
+                ? Path.Combine(
+                    environmentRoot,
+                    "Documents")
+                : DmsStoragePathPolicy
+                    .CanonicalizeDmsPath(
+                        settings.DocumentsRootPath);
+
+        settings.ArticleFoldersRootPath =
+            string.IsNullOrWhiteSpace(
+                settings.ArticleFoldersRootPath)
+                ? Path.Combine(
+                    settings.DocumentsRootPath,
+                    "Articles")
+                : DmsStoragePathPolicy
+                    .CanonicalizeDmsPath(
+                        settings.ArticleFoldersRootPath);
+
+        if (!string.IsNullOrWhiteSpace(
+                settings.HeaderSecondaryLogoPath))
+        {
+            settings.HeaderSecondaryLogoPath =
+                DmsStoragePathPolicy
+                    .CanonicalizeDmsPath(
+                        settings.HeaderSecondaryLogoPath);
+        }
+    }
+
+    private DmsSystemSettings CreateDefault()
+    {
+
+        var environmentRoot =
+            DmsStoragePathPolicy
+                .GetEnvironmentRootFromConfigurationPath(
+                    _settingsPath);
 
         return new DmsSystemSettings
         {
-            DocumentsRootPath = @"Z:\SAP\DMS-db\DEV\Documents",
-            ArticleFoldersRootPath = @"Z:\SAP\DMS-db\DEV\Documents\Articles",
+            DocumentsRootPath =
+                Path.Combine(
+                    environmentRoot,
+                    "Documents"),
+
+            ArticleFoldersRootPath =
+                Path.Combine(
+                    environmentRoot,
+                    "Documents",
+                    "Articles"),
             CreateArticleFoldersOnSapImport = true,
 
             HeaderSecondaryLogoPath = string.Empty,

@@ -1,4 +1,15 @@
-# DMS MSI release checklist
+﻿# DMS MSI release checklist
+
+## FW11 / release gate
+
+- [ ] FW11 spuštěn po posledních změnách konfigurace
+- [ ] Critical = 0
+- [ ] Errors = 0
+- [ ] Varování zkontrolována a akceptována
+- [ ] HTML/JSON release report uložen k vydání
+- [ ] `Scripts\Invoke-DMS-ReleaseGate.ps1` prošel
+- [ ] Publish nebyl vytvořen s `-SkipReleaseGate` (nebo je výjimka zdokumentována)
+
 
 ## Build
 

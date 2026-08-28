@@ -115,10 +115,42 @@ public sealed class DmsMasterDataService
     private static void ValidateUnits(IReadOnlyCollection<UnitDimension> dimensions, IReadOnlyCollection<UnitDefinition> units)
     {
         if (dimensions.Where(x => x.IsActive).GroupBy(x => x.Code.Trim(), StringComparer.OrdinalIgnoreCase).Any(g => string.IsNullOrWhiteSpace(g.Key) || g.Count() > 1)) throw new InvalidOperationException("Unit dimension codes must be unique.");
+
         var dimensionIds = dimensions.Select(x => x.UnitDimensionId).ToHashSet();
+
         if (units.Any(x => !dimensionIds.Contains(x.UnitDimensionId))) throw new InvalidOperationException("Unit references a missing dimension.");
         if (units.Any(x => x.ScaleToBase == 0m)) throw new InvalidOperationException("Unit scale cannot be zero.");
         if (units.GroupBy(x => x.Code.Trim(), StringComparer.OrdinalIgnoreCase).Any(g => string.IsNullOrWhiteSpace(g.Key) || g.Count() > 1)) throw new InvalidOperationException("Unit codes must be globally unique.");
         if (units.Where(x => x.IsDefault).GroupBy(x => x.UnitDimensionId).Any(g => g.Count() > 1)) throw new InvalidOperationException("A dimension can have only one default unit.");
+
+        foreach (var dimension in dimensions.Where(x => x.IsActive))
+        {
+            if (string.IsNullOrWhiteSpace(dimension.BaseUnitCode))
+            {
+                throw new InvalidOperationException(
+                    $"Active unit dimension {dimension.Code} must define BaseUnitCode.");
+            }
+
+            var baseUnit = units.FirstOrDefault(unit =>
+                unit.UnitDimensionId == dimension.UnitDimensionId &&
+                unit.IsActive &&
+                string.Equals(
+                    unit.Code,
+                    dimension.BaseUnitCode,
+                    StringComparison.OrdinalIgnoreCase));
+
+            if (baseUnit is null)
+            {
+                throw new InvalidOperationException(
+                    $"Base unit {dimension.BaseUnitCode} for dimension {dimension.Code} does not exist or is inactive.");
+            }
+
+            if (baseUnit.ScaleToBase != 1m ||
+                baseUnit.OffsetToBase != 0m)
+            {
+                throw new InvalidOperationException(
+                    $"Base unit {baseUnit.Code} for dimension {dimension.Code} must have ScaleToBase=1 and OffsetToBase=0.");
+            }
+        }
     }
 }
