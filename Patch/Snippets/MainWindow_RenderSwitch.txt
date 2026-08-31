@@ -1,0 +1,7 @@
+Do switch (result.TransactionCode) v MainWindow přidej pouze tento jediný case, ideálně hned před MES06:
+
+case "MES":
+    RenderMesLiveOverview();
+    break;
+
+Nic dalšího v MainWindow neměň.

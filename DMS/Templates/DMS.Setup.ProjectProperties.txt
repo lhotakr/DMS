@@ -1,7 +1,7 @@
-ProductName=DMS Desktop
+﻿ProductName=DMS Desktop
 Manufacturer=Heinz Glas Decor / Interní DMS
-Version=0.9.0
+Version=1.0.0
 RemovePreviousVersions=True
-InstallAllUsers=False
+InstallAllUsers=True
 TargetPlatform=x64
 PublishProfilePath=Properties\PublishProfiles\DMS.Setup.pubxml

@@ -1,0 +1,655 @@
+[
+    {
+        "value":  [
+                      {
+                          "code":  "CLSET",
+                          "name":  "NastavenÄ‚Â­ klienta",
+                          "module":  "Administrace",
+                          "description":  "ZobrazÄ‚Â­ uÄąÄľivatelskÄ‚Â© nastavenÄ‚Â­ klienta DMS.",
+                          "handlerKey":  "ClientSettings",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN"
+                                    ]
+                      },
+                      {
+                          "code":  "HELP",
+                          "name":  "Seznam transakcÄ‚Â­",
+                          "module":  "Administrace",
+                          "description":  "ZobrazÄ‚Â­ dostupnÄ‚Â© transakce DMS.",
+                          "handlerKey":  "Help",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+
+                                    ]
+                      },
+                      {
+                          "code":  "LOG03",
+                          "name":  "Log aplikace",
+                          "module":  "Administrace",
+                          "description":  "ZobrazÄ‚Â­ poslednÄ‚Â­ zÄ‚Ë‡znamy aplikaĂ„Ĺ¤nÄ‚Â­ho logu.",
+                          "handlerKey":  "LogViewer",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN"
+                                    ]
+                      },
+                      {
+                          "code":  "SYS01",
+                          "name":  "NastavenÄ‚Â­ systÄ‚Â©mu DMS",
+                          "module":  "Administrace",
+                          "description":  "SprÄ‚Ë‡va systÄ‚Â©movÄ‚Â©ho nastavenÄ‚Â­ DMS, cest a serverovÄ‚Ëťch sloÄąÄľek.",
+                          "handlerKey":  "SystemSettings",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN"
+                                    ]
+                      },
+                      {
+                          "code":  "SYS03",
+                          "name":  "NÄ‚Ë‡hled systÄ‚Â©mu DMS",
+                          "module":  "Administrace",
+                          "description":  "ZobrazÄ‚Â­ aktuÄ‚Ë‡lnÄ‚Â­ systÄ‚Â©movou konfiguraci, prostÄąâ„˘edÄ‚Â­, cesty a pÄąâ„˘ihlÄ‚Ë‡ÄąË‡enÄ‚Â©ho uÄąÄľivatele.",
+                          "handlerKey":  "SystemDisplay",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+
+                                    ]
+                      },
+                      {
+                          "code":  "SYS11",
+                          "name":  "SprÄ‚Ë‡va transakcÄ‚Â­",
+                          "module":  "Administrace",
+                          "description":  "SprÄ‚Ë‡va nÄ‚Ë‡zvÄąĹ», popisÄąĹ», aktivace a rolÄ‚Â­ DMS transakcÄ‚Â­.",
+                          "handlerKey":  "TransactionManagement",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN"
+                                    ]
+                      },
+                      {
+                          "code":  "SYS12",
+                          "name":  "SprÄ‚Ë‡va rolÄ‚Â­",
+                          "module":  "Administrace",
+                          "description":  "SprÄ‚Ë‡va DMS rolÄ‚Â­ pouÄąÄľÄ‚Â­vanÄ‚Ëťch pro Äąâ„˘Ä‚Â­zenÄ‚Â­ pÄąâ„˘Ä‚Â­stupu k transakcÄ‚Â­m.",
+                          "handlerKey":  "RoleManagement",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN"
+                                    ]
+                      },
+                      {
+                          "code":  "SYS13",
+                          "name":  "SprÄ‚Ë‡va modulÄąĹ»",
+                          "module":  "Administrace",
+                          "description":  "SprÄ‚Ë‡va DMS modulÄąĹ» pouÄąÄľÄ‚Â­vanÄ‚Ëťch pro Ă„Ĺ¤lenĂ„â€şnÄ‚Â­ transakcÄ‚Â­ v menu.",
+                          "handlerKey":  "ModuleManagement",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN"
+                                    ]
+                      },
+                      {
+                          "code":  "USR01",
+                          "name":  "SprÄ‚Ë‡va uÄąÄľivatelÄąĹ»",
+                          "module":  "Administrace",
+                          "description":  "SprÄ‚Ë‡va uÄąÄľivatelÄąĹ» DMS a jejich rolÄ‚Â­.",
+                          "handlerKey":  "UserManagement",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN"
+                                    ]
+                      },
+                      {
+                          "code":  "WHOAMI",
+                          "name":  "AktuÄ‚Ë‡lnÄ‚Â­ uÄąÄľivatel",
+                          "module":  "Administrace",
+                          "description":  "ZobrazÄ‚Â­ aktuÄ‚Ë‡lnÄ‚Â­ Windows login, DMS uÄąÄľivatele a role.",
+                          "handlerKey":  "SystemInfo",
+                          "requiresArticleNumber":  false,
+                          "isActive":  false,
+                          "roles":  [
+
+                                    ]
+                      },
+                      {
+                          "code":  "MAT03",
+                          "name":  "PouÄąÄľitÄ‚Â­ materiÄ‚Ë‡lu",
+                          "module":  "SAP",
+                          "description":  "ZobrazÄ‚Â­, kde se SAP materiÄ‚Ë‡l pouÄąÄľÄ‚Â­vÄ‚Ë‡ jako komponenta a jeho vlastnÄ‚Â­ kusovnÄ‚Â­ky.",
+                          "handlerKey":  "SimpleMessage",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "REC03",
+                          "name":  "PÄąâ„˘ehled receptur",
+                          "module":  "SAP",
+                          "description":  "ZobrazenÄ‚Â­ receptur, jejich kusovnÄ‚Â­kÄąĹ», pouÄąÄľitÄ‚Â­ v artiklech a nÄ‚Ë‡vaznostÄ‚Â­ komponent v dalÄąË‡Ä‚Â­ch recepturÄ‚Ë‡ch.",
+                          "handlerKey":  "RecipeOverview",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "SAP00",
+                          "name":  "SAP import cockpit",
+                          "module":  "SAP",
+                          "description":  "ZobrazÄ‚Â­ SAP importnÄ‚Â­ cockpit s materiÄ‚Ë‡ly, kusovnÄ‚Â­ky, pracovnÄ‚Â­mi postupy a importnÄ‚Â­mi dÄ‚Ë‡vkami.",
+                          "handlerKey":  "SapCockpit",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE"
+                                    ]
+                      },
+                      {
+                          "code":  "SAP03",
+                          "name":  "NÄ‚Ë‡hled SAP materiÄ‚Ë‡lu",
+                          "module":  "SAP",
+                          "description":  "ZobrazÄ‚Â­ SAP materiÄ‚Ë‡l z lokÄ‚Ë‡lnÄ‚Â­ SAP mirror cache.",
+                          "handlerKey":  "SapMaterialDisplay",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "SAPSET",
+                          "name":  "SAP nastavenÄ‚Â­",
+                          "module":  "SAP",
+                          "description":  "SprÄ‚Ë‡va SAP-DMS pravidel, mapovÄ‚Ë‡nÄ‚Â­ a validaĂ„Ĺ¤nÄ‚Â­ch nastavenÄ‚Â­.",
+                          "handlerKey":  "SapSettings",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN"
+                                    ]
+                      },
+                      {
+                          "code":  "ART01",
+                          "name":  "ZaloÄąÄľenÄ‚Â­ artiklu",
+                          "module":  "Artikly",
+                          "description":  "ZaloÄąÄľÄ‚Â­ novÄ‚Ëť DMS profil artiklu.",
+                          "handlerKey":  "ArticleCreate",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE"
+                                    ]
+                      },
+                      {
+                          "code":  "ART02",
+                          "name":  "ZmĂ„â€şna artiklu",
+                          "module":  "Artikly",
+                          "description":  "UpravÄ‚Â­ DMS profil artiklu.",
+                          "handlerKey":  "ArticleChange",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE"
+                                    ]
+                      },
+                      {
+                          "code":  "ART03",
+                          "name":  "NÄ‚Ë‡hled artiklu",
+                          "module":  "Artikly",
+                          "description":  "ZobrazÄ‚Â­ DMS kartu artiklu.",
+                          "handlerKey":  "ArticleCard",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "DOC01",
+                          "name":  "PÄąâ„˘idÄ‚Ë‡nÄ‚Â­ dokumentu",
+                          "module":  "Dokumenty",
+                          "description":  "PÄąâ„˘idÄ‚Ë‡ dokument k SAP ID podle zvolenÄ‚Â©ho kontextu.",
+                          "handlerKey":  "ArticleDocumentCreate",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_KVALITA",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_PRODUCT_DEVELOPMENT"
+                                    ]
+                      },
+                      {
+                          "code":  "DOC02",
+                          "name":  "ZmĂ„â€şna dokumentu",
+                          "module":  "Dokumenty",
+                          "description":  "UpravÄ‚Â­ metadata dokumentu nebo pÄąâ„˘idÄ‚Ë‡ novou verzi.",
+                          "handlerKey":  "ArticleDocumentEdit",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_KVALITA",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_PRODUCT_DEVELOPMENT"
+                                    ]
+                      },
+                      {
+                          "code":  "DOC03",
+                          "name":  "ZobrazenÄ‚Â­ dokumentÄąĹ»",
+                          "module":  "Dokumenty",
+                          "description":  "ZobrazÄ‚Â­ dokumenty k SAP ID podle zvolenÄ‚Â©ho kontextu.",
+                          "handlerKey":  "DocumentDisplay",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_KVALITA",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_PRODUCT_DEVELOPMENT",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "QA00",
+                          "name":  "Quality cockpit",
+                          "module":  "Quality",
+                          "description":  "ImportnÄ‚Â­ a kontrolnÄ‚Â­ cockpit pro quality vrstvu nad artikelmapou.",
+                          "handlerKey":  "QualityCockpit",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "QA01",
+                          "name":  "ZaloÄąÄľenÄ‚Â­ quality dat",
+                          "module":  "Quality",
+                          "description":  "ZaloÄąÄľÄ‚Â­ quality artikl a prvnÄ‚Â­ tiskovou verzi podle SAP cache.",
+                          "handlerKey":  "QualityArticleCreate",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_QUALITY_EDIT"
+                                    ]
+                      },
+                      {
+                          "code":  "QA02",
+                          "name":  "ZmĂ„â€şna quality dat",
+                          "module":  "Quality",
+                          "description":  "UmoÄąÄľnÄ‚Â­ upravit quality informace artiklu, tiskovÄ‚Â© verze a Ä‚Ĺźkoly.",
+                          "handlerKey":  "QualityArticleEdit",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_QUALITY_EDIT"
+                                    ]
+                      },
+                      {
+                          "code":  "QA03",
+                          "name":  "Quality karta",
+                          "module":  "Quality",
+                          "description":  "ZobrazÄ‚Â­ quality vrstvu artiklu, tiskovÄ‚Â© verze, Ä‚Ĺźkoly a zakÄ‚Ë‡zky.",
+                          "handlerKey":  "QualityArticleDisplay",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "QA05",
+                          "name":  "PÄąâ„˘ehled tiskovÄ‚Ëťch verzÄ‚Â­",
+                          "module":  "Quality",
+                          "description":  "ZobrazÄ‚Â­ pÄąâ„˘ehled tiskovÄ‚Ëťch verzÄ‚Â­ z quality vrstvy.",
+                          "handlerKey":  "QualityPrintVersionList",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "QASET",
+                          "name":  "Quality nastavenÄ‚Â­",
+                          "module":  "Quality",
+                          "description":  "SprÄ‚Ë‡va Ă„Ĺ¤Ä‚Â­selnÄ‚Â­kÄąĹ» a nastavenÄ‚Â­ quality vrstvy.",
+                          "handlerKey":  "QualitySettings",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_QUALITY_EDIT"
+                                    ]
+                      },
+                      {
+                          "code":  "QATASK",
+                          "name":  "Quality Ä‚Ĺźkoly",
+                          "module":  "Quality",
+                          "description":  "SouhrnnÄ‚Ëť pÄąâ„˘ehled quality Ä‚ĹźkolÄąĹ» napÄąâ„˘Ä‚Â­Ă„Ĺ¤ artikly a tiskovÄ‚Ëťmi verzemi.",
+                          "handlerKey":  "QualityTasksOverview",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_QUALITY_EDIT",
+                                        "DMS_QUALITY_VIEW"
+                                    ]
+                      },
+                      {
+                          "code":  "QO01",
+                          "name":  "ZaloÄąÄľenÄ‚Â­ quality zakÄ‚Ë‡zky",
+                          "module":  "Quality",
+                          "description":  "ZaloÄąÄľÄ‚Â­ quality zakÄ‚Ë‡zku pro vybranÄ‚Ëť artikl nebo tiskovou verzi.",
+                          "handlerKey":  "QualityOrderCreate",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_QUALITY_EDIT"
+                                    ]
+                      },
+                      {
+                          "code":  "QO02",
+                          "name":  "ZmĂ„â€şna quality zakÄ‚Ë‡zky",
+                          "module":  "Quality",
+                          "description":  "UpravÄ‚Â­ existujÄ‚Â­cÄ‚Â­ quality zakÄ‚Ë‡zku podle Ă„Ĺ¤Ä‚Â­sla zakÄ‚Ë‡zky.",
+                          "handlerKey":  "QualityOrderEdit",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_QUALITY_EDIT"
+                                    ]
+                      },
+                      {
+                          "code":  "QO03",
+                          "name":  "NÄ‚Ë‡hled quality zakÄ‚Ë‡zky",
+                          "module":  "Quality",
+                          "description":  "ZobrazÄ‚Â­ quality zakÄ‚Ë‡zku nebo otevÄąâ„˘e jejÄ‚Â­ vÄ‚ËťbĂ„â€şr.",
+                          "handlerKey":  "QualityOrderDisplay",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_QUALITY_EDIT",
+                                        "DMS_QUALITY_VIEW"
+                                    ]
+                      },
+                      {
+                          "code":  "QO05",
+                          "name":  "PÄąâ„˘ehled quality zakÄ‚Ë‡zek",
+                          "module":  "Quality",
+                          "description":  "ZobrazÄ‚Â­ seznam quality zakÄ‚Ë‡zek a umoÄąÄľnÄ‚Â­ otevÄąâ„˘Ä‚Â­t jejich detail.",
+                          "handlerKey":  "QualityOrderList",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_QUALITY_EDIT",
+                                        "DMS_QUALITY_VIEW"
+                                    ]
+                      },
+                      {
+                          "code":  "QO06",
+                          "name":  "UvolnĂ„â€şnÄ‚Â­ a blokace quality zakÄ‚Ë‡zky",
+                          "module":  "Quality",
+                          "description":  "UvolnÄ‚Â­ nebo zablokuje vybranou quality zakÄ‚Ë‡zku.",
+                          "handlerKey":  "QualityOrderRelease",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_QUALITY_EDIT"
+                                    ]
+                      },
+                      {
+                          "code":  "TEC03",
+                          "name":  "TechnologickÄ‚Ëť souhrn artiklu",
+                          "module":  "Technologie",
+                          "description":  "ZobrazÄ‚Â­ technologickÄ‚Ëť souhrn artiklu z importovanÄ‚Ëťch SAP dat: materiÄ‚Ë‡l, kusovnÄ‚Â­ky, pracovnÄ‚Â­ postupy a pracoviÄąË‡tĂ„â€ş.",
+                          "handlerKey":  "TechnicalArticleSummary",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE"
+                                    ]
+                      },
+                      {
+                          "code":  "SCR03",
+                          "name":  "SÄ‚Â­ta artiklu",
+                          "module":  "SÄ‚Â­totisk",
+                          "description":  "ZobrazÄ‚Â­ sÄ‚Â­ta k artiklu.",
+                          "handlerKey":  "ArticleScreens",
+                          "requiresArticleNumber":  true,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "SCR10",
+                          "name":  "Fronta pÄąâ„˘Ä‚Â­pravy sÄ‚Â­t",
+                          "module":  "SÄ‚Â­totisk",
+                          "description":  "ZobrazÄ‚Â­ frontu pÄąâ„˘Ä‚Â­pravy sÄ‚Â­t.",
+                          "handlerKey":  "ScreenPreparationQueue",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "ORD10",
+                          "name":  "PÄąâ„˘ehled zakÄ‚Ë‡zek",
+                          "module":  "ZakÄ‚Ë‡zky",
+                          "description":  "ZobrazÄ‚Â­ pÄąâ„˘ehled zakÄ‚Ë‡zek.",
+                          "handlerKey":  "OrderOverview",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "MES00",
+                          "name":  "NastavenÄ‚Â­ MES komunikace",
+                          "module":  "MES",
+                          "description":  "CentrÄ‚Ë‡lnÄ‚Â­ nastavenÄ‚Â­ monitoringu zaÄąâ„˘Ä‚Â­zenÄ‚Â­ a budoucÄ‚Â­ komunikace mezi DMS a strojem.",
+                          "handlerKey":  "MesCommunicationSettings",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE"
+                                    ]
+                      },
+                      {
+                          "code":  "MES02",
+                          "name":  "Editace zaÄąâ„˘Ä‚Â­zenÄ‚Â­",
+                          "module":  "MES",
+                          "description":  "Edituje seznam MES zaÄąâ„˘Ä‚Â­zenÄ‚Â­ v ÄąÄľivÄ‚Â©m souboru devices.txt.",
+                          "handlerKey":  "MesDeviceEditor",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE"
+                                    ]
+                      },
+                      {
+                          "code":  "MES03",
+                          "name":  "Data stanic",
+                          "module":  "MES",
+                          "description":  "Ă„ĹštenÄ‚Â­ datovÄ‚Ëťch bodÄąĹ» z jednotlivÄ‚Ëťch MES stanic, B\u0026R/BRIO modulÄąĹ» a pozdĂ„â€şji Siemens PLC.",
+                          "handlerKey":  "MesStationData",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "MES05",
+                          "name":  "Soupis pracoviÄąË‡ÄąÄ„",
+                          "module":  "MES",
+                          "description":  "NÄ‚Ë‡hled dostupnosti MES serverÄąĹ», terminÄ‚Ë‡lÄąĹ», monitorÄąĹ» a strojÄąĹ» podle devices.txt.",
+                          "handlerKey":  "MesWorkplaceOverview",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      },
+                      {
+                          "code":  "MESDPM",
+                          "name":  "Monitor datovÄ‚Ëťch bodÄąĹ»",
+                          "module":  "MES",
+                          "description":  "DiagnostickÄ‚Ëť monitor Ă„Ĺ¤Ä‚Â­taĂ„Ĺ¤ÄąĹ», digitÄ‚Ë‡lnÄ‚Â­ch vstupÄąĹ» a stavovÄ‚Ëťch vÄ‚ËťstupÄąĹ» vybranÄ‚Â© MES stanice.",
+                          "handlerKey":  "MesDataPointMonitor",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE"
+                                    ]
+                      },
+                      {
+                          "Code":  "REC04",
+                          "Name":  "Import receptur",
+                          "Module":  "SAP",
+                          "Description":  "Import and normalization of spray-coating and screen-printing recipes.",
+                          "HandlerKey":  "RecipeImport",
+                          "RequiresArticleNumber":  false,
+                          "IsActive":  true,
+                          "Roles":  [
+
+                                    ]
+                      },
+                      {
+                          "code":  "MESSET",
+                          "name":  "MES Database Settings",
+                          "module":  "MES",
+                          "description":  "Read-only FASTEC SQL database connection settings.",
+                          "handlerKey":  "MesDatabaseSettings",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN"
+                                    ]
+                      },
+                      {
+                          "code":  "MES06",
+                          "name":  "MES Reporting",
+                          "module":  "MES",
+                          "description":  "Dynamic read-only production reporting from the FASTEC analytical database.",
+                          "handlerKey":  "MesReporting",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE"
+                                    ]
+                      },
+                      {
+                          "code":  "MES",
+                          "name":  "Machine overview",
+                          "module":  "MES",
+                          "description":  "Dynamic read-only production reporting from the FASTEC analytical database.",
+                          "handlerKey":  "MesReporting",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE"
+                                    ]
+                      },
+                      {
+                          "code":  "MESWC",
+                          "name":  "Profil pracoviÄąË‡tĂ„â€ş",
+                          "module":  "MES",
+                          "description":  "ÄąËťivÄ‚Ëť profil jednoho FASTEC pracoviÄąË‡tĂ„â€ş. PouÄąÄľitÄ‚Â­: MESWC K14-1.",
+                          "handlerKey":  "MesWorkcenter",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE"
+                                    ]
+                      },
+                      {
+                          "code":  "REC05",
+                          "name":  "AnalÄ‚Ëťza receptur",
+                          "module":  "SAP",
+                          "description":  "PorovnÄ‚Ë‡ receptury podle komponent a pomĂ„â€şrÄąĹ» v BOM zÄ‚Ë‡vodu 2000 a vyhledÄ‚Ë‡ identickÄ‚Â© nebo velmi podobnÄ‚Â© sloÄąÄľenÄ‚Â­.",
+                          "handlerKey":  "RecipeSimilarity",
+                          "requiresArticleNumber":  false,
+                          "isActive":  true,
+                          "roles":  [
+                                        "DMS_ADMIN",
+                                        "DMS_TECHNOLOGIE",
+                                        "DMS_READONLY"
+                                    ]
+                      }
+                  ],
+        "Count":  48
+    },
+    {
+        "code":  "REC05",
+        "name":  "AnalĂ˝za receptur",
+        "module":  "SAP",
+        "description":  "PorovnĂˇ receptury podle komponent a pomÄ›rĹŻ v BOM zĂˇvodu 2000 a vyhledĂˇ identickĂ© nebo velmi podobnĂ© sloĹľenĂ­.",
+        "handlerKey":  "RecipeSimilarity",
+        "requiresArticleNumber":  false,
+        "isActive":  true,
+        "roles":  [
+                      "DMS_ADMIN",
+                      "DMS_TECHNOLOGIE",
+                      "DMS_READONLY"
+                  ]
+    }
+]

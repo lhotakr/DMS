@@ -1,0 +1,1491 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace DMS.Integration.Mes.Reporting;
+
+/// <summary>
+/// Small read-only enrichment layer for MES06.
+/// It deliberately does not replace MesReportingDataService:
+/// - shift events are read from ana.DimShiftEvent
+/// - SAP article number is read from dbo.d_pda_po.cf_customer
+/// </summary>
+public sealed class MesReportingEnrichmentService
+{
+    private readonly object _settings;
+    private readonly string _analyticsSchema;
+    private readonly int _commandTimeoutSeconds;
+
+    public MesReportingEnrichmentService(
+        object settings)
+    {
+        _settings =
+            settings
+            ?? throw new ArgumentNullException(
+                nameof(settings));
+
+        _analyticsSchema =
+            ReadString(
+                "ReportingSchema",
+                "Schema",
+                "SchemaName")
+            ?? "ana";
+
+        _commandTimeoutSeconds =
+            Math.Max(
+                5,
+                ReadInt(
+                    30,
+                    "CommandTimeoutSeconds",
+                    "SqlCommandTimeoutSeconds",
+                    "CommandTimeout"));
+    }
+
+    public async Task<IReadOnlyList<MesReportingShiftEvent>> GetShiftEventsAsync(
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection =
+            CreateConnection();
+
+        await connection.OpenAsync(
+            cancellationToken);
+
+        var sql =
+            $"""
+            SELECT
+                s.ID,
+                s.Starttime,
+                s.Endtime,
+                s.Name
+            FROM [{_analyticsSchema}].[DimShiftEvent] s
+            WHERE s.Starttime < @to
+              AND COALESCE(s.Endtime, DATEADD(HOUR, 8, s.Starttime)) > @from
+            ORDER BY
+                s.Starttime,
+                s.Name;
+            """;
+
+        await using var command =
+            CreateCommand(
+                connection,
+                sql);
+
+        AddParameter(
+            command,
+            "@from",
+            from);
+
+        AddParameter(
+            command,
+            "@to",
+            to);
+
+        await using var reader =
+            await command.ExecuteReaderAsync(
+                cancellationToken);
+
+        var rows =
+            new List<MesReportingShiftEvent>();
+
+        while (await reader.ReadAsync(
+                   cancellationToken))
+        {
+            var start =
+                GetDateTime(
+                    reader,
+                    "Starttime");
+
+            if (!start.HasValue)
+            {
+                continue;
+            }
+
+            rows.Add(
+                new MesReportingShiftEvent
+                {
+                    Id =
+                        GetGuid(
+                            reader,
+                            "ID"),
+                    Starttime =
+                        start.Value,
+                    Endtime =
+                        GetDateTime(
+                            reader,
+                            "Endtime")
+                        ?? start.Value.AddHours(8),
+                    Name =
+                        GetString(
+                            reader,
+                            "Name")
+                });
+        }
+
+        return rows;
+    }
+
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<string>>> GetWorkcenterGroupsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        const string metadataSql = """
+            SELECT
+                TABLE_SCHEMA,
+                TABLE_NAME,
+                COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            ORDER BY TABLE_SCHEMA, TABLE_NAME, ORDINAL_POSITION;
+            """;
+
+        var columns =
+            new List<Mes06MetadataColumnRow>();
+
+        await using (var connection =
+                     CreateConnection())
+        {
+            await connection.OpenAsync(
+                cancellationToken);
+
+            await using var command =
+                CreateCommand(
+                    connection,
+                    metadataSql);
+
+            command.CommandTimeout =
+                Math.Min(
+                    command.CommandTimeout,
+                    8);
+
+            await using var reader =
+                await command.ExecuteReaderAsync(
+                    cancellationToken);
+
+            while (await reader.ReadAsync(
+                       cancellationToken))
+            {
+                columns.Add(
+                    new Mes06MetadataColumnRow
+                    {
+                        Schema =
+                            GetString(
+                                reader,
+                                "TABLE_SCHEMA"),
+                        Table =
+                            GetString(
+                                reader,
+                                "TABLE_NAME"),
+                        Column =
+                            GetString(
+                                reader,
+                                "COLUMN_NAME")
+                    });
+            }
+        }
+
+        var tables =
+            columns
+                .GroupBy(row =>
+                    (row.Schema, row.Table))
+                .Select(group =>
+                    new Mes06MetadataTable
+                    {
+                        Schema =
+                            group.Key.Schema,
+                        Table =
+                            group.Key.Table,
+                        Columns =
+                            group
+                                .Select(row =>
+                                    row.Column)
+                                .Distinct(
+                                    StringComparer.OrdinalIgnoreCase)
+                                .ToList()
+                    })
+                .ToList();
+
+        var mappings =
+            new Dictionary<string, HashSet<string>>(
+                StringComparer.OrdinalIgnoreCase);
+
+        await LoadDirectWorkcenterGroupsAsync(
+            tables,
+            mappings,
+            cancellationToken);
+
+        if (mappings.Count == 0)
+        {
+            await LoadRelationalWorkcenterGroupsAsync(
+                tables,
+                mappings,
+                cancellationToken);
+        }
+
+        return mappings.ToDictionary(
+            pair => pair.Key,
+            pair =>
+                (IReadOnlyList<string>)pair.Value
+                    .OrderBy(
+                        value => value,
+                        StringComparer.CurrentCultureIgnoreCase)
+                    .ToList(),
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task LoadDirectWorkcenterGroupsAsync(
+        IReadOnlyList<Mes06MetadataTable> tables,
+        Dictionary<string, HashSet<string>> mappings,
+        CancellationToken cancellationToken)
+    {
+        var candidates =
+            tables
+                .Select(table =>
+                    new
+                    {
+                        Table =
+                            table,
+                        CodeColumn =
+                            FindColumn(
+                                table.Columns,
+                                "WorkcenterCode",
+                                "WorkCenterCode",
+                                "WorkCentreCode",
+                                "ResourceCode",
+                                "RessourceCode",
+                                "Code"),
+                        GroupColumn =
+                            FindColumn(
+                                table.Columns,
+                                "Groups",
+                                "WorkcenterGroups",
+                                "WorkCenterGroups",
+                                "GroupNames",
+                                "GroupName",
+                                "Group")
+                    })
+                .Where(item =>
+                    !string.IsNullOrWhiteSpace(
+                        item.CodeColumn)
+                    && !string.IsNullOrWhiteSpace(
+                        item.GroupColumn)
+                    && WorkcenterMetadataScore(
+                        item.Table) > 0)
+                .OrderByDescending(item =>
+                    WorkcenterMetadataScore(
+                        item.Table))
+                .Take(10)
+                .ToList();
+
+        foreach (var candidate
+                 in candidates)
+        {
+            try
+            {
+                var sql =
+                    $"""
+                    SELECT TOP (10000)
+                        CONVERT(nvarchar(255), {QuoteIdentifier(candidate.CodeColumn!)}) AS WorkcenterCode,
+                        CONVERT(nvarchar(1000), {QuoteIdentifier(candidate.GroupColumn!)}) AS WorkcenterGroup
+                    FROM {SqlObjectName(candidate.Table)}
+                    WHERE NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(255), {QuoteIdentifier(candidate.CodeColumn!)}))), '') IS NOT NULL;
+                    """;
+
+                var loaded =
+                    await ReadWorkcenterGroupPairsAsync(
+                        sql,
+                        mappings,
+                        cancellationToken);
+
+                if (loaded > 0)
+                {
+                    return;
+                }
+            }
+            catch
+            {
+                // Probe the next readable configuration object.
+            }
+        }
+    }
+
+    private async Task LoadRelationalWorkcenterGroupsAsync(
+        IReadOnlyList<Mes06MetadataTable> tables,
+        Dictionary<string, HashSet<string>> mappings,
+        CancellationToken cancellationToken)
+    {
+        var bridges =
+            tables
+                .Select(table =>
+                    new
+                    {
+                        Table = table,
+                        WorkcenterId =
+                            FindWorkcenterIdColumn(
+                                table.Columns),
+                        WorkcenterCode =
+                            FindWorkcenterCodeColumn(
+                                table.Columns),
+                        GroupId =
+                            FindGroupIdColumn(
+                                table.Columns),
+                        GroupName =
+                            FindDirectGroupNameColumn(
+                                table.Columns)
+                    })
+                .Where(item =>
+                    (!string.IsNullOrWhiteSpace(
+                         item.WorkcenterId)
+                     || !string.IsNullOrWhiteSpace(
+                         item.WorkcenterCode))
+                    && (!string.IsNullOrWhiteSpace(
+                            item.GroupId)
+                        || !string.IsNullOrWhiteSpace(
+                            item.GroupName))
+                    && BridgeMetadataScore(
+                        item.Table) > 0)
+                .OrderByDescending(item =>
+                    BridgeMetadataScore(
+                        item.Table))
+                .Take(12)
+                .ToList();
+
+        var workcenterTables =
+            tables
+                .Select(table =>
+                    new
+                    {
+                        Table = table,
+                        Id =
+                            FindEntityIdColumn(
+                                table.Columns,
+                                "workcenter",
+                                "resource",
+                                "ressource"),
+                        Code =
+                            FindColumn(
+                                table.Columns,
+                                "WorkcenterCode",
+                                "WorkCenterCode",
+                                "WorkCentreCode",
+                                "ResourceCode",
+                                "RessourceCode",
+                                "Code")
+                    })
+                .Where(item =>
+                    !string.IsNullOrWhiteSpace(
+                        item.Id)
+                    && !string.IsNullOrWhiteSpace(
+                        item.Code)
+                    && WorkcenterMetadataScore(
+                        item.Table) > 0)
+                .OrderByDescending(item =>
+                    WorkcenterMetadataScore(
+                        item.Table))
+                .Take(10)
+                .ToList();
+
+        var groupTables =
+            tables
+                .Select(table =>
+                    new
+                    {
+                        Table = table,
+                        Id =
+                            FindEntityIdColumn(
+                                table.Columns,
+                                "group"),
+                        Display =
+                            FindColumn(
+                                table.Columns,
+                                "GroupCode",
+                                "group_code",
+                                "Code",
+                                "Name",
+                                "GroupName",
+                                "group_name",
+                                "Description",
+                                "Designation")
+                    })
+                .Where(item =>
+                    !string.IsNullOrWhiteSpace(
+                        item.Id)
+                    && !string.IsNullOrWhiteSpace(
+                        item.Display)
+                    && GroupMetadataScore(
+                        item.Table) > 0)
+                .OrderByDescending(item =>
+                    GroupMetadataScore(
+                        item.Table))
+                .Take(10)
+                .ToList();
+
+        foreach (var bridge
+                 in bridges)
+        {
+            if (!string.IsNullOrWhiteSpace(
+                    bridge.WorkcenterCode)
+                && !string.IsNullOrWhiteSpace(
+                    bridge.GroupName))
+            {
+                var sql =
+                    $"""
+                    SELECT TOP (10000)
+                        CONVERT(nvarchar(255), b.{QuoteIdentifier(bridge.WorkcenterCode!)}) AS WorkcenterCode,
+                        CONVERT(nvarchar(1000), b.{QuoteIdentifier(bridge.GroupName!)}) AS WorkcenterGroup
+                    FROM {SqlObjectName(bridge.Table)} b;
+                    """;
+
+                if (await TryReadWorkcenterGroupPairsAsync(
+                        sql,
+                        mappings,
+                        cancellationToken))
+                {
+                    return;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    bridge.WorkcenterId)
+                && !string.IsNullOrWhiteSpace(
+                    bridge.GroupName))
+            {
+                foreach (var wc
+                         in RankBySchema(
+                             workcenterTables,
+                             bridge.Table.Schema)
+                             .Take(6))
+                {
+                    var sql =
+                        $"""
+                        SELECT TOP (10000)
+                            CONVERT(nvarchar(255), wc.{QuoteIdentifier(wc.Code!)}) AS WorkcenterCode,
+                            CONVERT(nvarchar(1000), b.{QuoteIdentifier(bridge.GroupName!)}) AS WorkcenterGroup
+                        FROM {SqlObjectName(bridge.Table)} b
+                        INNER JOIN {SqlObjectName(wc.Table)} wc
+                            ON wc.{QuoteIdentifier(wc.Id!)} = b.{QuoteIdentifier(bridge.WorkcenterId!)};
+                        """;
+
+                    if (await TryReadWorkcenterGroupPairsAsync(
+                            sql,
+                            mappings,
+                            cancellationToken))
+                    {
+                        return;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    bridge.WorkcenterId)
+                && !string.IsNullOrWhiteSpace(
+                    bridge.GroupId))
+            {
+                foreach (var wc
+                         in RankBySchema(
+                             workcenterTables,
+                             bridge.Table.Schema)
+                             .Take(6))
+                {
+                    foreach (var group
+                             in RankBySchema(
+                                 groupTables,
+                                 bridge.Table.Schema)
+                                 .Take(8))
+                    {
+                        var sql =
+                            $"""
+                            SELECT TOP (10000)
+                                CONVERT(nvarchar(255), wc.{QuoteIdentifier(wc.Code!)}) AS WorkcenterCode,
+                                CONVERT(nvarchar(1000), g.{QuoteIdentifier(group.Display!)}) AS WorkcenterGroup
+                            FROM {SqlObjectName(bridge.Table)} b
+                            INNER JOIN {SqlObjectName(wc.Table)} wc
+                                ON wc.{QuoteIdentifier(wc.Id!)} = b.{QuoteIdentifier(bridge.WorkcenterId!)}
+                            INNER JOIN {SqlObjectName(group.Table)} g
+                                ON g.{QuoteIdentifier(group.Id!)} = b.{QuoteIdentifier(bridge.GroupId!)};
+                            """;
+
+                        if (await TryReadWorkcenterGroupPairsAsync(
+                                sql,
+                                mappings,
+                                cancellationToken))
+                        {
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                    bridge.WorkcenterCode)
+                && !string.IsNullOrWhiteSpace(
+                    bridge.GroupId))
+            {
+                foreach (var group
+                         in RankBySchema(
+                             groupTables,
+                             bridge.Table.Schema)
+                             .Take(8))
+                {
+                    var sql =
+                        $"""
+                        SELECT TOP (10000)
+                            CONVERT(nvarchar(255), b.{QuoteIdentifier(bridge.WorkcenterCode!)}) AS WorkcenterCode,
+                            CONVERT(nvarchar(1000), g.{QuoteIdentifier(group.Display!)}) AS WorkcenterGroup
+                        FROM {SqlObjectName(bridge.Table)} b
+                        INNER JOIN {SqlObjectName(group.Table)} g
+                            ON g.{QuoteIdentifier(group.Id!)} = b.{QuoteIdentifier(bridge.GroupId!)};
+                        """;
+
+                    if (await TryReadWorkcenterGroupPairsAsync(
+                            sql,
+                            mappings,
+                            cancellationToken))
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    private async Task<bool> TryReadWorkcenterGroupPairsAsync(
+        string sql,
+        Dictionary<string, HashSet<string>> mappings,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await ReadWorkcenterGroupPairsAsync(
+                       sql,
+                       mappings,
+                       cancellationToken) > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task<int> ReadWorkcenterGroupPairsAsync(
+        string sql,
+        Dictionary<string, HashSet<string>> mappings,
+        CancellationToken cancellationToken)
+    {
+        var loaded = 0;
+
+        await using var connection =
+            CreateConnection();
+
+        await connection.OpenAsync(
+            cancellationToken);
+
+        await using var command =
+            CreateCommand(
+                connection,
+                sql);
+
+        command.CommandTimeout =
+            Math.Min(
+                command.CommandTimeout,
+                8);
+
+        await using var reader =
+            await command.ExecuteReaderAsync(
+                cancellationToken);
+
+        while (await reader.ReadAsync(
+                   cancellationToken))
+        {
+            var code =
+                GetString(
+                    reader,
+                    "WorkcenterCode")
+                .Trim();
+
+            var rawGroup =
+                GetString(
+                    reader,
+                    "WorkcenterGroup")
+                .Trim();
+
+            if (string.IsNullOrWhiteSpace(
+                    code)
+                || string.IsNullOrWhiteSpace(
+                    rawGroup))
+            {
+                continue;
+            }
+
+            if (!mappings.TryGetValue(
+                    code,
+                    out var groups))
+            {
+                groups =
+                    new HashSet<string>(
+                        StringComparer.CurrentCultureIgnoreCase);
+
+                mappings[code] =
+                    groups;
+            }
+
+            foreach (var groupName
+                     in ParseGroups(
+                         rawGroup))
+            {
+                if (groups.Add(
+                        groupName))
+                {
+                    loaded++;
+                }
+            }
+        }
+
+        return loaded;
+    }
+
+    private static int WorkcenterMetadataScore(
+        Mes06MetadataTable table)
+    {
+        var score = 0;
+        var name = table.Table;
+
+        if (name.Contains(
+                "workcenter",
+                StringComparison.OrdinalIgnoreCase)
+            || name.Contains(
+                "workcentre",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            score += 100;
+        }
+
+        if (name.Contains(
+                "resource",
+                StringComparison.OrdinalIgnoreCase)
+            || name.Contains(
+                "ressource",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            score += 70;
+        }
+
+        if (string.Equals(
+                name,
+                "m_res",
+                StringComparison.OrdinalIgnoreCase)
+            || name.StartsWith(
+                "m_res_",
+                StringComparison.OrdinalIgnoreCase)
+            || name.Contains(
+                "_res_",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            score += 180;
+        }
+
+        if (table.Columns.Any(column =>
+                column.Contains(
+                    "workcenter",
+                    StringComparison.OrdinalIgnoreCase)
+                || column.Contains(
+                    "resource",
+                    StringComparison.OrdinalIgnoreCase)))
+        {
+            score += 40;
+        }
+
+        return score;
+    }
+
+    private static int GroupMetadataScore(
+        Mes06MetadataTable table)
+    {
+        var score = 0;
+
+        if (table.Table.Contains(
+                "group",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            score += 100;
+        }
+
+        if (string.Equals(
+                table.Table,
+                "m_res_group",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            // User-verified FASTEC group master table.
+            score += 500;
+        }
+
+        if (table.Columns.Any(column =>
+                column.Contains(
+                    "group",
+                    StringComparison.OrdinalIgnoreCase)))
+        {
+            score += 40;
+        }
+
+        return score;
+    }
+
+    private static int BridgeMetadataScore(
+        Mes06MetadataTable table)
+    {
+        var score =
+            GroupMetadataScore(
+                table);
+
+        if (table.Table.Contains(
+                "map",
+                StringComparison.OrdinalIgnoreCase)
+            || table.Table.Contains(
+                "link",
+                StringComparison.OrdinalIgnoreCase)
+            || table.Table.Contains(
+                "member",
+                StringComparison.OrdinalIgnoreCase)
+            || table.Table.Contains(
+                "assign",
+                StringComparison.OrdinalIgnoreCase)
+            || table.Table.Contains(
+                "relation",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            score += 60;
+        }
+
+        if (table.Table.StartsWith(
+                "m_res_",
+                StringComparison.OrdinalIgnoreCase)
+            && table.Table.Contains(
+                "group",
+                StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(
+                table.Table,
+                "m_res_group",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            score += 220;
+        }
+
+        return score;
+    }
+
+    private static string? FindWorkcenterIdColumn(
+        IReadOnlyList<string> columns) =>
+        FindColumn(
+            columns,
+            "WorkcenterID",
+            "WorkCenterID",
+            "WorkCentreID",
+            "ResourceID",
+            "RessourceID",
+            "MachineID",
+            "workcenter_id",
+            "work_center_id",
+            "resource_id",
+            "ressource_id",
+            "res_id",
+            "machine_id",
+            "m_res_id")
+        ?? columns.FirstOrDefault(column =>
+            column.EndsWith(
+                "ID",
+                StringComparison.OrdinalIgnoreCase)
+            && (column.Contains(
+                    "workcenter",
+                    StringComparison.OrdinalIgnoreCase)
+                || column.Contains(
+                    "resource",
+                    StringComparison.OrdinalIgnoreCase)
+                || column.Contains(
+                    "ressource",
+                    StringComparison.OrdinalIgnoreCase)
+                || column.Contains(
+                    "res_",
+                    StringComparison.OrdinalIgnoreCase))
+            && !column.Contains(
+                "group",
+                StringComparison.OrdinalIgnoreCase));
+
+    private static string? FindWorkcenterCodeColumn(
+        IReadOnlyList<string> columns) =>
+        FindColumn(
+            columns,
+            "WorkcenterCode",
+            "WorkCenterCode",
+            "WorkCentreCode",
+            "ResourceCode",
+            "RessourceCode",
+            "workcenter_code",
+            "work_center_code",
+            "resource_code",
+            "ressource_code",
+            "res_code");
+
+    private static string? FindGroupIdColumn(
+        IReadOnlyList<string> columns) =>
+        FindColumn(
+            columns,
+            "WorkcenterGroupID",
+            "WorkCenterGroupID",
+            "WorkCentreGroupID",
+            "ResourceGroupID",
+            "RessourceGroupID",
+            "GroupID",
+            "workcenter_group_id",
+            "work_center_group_id",
+            "resource_group_id",
+            "ressource_group_id",
+            "res_group_id",
+            "group_id",
+            "m_res_group_id")
+        ?? columns.FirstOrDefault(column =>
+            column.EndsWith(
+                "ID",
+                StringComparison.OrdinalIgnoreCase)
+            && column.Contains(
+                "group",
+                StringComparison.OrdinalIgnoreCase));
+
+    private static string? FindDirectGroupNameColumn(
+        IReadOnlyList<string> columns) =>
+        FindColumn(
+            columns,
+            "Groups",
+            "WorkcenterGroups",
+            "WorkCenterGroups",
+            "GroupNames",
+            "GroupName",
+            "Group",
+            "group_code",
+            "group_name",
+            "groups",
+            "group");
+
+    private static string? FindEntityIdColumn(
+        IReadOnlyList<string> columns,
+        params string[] entityTokens)
+    {
+        var exact =
+            FindColumn(
+                columns,
+                "ID");
+
+        if (!string.IsNullOrWhiteSpace(
+                exact))
+        {
+            return exact;
+        }
+
+        foreach (var token
+                 in entityTokens)
+        {
+            var match =
+                columns.FirstOrDefault(column =>
+                    string.Equals(
+                        column,
+                        token + "ID",
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (!string.IsNullOrWhiteSpace(
+                    match))
+            {
+                return match;
+            }
+        }
+
+        return columns.FirstOrDefault(column =>
+            column.EndsWith(
+                "ID",
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static IEnumerable<T> RankBySchema<T>(
+        IEnumerable<T> candidates,
+        string preferredSchema)
+        where T : class
+    {
+        return candidates.OrderByDescending(candidate =>
+        {
+            var tableProperty =
+                candidate
+                    .GetType()
+                    .GetProperty(
+                        "Table");
+
+            if (tableProperty?.GetValue(
+                    candidate)
+                is Mes06MetadataTable table)
+            {
+                return string.Equals(
+                    table.Schema,
+                    preferredSchema,
+                    StringComparison.OrdinalIgnoreCase)
+                    ? 1
+                    : 0;
+            }
+
+            return 0;
+        });
+    }
+
+    private static string SqlObjectName(
+        Mes06MetadataTable table) =>
+        $"{QuoteIdentifier(table.Schema)}.{QuoteIdentifier(table.Table)}";
+
+    private static string QuoteIdentifier(
+        string identifier) =>
+        $"[{identifier.Replace("]", "]]")}]";
+
+    private static string? FindColumn(
+        IEnumerable<string> available,
+        params string[] candidates)
+    {
+        foreach (var candidate
+                 in candidates)
+        {
+            var match =
+                available.FirstOrDefault(column =>
+                    string.Equals(
+                        column,
+                        candidate,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (!string.IsNullOrWhiteSpace(
+                    match))
+            {
+                return match;
+            }
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<string> ParseGroups(
+        string raw)
+    {
+        if (string.IsNullOrWhiteSpace(
+                raw))
+        {
+            return Array.Empty<string>();
+        }
+
+        return raw
+            .Split(
+                new[] { ',', ';', '|' },
+                StringSplitOptions.RemoveEmptyEntries)
+            .Select(value =>
+                value.Trim())
+            .Where(value =>
+                !string.IsNullOrWhiteSpace(
+                    value))
+            .Distinct(
+                StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyDictionary<string, string>> GetSapNumbersByOrderAsync(
+        IEnumerable<string> orderCodes,
+        CancellationToken cancellationToken = default)
+    {
+        var distinct =
+            orderCodes
+                .Where(code =>
+                    !string.IsNullOrWhiteSpace(
+                        code))
+                .Select(code =>
+                    code.Trim())
+                .Distinct(
+                    StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+        if (distinct.Count == 0)
+        {
+            return new Dictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        var result =
+            new Dictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase);
+
+        await using var connection =
+            CreateConnection();
+
+        await connection.OpenAsync(
+            cancellationToken);
+
+        const int batchSize = 500;
+
+        for (var offset = 0;
+             offset < distinct.Count;
+             offset += batchSize)
+        {
+            var batch =
+                distinct
+                    .Skip(offset)
+                    .Take(batchSize)
+                    .ToList();
+
+            var parameterNames =
+                batch
+                    .Select((_, index) =>
+                        $"@order{index}")
+                    .ToArray();
+
+            var sql =
+                $"""
+                SELECT
+                    po.code,
+                    MAX(
+                        NULLIF(
+                            LTRIM(
+                                RTRIM(
+                                    po.cf_customer)),
+                            '')) AS SapArticleNumber
+                FROM dbo.d_pda_po po
+                WHERE po.code IN ({string.Join(", ", parameterNames)})
+                GROUP BY po.code;
+                """;
+
+            await using var command =
+                CreateCommand(
+                    connection,
+                    sql);
+
+            for (var index = 0;
+                 index < batch.Count;
+                 index++)
+            {
+                AddParameter(
+                    command,
+                    parameterNames[index],
+                    batch[index]);
+            }
+
+            await using var reader =
+                await command.ExecuteReaderAsync(
+                    cancellationToken);
+
+            while (await reader.ReadAsync(
+                       cancellationToken))
+            {
+                var orderCode =
+                    GetString(
+                        reader,
+                        "code");
+
+                var sapNumber =
+                    GetString(
+                        reader,
+                        "SapArticleNumber");
+
+                if (!string.IsNullOrWhiteSpace(
+                        orderCode)
+                    && !string.IsNullOrWhiteSpace(
+                        sapNumber))
+                {
+                    result[orderCode] =
+                        sapNumber;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private DbConnection CreateConnection()
+    {
+        var directConnectionString =
+            ReadConnectionString();
+
+        if (!string.IsNullOrWhiteSpace(
+                directConnectionString))
+        {
+            return CreateSqlServerConnection(
+                directConnectionString);
+        }
+
+        var server =
+            ReadString(
+                "Server",
+                "SqlServer",
+                "ServerName",
+                "DataSource",
+                "Host",
+                "Address",
+                "ServerAddress");
+
+        var database =
+            ReadString(
+                "Database",
+                "DatabaseName",
+                "InitialCatalog",
+                "Catalog");
+
+        if (string.IsNullOrWhiteSpace(
+                server))
+        {
+            throw new InvalidOperationException(
+                "MESSET does not contain a SQL server address.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                database))
+        {
+            throw new InvalidOperationException(
+                "MESSET does not contain a SQL database name.");
+        }
+
+        var encrypt =
+            ReadBool(
+                true,
+                "Encrypt",
+                "UseEncryption");
+
+        var trust =
+            ReadBool(
+                true,
+                "TrustServerCertificate",
+                "TrustCertificate");
+
+        var timeout =
+            Math.Max(
+                2,
+                ReadInt(
+                    8,
+                    "ConnectionTimeoutSeconds",
+                    "ConnectTimeoutSeconds",
+                    "ConnectionTimeout"));
+
+        var connectionString =
+            $"Server={server};Database={database};Integrated Security=True;Encrypt={encrypt};TrustServerCertificate={trust};Connect Timeout={timeout};Application Name=DMS MES06 Enrichment;";
+
+        return CreateSqlServerConnection(
+            connectionString);
+    }
+
+    private string? ReadConnectionString()
+    {
+        var propertyValue =
+            ReadString(
+                "ConnectionString",
+                "SqlConnectionString");
+
+        if (!string.IsNullOrWhiteSpace(
+                propertyValue))
+        {
+            return propertyValue;
+        }
+
+        foreach (var methodName in new[]
+                 {
+                     "BuildConnectionString",
+                     "CreateConnectionString",
+                     "GetConnectionString"
+                 })
+        {
+            var method =
+                _settings
+                    .GetType()
+                    .GetMethod(
+                        methodName,
+                        BindingFlags.Public
+                        | BindingFlags.Instance
+                        | BindingFlags.IgnoreCase,
+                        binder: null,
+                        types: Type.EmptyTypes,
+                        modifiers: null);
+
+            if (method?.ReturnType == typeof(string)
+                && method.Invoke(
+                       _settings,
+                       null) is string value
+                && !string.IsNullOrWhiteSpace(
+                    value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    private static DbConnection CreateSqlServerConnection(
+        string connectionString)
+    {
+        var type =
+            Type.GetType(
+                "Microsoft.Data.SqlClient.SqlConnection, Microsoft.Data.SqlClient",
+                throwOnError: false)
+            ?? Type.GetType(
+                "System.Data.SqlClient.SqlConnection, System.Data.SqlClient",
+                throwOnError: false);
+
+        if (type is null)
+        {
+            throw new InvalidOperationException(
+                "No SQL Server provider is available.");
+        }
+
+        return
+            (DbConnection)(
+                Activator.CreateInstance(
+                    type,
+                    connectionString)
+                ?? throw new InvalidOperationException(
+                    "Could not create SQL Server connection."));
+    }
+
+    private DbCommand CreateCommand(
+        DbConnection connection,
+        string sql)
+    {
+        var command =
+            connection.CreateCommand();
+
+        command.CommandText =
+            sql;
+
+        command.CommandType =
+            CommandType.Text;
+
+        command.CommandTimeout =
+            _commandTimeoutSeconds;
+
+        return command;
+    }
+
+    private static void AddParameter(
+        DbCommand command,
+        string name,
+        object? value)
+    {
+        var parameter =
+            command.CreateParameter();
+
+        parameter.ParameterName =
+            name;
+
+        parameter.Value =
+            value
+            ?? DBNull.Value;
+
+        command.Parameters.Add(
+            parameter);
+    }
+
+    private string? ReadString(
+        params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var property =
+                _settings
+                    .GetType()
+                    .GetProperty(
+                        name,
+                        BindingFlags.Public
+                        | BindingFlags.Instance
+                        | BindingFlags.IgnoreCase);
+
+            if (property?.GetValue(
+                    _settings) is object value)
+            {
+                var text =
+                    Convert.ToString(
+                        value);
+
+                if (!string.IsNullOrWhiteSpace(
+                        text))
+                {
+                    return text.Trim();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private int ReadInt(
+        int fallback,
+        params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var property =
+                _settings
+                    .GetType()
+                    .GetProperty(
+                        name,
+                        BindingFlags.Public
+                        | BindingFlags.Instance
+                        | BindingFlags.IgnoreCase);
+
+            var raw =
+                property?.GetValue(
+                    _settings);
+
+            if (raw is not null
+                && int.TryParse(
+                    Convert.ToString(
+                        raw),
+                    out var value))
+            {
+                return value;
+            }
+        }
+
+        return fallback;
+    }
+
+    private bool ReadBool(
+        bool fallback,
+        params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var property =
+                _settings
+                    .GetType()
+                    .GetProperty(
+                        name,
+                        BindingFlags.Public
+                        | BindingFlags.Instance
+                        | BindingFlags.IgnoreCase);
+
+            var raw =
+                property?.GetValue(
+                    _settings);
+
+            if (raw is bool value)
+            {
+                return value;
+            }
+
+            if (raw is not null
+                && bool.TryParse(
+                    Convert.ToString(
+                        raw),
+                    out var parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return fallback;
+    }
+
+    private static string GetString(
+        DbDataReader reader,
+        string columnName)
+    {
+        var ordinal =
+            reader.GetOrdinal(
+                columnName);
+
+        return reader.IsDBNull(
+                ordinal)
+            ? string.Empty
+            : Convert.ToString(
+                  reader.GetValue(
+                      ordinal))
+              ?? string.Empty;
+    }
+
+    private static Guid? GetGuid(
+        DbDataReader reader,
+        string columnName)
+    {
+        var ordinal =
+            reader.GetOrdinal(
+                columnName);
+
+        if (reader.IsDBNull(
+                ordinal))
+        {
+            return null;
+        }
+
+        var value =
+            reader.GetValue(
+                ordinal);
+
+        if (value is Guid guid)
+        {
+            return guid;
+        }
+
+        return Guid.TryParse(
+            Convert.ToString(
+                value),
+            out var parsed)
+            ? parsed
+            : null;
+    }
+
+    private static DateTime? GetDateTime(
+        DbDataReader reader,
+        string columnName)
+    {
+        var ordinal =
+            reader.GetOrdinal(
+                columnName);
+
+        if (reader.IsDBNull(
+                ordinal))
+        {
+            return null;
+        }
+
+        var value =
+            reader.GetValue(
+                ordinal);
+
+        return value switch
+        {
+            DateTime dateTime =>
+                dateTime,
+
+            DateTimeOffset offset =>
+                offset.DateTime,
+
+            _ =>
+                DateTime.TryParse(
+                    Convert.ToString(
+                        value),
+                    out var parsed)
+                    ? parsed
+                    : null
+        };
+    }
+}
+
+internal sealed class Mes06MetadataColumnRow
+{
+    public string Schema { get; init; } = string.Empty;
+    public string Table { get; init; } = string.Empty;
+    public string Column { get; init; } = string.Empty;
+}
+
+internal sealed class Mes06MetadataTable
+{
+    public string Schema { get; init; } = string.Empty;
+    public string Table { get; init; } = string.Empty;
+    public IReadOnlyList<string> Columns { get; init; } = Array.Empty<string>();
+}
+
+public sealed class MesReportingShiftEvent
+{
+    public Guid? Id { get; init; }
+    public DateTime Starttime { get; init; }
+    public DateTime Endtime { get; init; }
+    public string Name { get; init; } = string.Empty;
+}

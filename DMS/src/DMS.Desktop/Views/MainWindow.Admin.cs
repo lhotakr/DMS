@@ -82,7 +82,7 @@ public partial class MainWindow
         tabs.Items.Add(new TabItem
         {
             Header = T("SYS01.MasterData.TabPeople"),
-            Content = new PeopleView(masterDataService, _logger, _currentUser.DisplayName, key => T(key))
+            Content = new PeopleView(masterDataService, _logger, _currentUser.DisplayName)
         });
 
         tabs.Items.Add(new TabItem

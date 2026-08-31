@@ -1,4 +1,4 @@
-# DMS - Visual Studio Installer Project varianta
+﻿# DMS - Visual Studio Installer Project varianta
 
 Tento balíček připravuje variantu bez Inno Setupu. Využije rozšíření **Microsoft Visual Studio Installer Projects 2022**, které už je ve Visual Studiu nainstalované.
 
@@ -105,9 +105,9 @@ Vyber projekt `DMS.Setup` a nastav v Properties:
 ```text
 ProductName   = DMS Desktop
 Manufacturer  = Heinz Glas Decor / Interní DMS
-Version       = 0.9.0
+Version       = 1.0.0
 RemovePreviousVersions = True
-InstallAllUsers = False
+InstallAllUsers = True
 TargetPlatform = x64
 ```
 

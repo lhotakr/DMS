@@ -1,4 +1,4 @@
-<Window x:Class="DMS.Desktop.Views.MainWindow"
+﻿<Window x:Class="DMS.Desktop.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="DMS FiGUI Shell"
@@ -302,9 +302,10 @@
                    Foreground="{DynamicResource DmsForegroundBrush}">
             <StatusBarItem x:Name="StatusDatabase" Content="DB: lokální režim" />
             <StatusBarItem x:Name="StatusSap" Content="SAP TEST: nepřipojeno" />
-            <StatusBarItem x:Name="StatusMes" Content="MES import: nepřipraven" />
+            <StatusBarItem x:Name="StatusMes" Content="MES: připojování..." />
             <StatusBarItem x:Name="StatusSso" Content="SSO: Windows login" />
-            <StatusBarItem x:Name="StatusVersion" Content="verze 0.1" />
+            <StatusBarItem x:Name="StatusVersion" Content="verze ..." />
+            <StatusBarItem x:Name="StatusDate" Content="build ..." />
         </StatusBar>
 
         <!-- Levé menu -->

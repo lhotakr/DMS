@@ -1,4 +1,4 @@
-﻿using DMS.Core.Sap;
+using DMS.Core.Sap;
 using DMS.Core.Security;
 using DMS.Core.Transactions;
 using DMS.Core.Transactions.Handlers;
@@ -68,7 +68,7 @@ public partial class MainWindow : Window
         _appSettings = _appSettingsService.Load();
 
         _logger = new DmsLogger(_appSettings.LogsRootPath);
-        _logger.Info("DMS klient spuĹˇtÄ›n.");
+        _logger.Info("DMS klient spuštěn.");
 
         _systemSettingsPath = GetConfigPath("dms-system-settings.json");
 
@@ -102,6 +102,7 @@ public partial class MainWindow : Window
         LoadUserSettings();
         ApplyTheme();
         ApplyHeaderBranding();
+        InitializeMesDatabaseHealthMonitoring();
 
         UpdateCurrentTransactionText(_currentTransactionCommand);
 
@@ -110,12 +111,14 @@ public partial class MainWindow : Window
         Loaded += MainWindow_Loaded;
     }
 
-    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         if (_startupTransactionExecuted)
             return;
 
         _startupTransactionExecuted = true;
+
+        await LoadMesWorkcenterCodesAsync();
         var startupTransaction = _userSettings.StartupTransaction?.Trim();
         if (string.IsNullOrWhiteSpace(startupTransaction))
             return;
@@ -143,8 +146,8 @@ public partial class MainWindow : Window
             mutedForegroundBrush = CreateBrushFromHex("#B4B4B9", "#B4B4B9");
             borderBrush = CreateBrushFromHex("#4B4B50", "#4B4B50");
 
-            // Dark mĂˇ mĂ­t vlastnĂ­ tmavÄ› modrĂ˝ DMS akcent,
-            // ne poslednĂ­ uloĹľenou barvu z HG/Custom.
+            // Dark má mít vlastní tmavě modrý DMS akcent,
+            // ne poslední uloženou barvu z HG/Custom.
             accentBrush = CreateBrushFromHex("#0B2A4A", "#0B2A4A");
             onAccentBrush = CreateBrushFromHex("#FFFFFF", "#FFFFFF");
         }
@@ -526,8 +529,8 @@ public partial class MainWindow : Window
             UpdateCurrentUserText();
 
             DmsMessage.Show(
-                $"UĹľivatel nenĂ­ zaloĹľenĂ˝ v DMS.\n\nWindows login:\n{windowsLogin}\n\nBude pouĹľit reĹľim DMS_READONLY.",
-                "DMS - uĹľivatel nenalezen",
+                $"Uživatel není založený v DMS.\n\nWindows login:\n{windowsLogin}\n\nBude použit režim DMS_READONLY.",
+                "DMS - uživatel nenalezen",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
@@ -541,7 +544,7 @@ public partial class MainWindow : Window
             PersonId = user.PersonId,
             Roles = user.Roles
         };
-        _logger.Info($"AktuĂˇlnĂ­ uĹľivatel: {_currentUser.WindowsLogin}; DMS jmĂ©no: {_currentUser.DisplayName}; Role: {string.Join(", ", _currentUser.Roles)}");
+        _logger.Info($"Aktuální uživatel: {_currentUser.WindowsLogin}; DMS jméno: {_currentUser.DisplayName}; Role: {string.Join(", ", _currentUser.Roles)}");
         UpdateCurrentUserText();
     }
 
@@ -565,32 +568,37 @@ public partial class MainWindow : Window
         definitions = DMS.Core.Quality.QualityMenuTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Framework.FrameworkTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Administration.DmsThemeDesignerTransactionDefinitions.AddMissing(definitions);
+        definitions = DMS.Core.Recipes.RecipeImportTransactionDefinitions.AddMissing(definitions);
+        definitions = DMS.Core.Mes.MesReportingTransactionDefinitions.AddMissing(definitions);
 
         if (definitions.Count == 0)
         {
             DmsMessage.Show(
-                $"NenaÄŤetly se ĹľĂˇdnĂ© transakce.\n\nOÄŤekĂˇvanĂˇ cesta:\n{configPath}",
-                "DMS - konfigurace transakcĂ­",
+                $"Nenačetly se žádné transakce.\n\nOčekávaná cesta:\n{configPath}",
+                "DMS - konfigurace transakcí",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
 
         var handlers = new ITransactionHandler[]
 {
-    // DMS zĂˇklad
+            new MesWorkcenterTransactionHandler(code =>
+                !_mesWorkcenterValidationAvailable ||
+                _mesWorkcenterCodes.Contains(code)),
+    // DMS základ
     new SettingsTransactionHandler(() => _userSettings.MaxTransactionHistoryItems),
     new HelpTransactionHandler(() => _transactionDispatcher.GetDefinitions()),
-    new SimpleMessageTransactionHandler("SystemInfo", "AktuĂˇlnĂ­ uĹľivatel"),
+    new SimpleMessageTransactionHandler("SystemInfo", "Aktuální uživatel"),
 
-    // Administrace / systĂ©m
-    new SimpleMessageTransactionHandler("ClientSettings", "NastavenĂ­ klienta"),
-    new SimpleMessageTransactionHandler("SystemSettings", "NastavenĂ­ systĂ©mu DMS"),
-    new SimpleMessageTransactionHandler("SystemDisplay", "NĂˇhled systĂ©mu DMS"),
-    new SimpleMessageTransactionHandler("TransactionManagement", "SprĂˇva transakcĂ­"),
-    new SimpleMessageTransactionHandler("RoleManagement", "SprĂˇva rolĂ­"),
-    new SimpleMessageTransactionHandler("ModuleManagement", "SprĂˇva modulĹŻ"),
+    // Administrace / systém
+    new SimpleMessageTransactionHandler("ClientSettings", "Nastavení klienta"),
+    new SimpleMessageTransactionHandler("SystemSettings", "Nastavení systému DMS"),
+    new SimpleMessageTransactionHandler("SystemDisplay", "Náhled systému DMS"),
+    new SimpleMessageTransactionHandler("TransactionManagement", "Správa transakcí"),
+    new SimpleMessageTransactionHandler("RoleManagement", "Správa rolí"),
+    new SimpleMessageTransactionHandler("ModuleManagement", "Správa modulů"),
     new SimpleMessageTransactionHandler("ThemeDesigner", "Theme & UI Designer"),
-    new SimpleMessageTransactionHandler("UserManagement", "SprĂˇva uĹľivatelĹŻ"),
+    new SimpleMessageTransactionHandler("UserManagement", "Správa uživatelů"),
     new SimpleMessageTransactionHandler("LogViewer", "Log aplikace"),
     new SimpleMessageTransactionHandler("FrameworkHub", "DMS Framework"),
     new SimpleMessageTransactionHandler("FrameworkDiagnostics", "DMS Framework diagnostics"),
@@ -602,47 +610,51 @@ public partial class MainWindow : Window
     new ArticleDocumentsTransactionHandler(),
     new ArticleDocumentCreateTransactionHandler(),
     new ArticleDocumentEditTransactionHandler(),
-    new SimpleMessageTransactionHandler("DocumentDisplay", "ZobrazenĂ­ dokumentĹŻ"),
+    new SimpleMessageTransactionHandler("DocumentDisplay", "Zobrazení dokumentů"),
     new ArticleScreensTransactionHandler(),
 
-    new SimpleMessageTransactionHandler("ScreenPreparationQueue", "Fronta pĹ™Ă­pravy sĂ­t"),
-    new SimpleMessageTransactionHandler("OrderOverview", "PĹ™ehled zakĂˇzek"),
-    new SimpleMessageTransactionHandler("RecipeOverview", "PĹ™ehled receptur"),
-    new SimpleMessageTransactionHandler("TechnicalArticleSummary", "TechnologickĂ˝ souhrn artiklu"),
-    new SimpleMessageTransactionHandler("TechnologyArticleSummary", "TechnologickĂ˝ souhrn artiklu"),
-    new SimpleMessageTransactionHandler("TechnicalSummary", "TechnologickĂ˝ souhrn artiklu"),
+    new SimpleMessageTransactionHandler("ScreenPreparationQueue", "Fronta přípravy sít"),
+    new SimpleMessageTransactionHandler("OrderOverview", "Přehled zakázek"),
+    new SimpleMessageTransactionHandler("RecipeOverview", "Přehled receptur"),
+    new SimpleMessageTransactionHandler("RecipeSimilarity", "Analýza podobnosti receptur"),
+    new SimpleMessageTransactionHandler("RecipeImport", "Import receptur"),
+    new SimpleMessageTransactionHandler("TechnicalArticleSummary", "Technologický souhrn artiklu"),
+    new SimpleMessageTransactionHandler("TechnologyArticleSummary", "Technologický souhrn artiklu"),
+    new SimpleMessageTransactionHandler("TechnicalSummary", "Technologický souhrn artiklu"),
 
     // SAP
-    new SimpleMessageTransactionHandler("SapSettings", "SAP nastavenĂ­"),
+    new SimpleMessageTransactionHandler("SapSettings", "SAP nastavení"),
     new SimpleMessageTransactionHandler("SapCockpit", "SAP import cockpit"),
-    new SimpleMessageTransactionHandler("SapMaterialDisplay", "NĂˇhled SAP materiĂˇlu"),
-    new SimpleMessageTransactionHandler("SapRecipeDisplay", "NĂˇhled receptury"),
+    new SimpleMessageTransactionHandler("SapMaterialDisplay", "Náhled SAP materiálu"),
+    new SimpleMessageTransactionHandler("SapRecipeDisplay", "Náhled receptury"),
 
     // Quality
-    new SimpleMessageTransactionHandler("QualitySettings", "Quality nastavenĂ­"),
+    new SimpleMessageTransactionHandler("QualitySettings", "Quality nastavení"),
     new SimpleMessageTransactionHandler("QualityCockpit", "Quality cockpit"),
     new SimpleMessageTransactionHandler("QualityArticleDisplay", "Quality karta"),
-    new SimpleMessageTransactionHandler("QualityArticleEdit", "ZmÄ›na quality dat"),
-    new SimpleMessageTransactionHandler("QualityArticleCreate", "ZaloĹľenĂ­ quality dat"),
-    new SimpleMessageTransactionHandler("QualityPrintVersionList", "PĹ™ehled tiskovĂ˝ch verzĂ­"),
-    new SimpleMessageTransactionHandler("QualityTasksOverview", "Quality Ăşkoly"),
-    new SimpleMessageTransactionHandler("QualityTaskOverview", "Quality Ăşkoly"),
-    new SimpleMessageTransactionHandler("QualityTasks", "Quality Ăşkoly"),
+    new SimpleMessageTransactionHandler("QualityArticleEdit", "Změna quality dat"),
+    new SimpleMessageTransactionHandler("QualityArticleCreate", "Založení quality dat"),
+    new SimpleMessageTransactionHandler("QualityPrintVersionList", "Přehled tiskových verzí"),
+    new SimpleMessageTransactionHandler("QualityTasksOverview", "Quality úkoly"),
+    new SimpleMessageTransactionHandler("QualityTaskOverview", "Quality úkoly"),
+    new SimpleMessageTransactionHandler("QualityTasks", "Quality úkoly"),
 
     // MES
     new MesDataPointMonitorTransactionHandler(),
     new ChecklistTransactionHandler(),
 
-    // fallback / obecnĂ©
+    // fallback / obecné
     new QualityOrderCreateTransactionHandler(),
     new QualityOrderEditTransactionHandler(),
     new QualityOrderDisplayTransactionHandler(),
     new QualityOrderListTransactionHandler(),
     new QualityOrderReleaseTransactionHandler(),
-    new SimpleMessageTransactionHandler("MesCommunicationSettings", "MES nastavenĂ­ komunikace"),
-    new SimpleMessageTransactionHandler("MesDeviceEditor", "MES editace zaĹ™Ă­zenĂ­"),
+    new SimpleMessageTransactionHandler("MesCommunicationSettings", "MES nastavení komunikace"),
+    new SimpleMessageTransactionHandler("MesDeviceEditor", "MES editace zařízení"),
     new SimpleMessageTransactionHandler("MesStationData", "MES data stanic"),
-    new SimpleMessageTransactionHandler("MesWorkplaceOverview", "MES soupis pracoviĹˇĹĄ"),
+    new SimpleMessageTransactionHandler("MesWorkplaceOverview", "MES soupis pracovišť"),
+    new SimpleMessageTransactionHandler("MesDatabaseSettings", "MES SQL settings"),
+    new SimpleMessageTransactionHandler("MesReporting", "MES reporting"),
     new SimpleMessageTransactionHandler("SimpleMessage", "Transakce"),
 };
 
@@ -677,7 +689,7 @@ public partial class MainWindow : Window
         RefreshTransactionHistoryList();
         RefreshFavoritesList();
         RefreshModulesList();
-        RefreshModuleTransactionsList("VĹˇe");
+        RefreshModuleTransactionsList("Vše");
         ApplyLocalization();
     }
 
@@ -708,7 +720,7 @@ public partial class MainWindow : Window
             return module.Name;
         }
 
-        return "VĹˇe";
+        return "Vše";
     }
 
     private bool UserCanSeeTransaction(TransactionDefinition definition)
@@ -834,14 +846,14 @@ public partial class MainWindow : Window
         EnsureConfiguredModulesLoaded(forceReload: true);
 
         selectedModuleName = string.IsNullOrWhiteSpace(selectedModuleName)
-            ? "VĹˇe"
+            ? "Vše"
             : selectedModuleName;
 
         LstModules.Items.Clear();
 
         LstModules.Items.Add(new ModuleMenuItem
         {
-            Name = "VĹˇe",
+            Name = "Vše",
             DisplayName = DmsTransactionText.AllModules(T)
         });
 
@@ -911,7 +923,7 @@ public partial class MainWindow : Window
 
         var definitions = GetVisibleTransactionDefinitions();
 
-        if (!string.Equals(selectedModule, "VĹˇe", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(selectedModule, "Vše", StringComparison.OrdinalIgnoreCase))
         {
             definitions = definitions
                 .Where(definition =>
@@ -1041,8 +1053,8 @@ public partial class MainWindow : Window
         if (item is null)
         {
             RenderSimplePage(
-                "OblĂ­benĂ© transakce",
-                "NejdĹ™Ă­v klikni pravĂ˝m tlaÄŤĂ­tkem na transakci, kterou chceĹˇ odebrat.");
+                "Oblíbené transakce",
+                "Nejdřív klikni pravým tlačítkem na transakci, kterou chceš odebrat.");
             return;
         }
 
@@ -1053,8 +1065,8 @@ public partial class MainWindow : Window
         RefreshFavoritesList();
 
         RenderSimplePage(
-            "OblĂ­benĂ© transakce",
-            $"Transakce {item.Code} byla odebrĂˇna z oblĂ­benĂ˝ch.");
+            "Oblíbené transakce",
+            $"Transakce {item.Code} byla odebrána z oblíbených.");
 
         _favoriteContextMenuItem = null;
     }
@@ -1083,7 +1095,7 @@ public partial class MainWindow : Window
             {
                 performanceResult = "DENIED";
 
-                _logger.Warning($"ZamĂ­tnutĂ© spuĹˇtÄ›nĂ­ transakce {completedCommand.Code}: {authorizationMessage}");
+                _logger.Warning($"Zamítnuté spuštění transakce {completedCommand.Code}: {authorizationMessage}");
 
                 RenderTransactionResult(TransactionResult.Fail(
                     completedCommand.Code,
@@ -1122,12 +1134,12 @@ public partial class MainWindow : Window
             performanceTransactionCode = transactionCode;
 
             _logger.Error(
-                $"NeoÄŤekĂˇvanĂˇ chyba pĹ™i spuĹˇtÄ›nĂ­ transakce {transactionCode}: {ex.Message}",
+                $"Neočekávaná chyba při spuštění transakce {transactionCode}: {ex.Message}",
                 ex);
 
             RenderTransactionResult(TransactionResult.Fail(
                 transactionCode,
-                $"NeoÄŤekĂˇvanĂˇ chyba pĹ™i spuĹˇtÄ›nĂ­ transakce:\n\n{ex.Message}"));
+                $"Neočekávaná chyba při spuštění transakce:\n\n{ex.Message}"));
 
             ClearTransactionInput();
         }
@@ -1148,7 +1160,7 @@ public partial class MainWindow : Window
 
         if (definition is null)
         {
-            message = $"NeznĂˇmĂˇ transakce: {transactionCode}";
+            message = $"Neznámá transakce: {transactionCode}";
             return false;
         }
 
@@ -1170,9 +1182,9 @@ public partial class MainWindow : Window
         }
 
         message =
-            $"NemĂˇte oprĂˇvnÄ›nĂ­ ke spuĹˇtÄ›nĂ­ transakce {transactionCode}.\n\n" +
-            $"PoĹľadovanĂ© role: {string.Join(", ", definition.Roles)}\n" +
-            $"VaĹˇe role: {string.Join(", ", _currentUser.Roles)}";
+            $"Nemáte oprávnění ke spuštění transakce {transactionCode}.\n\n" +
+            $"Požadované role: {string.Join(", ", definition.Roles)}\n" +
+            $"Vaše role: {string.Join(", ", _currentUser.Roles)}";
 
         return false;
     }
@@ -1185,7 +1197,7 @@ public partial class MainWindow : Window
         {
             RenderTransactionResult(TransactionResult.Fail(
                 transactionCode,
-                $"Transakce {transactionCode} neexistuje, nelze ji pĹ™idat do oblĂ­benĂ˝ch."));
+                $"Transakce {transactionCode} neexistuje, nelze ji přidat do oblíbených."));
             return;
         }
 
@@ -1193,8 +1205,8 @@ public partial class MainWindow : Window
                 string.Equals(item, definition.Code, StringComparison.OrdinalIgnoreCase)))
         {
             RenderSimplePage(
-                "OblĂ­benĂ© transakce",
-                $"Transakce {definition.Code} uĹľ je v oblĂ­benĂ˝ch.");
+                "Oblíbené transakce",
+                $"Transakce {definition.Code} už je v oblíbených.");
             return;
         }
 
@@ -1205,8 +1217,8 @@ public partial class MainWindow : Window
         RefreshModuleTransactionsList(GetSelectedModuleName());
 
         RenderSimplePage(
-            "OblĂ­benĂ© transakce",
-            $"Transakce {definition.Code} byla pĹ™idĂˇna do oblĂ­benĂ˝ch.");
+            "Oblíbené transakce",
+            $"Transakce {definition.Code} byla přidána do oblíbených.");
     }
     private bool TryCompleteMissingParameter(
     TransactionCommand command,
@@ -1325,14 +1337,14 @@ public partial class MainWindow : Window
     {
         return materialKind switch
         {
-            nameof(SapMaterialKind.GlassArticle) => "sklenÄ›nĂ˝ artikl / flakon",
-            nameof(SapMaterialKind.PurchasedPart) => "nakupovanĂ˝ dĂ­l",
-            nameof(SapMaterialKind.Packaging) => "obalovĂ˝ materiĂˇl",
+            nameof(SapMaterialKind.GlassArticle) => "skleněný artikl / flakon",
+            nameof(SapMaterialKind.PurchasedPart) => "nakupovaný díl",
+            nameof(SapMaterialKind.Packaging) => "obalový materiál",
             nameof(SapMaterialKind.Recipe) => "receptura",
-            nameof(SapMaterialKind.AssemblyPart) => "kompletaÄŤnĂ­ dĂ­l",
-            nameof(SapMaterialKind.ToolFixture) => "pĹ™Ă­pravek",
-            nameof(SapMaterialKind.Ignored) => "ignorovanĂ˝ SAP materiĂˇl",
-            _ => "neznĂˇmĂ˝ typ materiĂˇlu"
+            nameof(SapMaterialKind.AssemblyPart) => "kompletační díl",
+            nameof(SapMaterialKind.ToolFixture) => "přípravek",
+            nameof(SapMaterialKind.Ignored) => "ignorovaný SAP materiál",
+            _ => "neznámý typ materiálu"
         };
     }
 
@@ -1340,11 +1352,25 @@ public partial class MainWindow : Window
     {
         return packagingKind switch
         {
-            "PackagingSetOldReference" => "BalicĂ­ sada - vazba podle starĂ©ho ÄŤĂ­sla",
-            "PackagingSetSapReference" => "BalicĂ­ sada - vazba podle SAP ÄŤĂ­sla",
-            "PackagingComponent" => "Komponenta balicĂ­ sady",
-            _ => "NeznĂˇmĂ˝ typ obalu"
+            "PackagingSetOldReference" => "Balicí sada - vazba podle starého čísla",
+            "PackagingSetSapReference" => "Balicí sada - vazba podle SAP čísla",
+            "PackagingComponent" => "Komponenta balicí sady",
+            _ => "Neznámý typ obalu"
         };
+    }
+    private void RenderMesWorkcenter(string workcenterCode)
+    {
+        WorkspacePanel.Children.Clear();
+
+        WorkspacePanel.Children.Add(
+            new DMS.Desktop.Views.Mes.MesWorkcenterDashboardView(
+                _appSettings.ConfigurationRootPath,
+                _logger,
+                _currentUser.DisplayName,
+                workcenterCode,
+                translate: key => T(key)));
+
+        ResetWorkspaceScroll();
     }
     private void RenderTransactionResult(TransactionResult result)
     {
@@ -1399,19 +1425,19 @@ public partial class MainWindow : Window
                 break;
 
             case "SCR03":
-                RenderSimplePage("SĂ­ta artiklu", result.Message);
+                RenderSimplePage("Síta artiklu", result.Message);
                 break;
 
             case "SCR10":
-                RenderSimplePage("Fronta pĹ™Ă­pravy sĂ­t", result.Message);
+                RenderSimplePage("Fronta přípravy sí­t", result.Message);
                 break;
 
             case "ORD10":
-                RenderSimplePage("PĹ™ehled zakĂˇzek", result.Message);
+                RenderOrderOverview();
                 break;
 
             case "WHOAMI":
-                RenderSimplePage("AktuĂˇlnĂ­ uĹľivatel", result.Message);
+                RenderSimplePage("Aktuální uživatel", result.Message);
                 break;
 
             case "HELP":
@@ -1451,8 +1477,8 @@ public partial class MainWindow : Window
             case "SYS14":
                 RenderThemeDesigner();
                 break;
-            case "FW01":                 RenderFrameworkLocalization();                 break; 
-            case "FW02":                 RenderFrameworkUiStandards();                 break; 
+            case "FW01": RenderFrameworkLocalization(); break;
+            case "FW02": RenderFrameworkUiStandards(); break;
 
             case "FW06":
                 RenderFrameworkSecurity();
@@ -1466,9 +1492,9 @@ public partial class MainWindow : Window
                 RenderFrameworkPerformance();
                 break;
 
-            case "FW09":                 RenderFrameworkMasterData();                 break; 
+            case "FW09": RenderFrameworkMasterData(); break;
 
-            case "FW11":                 RenderFrameworkReleaseHealth();                 break; 
+            case "FW11": RenderFrameworkReleaseHealth(); break;
             case "FW03":
                 RenderFrameworkRuntimeConfiguration();
                 break;
@@ -1505,8 +1531,19 @@ public partial class MainWindow : Window
                 RenderRecipeOverview(result.Parameter ?? string.Empty);
                 break;
 
+
+            case "REC05":
+
+                RenderRecipeSimilarityAnalysis();
+
+                break;
+
+            case "REC04":
+                RenderRecipeImport();
+                break;
+
             case "TEC03":
-                RenderTechnicalArticleSummary(result.Parameter ?? string.Empty);
+                RenderTechnicalArticleSummaryWithTree(result.Parameter ?? string.Empty);
                 break;
 
             case "QAMENU":
@@ -1571,9 +1608,26 @@ public partial class MainWindow : Window
             case "MES05":
                 RenderMesWorkplaceOverview();
                 break;
+
+            case "MESSET":
+                RenderMesDatabaseSettings();
+                break;
+            case "MESWC":
+                RenderMesWorkcenter(result.Parameter ?? string.Empty);
+                break;
+
+
+            case "MES06":
+                RenderMesReporting();
+                break;
             case "MESDPM":
                 RenderMesDataPointMonitor(result.Parameter);
                 break;
+
+            case "MES":
+                RenderMesLiveOverview();
+                break;
+
             case "CHLSET":
                 RenderChecklistSettings();
                 break;
@@ -1613,16 +1667,16 @@ public partial class MainWindow : Window
             if (material is null)
             {
                 panel.Children.Add(CreateArticleWarning(
-                    "MateriĂˇl nenalezen",
-                    $"SAP materiĂˇl {materialNumber} nebyl nalezen v SAP mirror cache.\n\n" +
+                    "Materiál nenalezen",
+                    $"SAP materiál {materialNumber} nebyl nalezen v SAP mirror cache.\n\n" +
                     $"Soubor:\n{storagePaths.SapMaterialsFilePath}\n\n" +
-                    "NejdĹ™Ă­v proveÄŹ import pĹ™es SAP00."));
+                    "Nejdřív proveď import přes SAP00."));
                 return;
             }
 
             if (material.PackagingInfo is not null)
             {
-                panel.Children.Add(CreateArticleSectionTitle("BalicĂ­ vazba"));
+                panel.Children.Add(CreateArticleSectionTitle("Balicí vazba"));
 
                 panel.Children.Add(CreateArticleFullLine(
                     "Typ obalu",
@@ -1638,7 +1692,7 @@ public partial class MainWindow : Window
                 if (!string.IsNullOrWhiteSpace(material.PackagingInfo.LinkedArticleOldNumber))
                 {
                     panel.Children.Add(CreateArticleFullLine(
-                        "Vazba na starĂ© ÄŤĂ­slo artiklu",
+                        "Vazba na staré číslo artiklu",
                         material.PackagingInfo.LinkedArticleOldNumber));
                 }
             }
@@ -1650,35 +1704,35 @@ public partial class MainWindow : Window
                 if (!string.IsNullOrWhiteSpace(correctTransaction))
                 {
                     panel.Children.Add(CreateArticleWarning(
-                        "PĹ™esmÄ›rovĂˇnĂ­ na sprĂˇvnou transakci",
-                        $"ZadanĂ˝ materiĂˇl {material.MaterialNumber} nenĂ­ typ " +
+                        "Přesměrování na správnou transakci",
+                        $"Zadaný materiál {material.MaterialNumber} není typ " +
                         $"{GetMaterialKindDisplayName(expectedMaterialKind)}, ale {GetMaterialKindDisplayName(material.MaterialKind)}.\n\n" +
-                        $"OtevĂ­rĂˇm sprĂˇvnou transakci: {correctTransaction} {material.MaterialNumber}"));
+                        $"Otevírám správnou transakci: {correctTransaction} {material.MaterialNumber}"));
 
                     ExecuteTransaction($"{correctTransaction} {material.MaterialNumber}");
                     return;
                 }
 
                 panel.Children.Add(CreateArticleWarning(
-                    "NesprĂˇvnĂ˝ typ materiĂˇlu",
-                    $"ZadanĂ˝ materiĂˇl {material.MaterialNumber} mĂˇ typ {material.MaterialKind}, " +
-                    $"kterĂ˝ nemĂˇ pĹ™iĹ™azenou nĂˇhledovou transakci.\n\n" +
-                    "Pro obecnĂ˝ nĂˇhled pouĹľij SAP03."));
+                    "Nesprávný typ materiálu",
+                    $"Zadaný materiál {material.MaterialNumber} má typ {material.MaterialKind}, " +
+                    $"který nemá přiřazenou náhledovou transakci.\n\n" +
+                    "Pro obecný náhled použij SAP03."));
                 return;
             }
 
             panel.Children.Add(CreateMaterialHeaderCard(material, title));
 
-            panel.Children.Add(CreateArticleSectionTitle("SAP zĂˇklad"));
-            panel.Children.Add(CreateArticleTwoColumnLine("SAP ÄŤĂ­slo", material.MaterialNumber, "Status", NullDash(material.MaterialStatus)));
-            panel.Children.Add(CreateArticleTwoColumnLine("StarĂ© ÄŤĂ­slo", NullDash(material.OldMaterialNumber), "Typ v DMS", material.MaterialKind));
-            panel.Children.Add(CreateArticleTwoColumnLine("Prefix", NullDash(material.TransactionPrefix), "ImportovĂˇno", material.ImportedAt.ToString("dd.MM.yyyy HH:mm:ss")));
-            panel.Children.Add(CreateArticleFullLine("OznaÄŤenĂ­", material.Description));
+            panel.Children.Add(CreateArticleSectionTitle("SAP základ"));
+            panel.Children.Add(CreateArticleTwoColumnLine("SAP číslo", material.MaterialNumber, "Status", NullDash(material.MaterialStatus)));
+            panel.Children.Add(CreateArticleTwoColumnLine("Staré číslo", NullDash(material.OldMaterialNumber), "Typ v DMS", material.MaterialKind));
+            panel.Children.Add(CreateArticleTwoColumnLine("Prefix", NullDash(material.TransactionPrefix), "Importováno", material.ImportedAt.ToString("dd.MM.yyyy HH:mm:ss")));
+            panel.Children.Add(CreateArticleFullLine("Označení", material.Description));
 
             if (!string.IsNullOrWhiteSpace(material.ToolFixtureKind))
             {
-                panel.Children.Add(CreateArticleSectionTitle("Klasifikace pĹ™Ă­pravku"));
-                panel.Children.Add(CreateArticleFullLine("Druh pĹ™Ă­pravku", material.ToolFixtureKind));
+                panel.Children.Add(CreateArticleSectionTitle("Klasifikace přípravku"));
+                panel.Children.Add(CreateArticleFullLine("Druh přípravku", material.ToolFixtureKind));
             }
 
             panel.Children.Add(CreateArticleSectionTitle("DMS vazby"));
@@ -1692,27 +1746,27 @@ public partial class MainWindow : Window
             switch (expectedMaterialKind)
             {
                 case nameof(SapMaterialKind.PurchasedPart):
-                    linksGrid.Children.Add(CreateArticleLinkTile("PouĹľitĂ­ v kusovnĂ­cĂ­ch", "BOM", "Kde je dĂ­l pouĹľitĂ˝"));
-                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "TechnickĂ© listy, specifikace"));
-                    linksGrid.Children.Add(CreateArticleLinkTile("PoznĂˇmky", "DMS", "LokĂˇlnĂ­ poznĂˇmky k dĂ­lu"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Použití v kusovnících", "BOM", "Kde je díl použitý"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Technické listy, specifikace"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Poznámky", "DMS", "Lokální poznámky k dílu"));
                     break;
 
                 case nameof(SapMaterialKind.Recipe):
-                    linksGrid.Children.Add(CreateArticleLinkTile("PouĹľitĂ­ receptury", "REC", "Artikly pouĹľĂ­vajĂ­cĂ­ recepturu"));
-                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Receptura, schvĂˇlenĂ­, verze"));
-                    linksGrid.Children.Add(CreateArticleLinkTile("KusovnĂ­ky", "BOM", "VĂ˝skyt v SAP kusovnĂ­cĂ­ch"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Použití receptury", "REC", "Artikly používající recepturu"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Receptura, schválení, verze"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Kusovníky", "BOM", "Výskyt v SAP kusovnících"));
                     break;
 
                 case nameof(SapMaterialKind.AssemblyPart):
-                    linksGrid.Children.Add(CreateArticleLinkTile("PouĹľitĂ­ v kompletaci", "KOM", "Vazby na lepenĂ­/kompletaci"));
-                    linksGrid.Children.Add(CreateArticleLinkTile("KusovnĂ­ky", "BOM", "VĂ˝skyt v SAP kusovnĂ­cĂ­ch"));
-                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "VĂ˝kresy, schvĂˇlenĂ­, specifikace"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Použití v kompletaci", "KOM", "Vazby na lepení/kompletaci"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Kusovníky", "BOM", "Výskyt v SAP kusovnících"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Výkresy, schválení, specifikace"));
                     break;
 
                 case nameof(SapMaterialKind.ToolFixture):
-                    linksGrid.Children.Add(CreateArticleLinkTile("PouĹľitĂ­ pĹ™Ă­pravku", "PRIP", "Artikly a operace pouĹľĂ­vajĂ­cĂ­ pĹ™Ă­pravek"));
-                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "VĂ˝kresy, ĂşdrĹľba, nastavenĂ­"));
-                    linksGrid.Children.Add(CreateArticleLinkTile("PracovnĂ­ postupy", "RTG", "Vazby na operace"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Použití přípravku", "PRIP", "Artikly a operace používající přípravek"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Výkresy, údržba, nastavení"));
+                    linksGrid.Children.Add(CreateArticleLinkTile("Pracovní postupy", "RTG", "Vazby na operace"));
                     break;
             }
 
@@ -1721,7 +1775,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             panel.Children.Add(CreateArticleWarning(
-                $"{title} se nepodaĹ™ilo naÄŤĂ­st",
+                $"{title} se nepodařilo načíst",
                 ex.Message));
         }
     }
@@ -1758,7 +1812,7 @@ public partial class MainWindow : Window
                     "Artikl nenalezen",
                     $"SAP artikl {articleNumber} nebyl nalezen v SAP mirror cache.\n\n" +
                     $"Soubor:\n{storagePaths.SapMaterialsFilePath}\n\n" +
-                    "NejdĹ™Ă­v proveÄŹ import pĹ™es SAP00."));
+                    "Nejdřív proveď import přes SAP00."));
                 return;
             }
 
@@ -1769,45 +1823,45 @@ public partial class MainWindow : Window
                 if (!string.IsNullOrWhiteSpace(correctTransaction))
                 {
                     panel.Children.Add(CreateArticleWarning(
-                        "PĹ™esmÄ›rovĂˇnĂ­ na sprĂˇvnou transakci",
-                        $"MateriĂˇl {material.MaterialNumber} nenĂ­ sklenÄ›nĂ˝ artikl / flakon, " +
+                        "Přesměrování na správnou transakci",
+                        $"Materiál {material.MaterialNumber} není skleněný artikl / flakon, " +
                         $"ale {GetMaterialKindDisplayName(material.MaterialKind)}.\n\n" +
-                        $"OtevĂ­rĂˇm sprĂˇvnou transakci: {correctTransaction} {material.MaterialNumber}"));
+                        $"Otevírám správnou transakci: {correctTransaction} {material.MaterialNumber}"));
 
                     ExecuteTransaction($"{correctTransaction} {material.MaterialNumber}");
                     return;
                 }
 
                 panel.Children.Add(CreateArticleWarning(
-                    "NejednĂˇ se o sklenÄ›nĂ˝ artikl",
-                    $"MateriĂˇl {material.MaterialNumber} nenĂ­ sklenÄ›nĂ˝ artikl / flakon.\n\n" +
+                    "Nejedná se o skleněný artikl",
+                    $"Materiál {material.MaterialNumber} není skleněný artikl / flakon.\n\n" +
                     $"Typ v DMS: {material.MaterialKind}\n\n" +
-                    "Pro obecnĂ˝ SAP nĂˇhled pouĹľij SAP03."));
+                    "Pro obecný SAP náhled použij SAP03."));
                 return;
             }
 
             panel.Children.Add(CreateArticleHeaderCard(material));
 
-            panel.Children.Add(CreateArticleSectionTitle("SAP zĂˇklad"));
-            panel.Children.Add(CreateArticleTwoColumnLine("SAP ÄŤĂ­slo", material.MaterialNumber, "Status", NullDash(material.MaterialStatus)));
-            panel.Children.Add(CreateArticleTwoColumnLine("StarĂ© ÄŤĂ­slo", NullDash(material.OldMaterialNumber), "Typ v DMS", material.MaterialKind));
-            panel.Children.Add(CreateArticleFullLine("OznaÄŤenĂ­", material.Description));
+            panel.Children.Add(CreateArticleSectionTitle("SAP základ"));
+            panel.Children.Add(CreateArticleTwoColumnLine("SAP číslo", material.MaterialNumber, "Status", NullDash(material.MaterialStatus)));
+            panel.Children.Add(CreateArticleTwoColumnLine("Staré číslo", NullDash(material.OldMaterialNumber), "Typ v DMS", material.MaterialKind));
+            panel.Children.Add(CreateArticleFullLine("Označení", material.Description));
 
             if (material.GlassInfo is not null)
             {
-                panel.Children.Add(CreateArticleSectionTitle("Rozpad oznaÄŤenĂ­"));
+                panel.Children.Add(CreateArticleSectionTitle("Rozpad označení"));
                 panel.Children.Add(CreateArticleTwoColumnLine("Forma", NullDash(material.GlassInfo.MoldNumber), "Typ skla", NullDash(material.GlassInfo.GlassTypeNumber)));
                 panel.Children.Add(CreateArticleTwoColumnLine("Objem", FormatVolume(material.GlassInfo.VolumeMl), "Dekorace", NullDash(material.GlassInfo.DecorationChain)));
                 panel.Children.Add(CreateArticleFullLine("Popis", NullDash(material.GlassInfo.RemainingDescription)));
 
-                panel.Children.Add(CreateArticleSectionTitle("DekoraÄŤnĂ­ tok"));
+                panel.Children.Add(CreateArticleSectionTitle("Dekorační tok"));
                 panel.Children.Add(CreateDecorationFlow(material.GlassInfo.DecorationSteps));
             }
             else
             {
                 panel.Children.Add(CreateArticleWarning(
-                    "OznaÄŤenĂ­ se nepodaĹ™ilo rozparsovat",
-                    "KrĂˇtkĂ˝ text neodpovĂ­dĂˇ oÄŤekĂˇvanĂ©mu formĂˇtu:\n" +
+                    "Označení se nepodařilo rozparsovat",
+                    "Krátký text neodpovídá očekávanému formátu:\n" +
                     "<forma> <typ skla> <objem> <dekorace> <popis>"));
             }
 
@@ -1819,19 +1873,19 @@ public partial class MainWindow : Window
                 Margin = new Thickness(0, 4, 0, 0)
             };
 
-            linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "VĂ˝kresy, MB, tiskovĂ© oblasti"));
+            linksGrid.Children.Add(CreateArticleLinkTile("Dokumentace", "DOC03", "Výkresy, MB, tiskové oblasti"));
             linksGrid.Children.Add(CreateArticleLinkTile("Receptury", "REC03", "SAP receptury a DMS vazby"));
-            linksGrid.Children.Add(CreateArticleLinkTile("SĂ­ta", "SCR03", "SĂ­ta a pĹ™Ă­prava sĂ­t"));
-            linksGrid.Children.Add(CreateArticleLinkTile("KusovnĂ­k", "BOM03", "SAP snapshot kusovnĂ­ku"));
-            linksGrid.Children.Add(CreateArticleLinkTile("Postup", "RTG03", "SAP snapshot pracovnĂ­ho postupu"));
-            linksGrid.Children.Add(CreateArticleLinkTile("PĹ™Ă­pravky", "PRIP03", "NĂˇstroje a pĹ™Ă­pravky"));
+            linksGrid.Children.Add(CreateArticleLinkTile("Síta", "SCR03", "Síta a příprava sít"));
+            linksGrid.Children.Add(CreateArticleLinkTile("Kusovník", "BOM03", "SAP snapshot kusovníku"));
+            linksGrid.Children.Add(CreateArticleLinkTile("Postup", "RTG03", "SAP snapshot pracovního postupu"));
+            linksGrid.Children.Add(CreateArticleLinkTile("Přípravky", "PRIP03", "Nástroje a přípravky"));
 
             panel.Children.Add(linksGrid);
         }
         catch (Exception ex)
         {
             panel.Children.Add(CreateArticleWarning(
-                "ART03 se nepodaĹ™ilo naÄŤĂ­st",
+                "ART03 se nepodařilo načíst",
                 ex.Message));
         }
     }
@@ -1877,7 +1931,7 @@ public partial class MainWindow : Window
         {
             RenderSimplePage(
                 "Artikl nenalezen",
-                $"Artikl {articleNumber} nebyl nalezen v DMS. PouĹľij ART01 pro zaloĹľenĂ­.");
+                $"Artikl {articleNumber} nebyl nalezen v DMS. Použij ART01 pro založení.");
             return;
         }
 
@@ -1912,7 +1966,7 @@ public partial class MainWindow : Window
     {
         _articleRepository.Save(article);
 
-        _logger.Info($"UloĹľen artikl {article.SapArticleNumber}; uĹľivatel: {_currentUser.DisplayName}");
+        _logger.Info($"Uložen artikl {article.SapArticleNumber}; uživatel: {_currentUser.DisplayName}");
 
         RenderArticleDetail(article.SapArticleNumber);
     }
@@ -2289,7 +2343,7 @@ public partial class MainWindow : Window
 
         if (steps.Count == 0)
         {
-            stack.Children.Add(CreateArticleBadge("Dekorace nerozpoznĂˇna"));
+            stack.Children.Add(CreateArticleBadge("Dekorace nerozpoznána"));
             return stack;
         }
 
@@ -2303,7 +2357,7 @@ public partial class MainWindow : Window
             {
                 stack.Children.Add(new TextBlock
                 {
-                    Text = "â†’",
+                    Text = "→",
                     FontSize = 22,
                     FontWeight = FontWeights.Bold,
                     VerticalAlignment = VerticalAlignment.Center,
@@ -2583,7 +2637,7 @@ public partial class MainWindow : Window
         LeftMenuPanel.Visibility = Visibility.Visible;
         LeftPanelSplitter.Visibility = Visibility.Visible;
 
-        BtnToggleLeftPanel.Content = "â°";
+        BtnToggleLeftPanel.Content = "☰";
         BtnToggleLeftPanel.ToolTip = T("Shell.HideLeftPanel");
     }
 
@@ -2605,7 +2659,7 @@ public partial class MainWindow : Window
 
             _isLeftPanelVisible = false;
 
-            BtnToggleLeftPanel.Content = "â°";
+            BtnToggleLeftPanel.Content = "☰";
             BtnToggleLeftPanel.ToolTip = T("Shell.ShowLeftPanel");
 
             return;
@@ -2623,7 +2677,7 @@ public partial class MainWindow : Window
 
         _isLeftPanelVisible = true;
 
-        BtnToggleLeftPanel.Content = "â°";
+        BtnToggleLeftPanel.Content = "☰";
         BtnToggleLeftPanel.ToolTip = T("Shell.HideLeftPanel");
     }
 
@@ -2696,9 +2750,10 @@ public partial class MainWindow : Window
 
         StatusDatabase.Content = T("Status.DatabaseLocalMode");
         StatusSap.Content = T("Status.SapTestDisconnected");
-        StatusMes.Content = T("Status.MesImportNotReady");
+        ApplyMesDatabaseStatusText();
         StatusSso.Content = T("Status.SsoWindowsLogin");
-        StatusVersion.Content = T("Status.Version", "0.1");
+        StatusVersion.Content = T("Status.Version", "1.0.0");
+        StatusDate.Content = T("Status.Date", "11.08.2026");
 
         TxtWelcomeTitle.Text = T("Welcome.Title");
         TxtWelcomeSubtitle.Text = T("Welcome.Subtitle");
@@ -2751,6 +2806,3 @@ public partial class MainWindow : Window
     }
 
 }
-
-
-

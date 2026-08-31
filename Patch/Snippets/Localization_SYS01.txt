@@ -1,0 +1,8 @@
+Lokalizaci NEPŘEPISUJ přímo na Z:\ ani PowerShellem.
+
+Po ověření buildu a funkce MES importuj/upsertni přes SYS01 soubory:
+  Patch\Localization\cs-CZ.MES.upsert.json
+  Patch\Localization\en-US.MES.upsert.json
+  Patch\Localization\de-DE.MES.upsert.json
+
+Díky tomu zápis provede existující DMS lokalizační služba a zachová správné UTF-8.

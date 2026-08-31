@@ -1,0 +1,15 @@
+﻿{
+  "isEnabled": true,
+  "server": "CZE-SQL01",
+  "database": "FastecCZE",
+  "reportingSchema": "ana",
+  "integratedSecurity": true,
+  "encrypt": true,
+  "trustServerCertificate": true,
+  "connectTimeoutSeconds": 5,
+  "commandTimeoutSeconds": 30,
+  "healthCheckIntervalSeconds": 60,
+  "defaultReportLookbackHours": 24,
+  "defaultReportMaxRows": 5000,
+  "applicationName": "DMS MES Reporting"
+}

@@ -1,0 +1,250 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Mes.MesReportingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0"
+                    Margin="0,0,0,12">
+            <TextBlock x:Name="TxtTitle"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+            <TextBlock x:Name="TxtSubtitle"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Padding="12"
+                Margin="0,0,0,10"
+                Background="{DynamicResource DmsBackgroundBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <!--
+                The filter area deliberately uses a WrapPanel rather than a
+                very wide fixed-column Grid. MES06 can therefore be hosted in
+                a narrower DMS workspace without clipping controls.
+            -->
+            <WrapPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,0,14,8">
+                    <TextBlock x:Name="LblReport"
+                               Width="85"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <ComboBox x:Name="CmbReport"
+                              Width="220"
+                              SelectionChanged="CmbReport_SelectionChanged"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,0,14,8">
+                    <TextBlock x:Name="LblFrom"
+                               Width="55"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <DatePicker x:Name="DateFrom"
+                                Width="145"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,0,14,8">
+                    <TextBlock x:Name="LblTo"
+                               Width="45"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <DatePicker x:Name="DateTo"
+                                Width="145"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,0,14,8">
+                    <TextBlock x:Name="LblWorkcenter"
+                               Width="90"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <ComboBox x:Name="CmbWorkcenter"
+                              Width="230"
+                              IsEditable="False"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,0,14,0">
+                    <TextBlock x:Name="LblOrder"
+                               Width="85"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtOrder"
+                             Width="220"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,0,14,0">
+                    <TextBlock x:Name="LblProduct"
+                               Width="75"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtProduct"
+                             Width="220"/>
+                </StackPanel>
+
+                <Button x:Name="BtnLoad"
+                        MinWidth="130"
+                        Margin="0,0,0,0"
+                        Click="BtnLoad_Click"/>
+            </WrapPanel>
+        </Border>
+
+        <Grid Grid.Row="2"
+              Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Margin="0,0,8,0"
+                    Padding="10"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <TextBlock x:Name="LblRows"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+                    <TextBlock x:Name="TxtRows"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1"
+                    Margin="0,0,8,0"
+                    Padding="10"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <TextBlock x:Name="LblWorkcenters"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+                    <TextBlock x:Name="TxtWorkcenters"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Margin="0,0,8,0"
+                    Padding="10"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <TextBlock x:Name="LblRefresh"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+                    <TextBlock x:Name="TxtRefresh"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="3"
+                    Padding="10"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <TextBlock x:Name="TxtReportDescription"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+            </Border>
+        </Grid>
+
+        <Border x:Name="ChartBorder"
+                Grid.Row="3"
+                Height="220"
+                Margin="0,0,0,10"
+                Padding="10"
+                Background="{DynamicResource DmsBackgroundBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock x:Name="TxtChartTitle"
+                           Grid.Row="0"
+                           Margin="0,0,0,8"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                <ContentControl x:Name="ChartHost"
+                                Grid.Row="1"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch"/>
+            </Grid>
+        </Border>
+
+        <DataGrid x:Name="GridReport"
+                  Grid.Row="4"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserResizeColumns="True"
+                  CanUserReorderColumns="True"
+                  CanUserSortColumns="True"
+                  SelectionMode="Extended"
+                  SelectionUnit="FullRow"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto"/>
+
+        <Grid Grid.Row="5"
+              Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="BtnReloadDefinitions"
+                    Grid.Column="0"
+                    MinWidth="150"
+                    Margin="0,0,8,0"
+                    Click="BtnReloadDefinitions_Click"/>
+
+            <Button x:Name="BtnExportExcel"
+                    Grid.Column="1"
+                    MinWidth="130"
+                    Click="BtnExportExcel_Click"/>
+
+            <TextBlock x:Name="TxtStatus"
+                       Grid.Column="2"
+                       Margin="14,0,0,0"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </Grid>
+    </Grid>
+</UserControl>

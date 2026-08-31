@@ -1,0 +1,14 @@
+NEUPRAVUJ transactions.json ručně ani skriptem.
+
+V SYS11 zduplikuj existující MES06 a změň pouze:
+
+Code: MES
+Name: Přehled výroby
+Module: MES
+Description: Živý read-only přehled pracovišť, směn a stavů výroby z FASTEC SQL.
+RequiresArticleNumber: false
+IsActive: true
+Roles: ponech stejné jako MES06
+HandlerKey: PONECH PŘESNĚ STEJNÝ JAKO U MES06
+
+Důvod: MES06 handler už je v runtime dispatcheru registrovaný a pro otevření view potřebujeme pouze úspěšný TransactionResult. Tím se vůbec nesahá do registrace handlerů.
