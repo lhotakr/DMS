@@ -1,0 +1,38 @@
+{
+    "PatchName":  "MES06_LoggedOperators_History_v1_4_2",
+    "AppliedAt":  "2026-09-01T10:19:55.4194779+02:00",
+    "RepoRoot":  "C:\\Users\\rlhotak\\DevelopmentEnv\\DMS\\DMS",
+    "RuntimeConfigRoot":  "Z:\\SAP\\DMS-db\\DEV\\Config",
+    "Files":  [
+                  {
+                      "OriginalPath":  "C:\\Users\\rlhotak\\DevelopmentEnv\\DMS\\DMS\\src\\DMS.Desktop\\Views\\Mes\\MesReportingView.xaml.cs",
+                      "BackupPath":  "C:\\Users\\rlhotak\\DevelopmentEnv\\DMS\\DMS\\DMS_PatchBackups\\MES06_LoggedOperators_History_v1_4_2_20260901_101954\\001_MesReportingView.xaml.cs",
+                      "Existed":  true
+                  },
+                  {
+                      "OriginalPath":  "C:\\Users\\rlhotak\\DevelopmentEnv\\DMS\\DMS\\src\\DMS.Integration.Mes\\Reporting\\MesLoggedOperatorsReportSupport.cs",
+                      "BackupPath":  "C:\\Users\\rlhotak\\DevelopmentEnv\\DMS\\DMS\\DMS_PatchBackups\\MES06_LoggedOperators_History_v1_4_2_20260901_101954\\002_MesLoggedOperatorsReportSupport.cs",
+                      "Existed":  true
+                  },
+                  {
+                      "OriginalPath":  "Z:\\SAP\\DMS-db\\DEV\\Config\\mes-report-definitions.json",
+                      "BackupPath":  "C:\\Users\\rlhotak\\DevelopmentEnv\\DMS\\DMS\\DMS_PatchBackups\\MES06_LoggedOperators_History_v1_4_2_20260901_101954\\003_mes-report-definitions.json",
+                      "Existed":  true
+                  },
+                  {
+                      "OriginalPath":  "Z:\\SAP\\DMS-db\\DEV\\Config\\Localization\\cs-CZ.json",
+                      "BackupPath":  "C:\\Users\\rlhotak\\DevelopmentEnv\\DMS\\DMS\\DMS_PatchBackups\\MES06_LoggedOperators_History_v1_4_2_20260901_101954\\004_cs-CZ.json",
+                      "Existed":  true
+                  },
+                  {
+                      "OriginalPath":  "Z:\\SAP\\DMS-db\\DEV\\Config\\Localization\\en-US.json",
+                      "BackupPath":  "C:\\Users\\rlhotak\\DevelopmentEnv\\DMS\\DMS\\DMS_PatchBackups\\MES06_LoggedOperators_History_v1_4_2_20260901_101954\\005_en-US.json",
+                      "Existed":  true
+                  },
+                  {
+                      "OriginalPath":  "Z:\\SAP\\DMS-db\\DEV\\Config\\Localization\\de-DE.json",
+                      "BackupPath":  "C:\\Users\\rlhotak\\DevelopmentEnv\\DMS\\DMS\\DMS_PatchBackups\\MES06_LoggedOperators_History_v1_4_2_20260901_101954\\006_de-DE.json",
+                      "Existed":  true
+                  }
+              ]
+}

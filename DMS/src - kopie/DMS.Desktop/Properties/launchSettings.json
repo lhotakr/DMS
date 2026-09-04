@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DMS.Desktop": {
+      "commandName": "Project"
+    },
+    "Profil 1": {
+      "commandName": "Project"
+    }
+  }
+}

@@ -1,0 +1,487 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Articles.ArticleEditView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsBackgroundBrush}"
+             PreviewMouseWheel="ArticleEditView_PreviewMouseWheel">
+
+    <Grid Background="{DynamicResource DmsBackgroundBrush}">
+        <Border Background="{DynamicResource DmsPanelBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="20">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock x:Name="TxtTitle"
+                           Grid.Row="0"
+                           Text="Artikl"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,0,16"/>
+
+                <TabControl Grid.Row="1">
+
+                    <!-- ZÁKLADNÍ DATA + DOKUMENTY -->
+                    <TabItem Header="Základní data">
+                        <Grid Margin="12">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0"
+                                           Grid.Column="0"
+                                           Text="SAP číslo:"
+                                           Margin="0,0,8,8"/>
+
+                                <TextBox x:Name="TxtSapArticleNumber"
+                                         Grid.Row="0"
+                                         Grid.Column="1"
+                                         Height="30"
+                                         Margin="0,0,0,8"/>
+
+                                <TextBlock Grid.Row="1"
+                                           Grid.Column="0"
+                                           Text="Označení:"
+                                           Margin="0,0,8,8"/>
+
+                                <TextBox x:Name="TxtDescription"
+                                         Grid.Row="1"
+                                         Grid.Column="1"
+                                         Height="30"
+                                         MaxLength="40"
+                                         Margin="0,0,0,8"/>
+
+                                <TextBlock Grid.Row="2"
+                                           Grid.Column="0"
+                                           Text="Staré číslo:"
+                                           Margin="0,0,8,8"/>
+
+                                <TextBox x:Name="TxtOldMaterialNumber"
+                                         Grid.Row="2"
+                                         Grid.Column="1"
+                                         Height="30"
+                                         MaxLength="18"
+                                         Margin="0,0,0,8"/>
+
+                                <TextBlock Grid.Row="3"
+                                           Grid.Column="0"
+                                           Text="Status materiálu:"
+                                           Margin="0,0,8,8"/>
+
+                                <TextBox x:Name="TxtMaterialStatusCode"
+                                         Grid.Row="3"
+                                         Grid.Column="1"
+                                         Height="30"
+                                         Margin="0,0,0,8"/>
+
+                                <TextBlock Grid.Row="4"
+                                           Grid.Column="0"
+                                           Text="Dekorace:"
+                                           Margin="0,0,8,8"/>
+
+                                <TextBox x:Name="TxtDecorationCode"
+                                         Grid.Row="4"
+                                         Grid.Column="1"
+                                         Height="30"
+                                         ToolTip="Například D, B, P"/>
+                            </Grid>
+
+                            <TextBlock Grid.Row="1"
+                                       Text="Dokumenty artiklu"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource DmsForegroundBrush}"
+                                       Margin="0,20,0,8"/>
+
+                            <DataGrid x:Name="DgvDocuments"
+                                      Grid.Row="2"
+                                      AutoGenerateColumns="False"
+                                      CanUserAddRows="True"
+                                      CanUserDeleteRows="True"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                      CanUserResizeColumns="True"
+                                      CanUserReorderColumns="True">
+
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Typ"
+                                                        Binding="{Binding DocumentTypeCode}"
+                                                        Width="Auto"
+                                                        MinWidth="120"/>
+
+                                    <DataGridTextColumn Header="Název"
+                                                        Binding="{Binding Name}"
+                                                        Width="*"
+                                                        MinWidth="220"/>
+
+                                    <DataGridTextColumn Header="Verze"
+                                                        Binding="{Binding Version}"
+                                                        Width="Auto"
+                                                        MinWidth="80"/>
+
+                                    <DataGridTextColumn Header="Stav"
+                                                        Binding="{Binding Status}"
+                                                        Width="Auto"
+                                                        MinWidth="100"/>
+
+                                    <DataGridTextColumn Header="Platné od"
+                                                        Binding="{Binding ValidFrom, StringFormat=dd.MM.yyyy}"
+                                                        Width="Auto"
+                                                        MinWidth="110"/>
+
+                                    <DataGridTextColumn Header="Cesta"
+                                                        Binding="{Binding FilePath}"
+                                                        Width="2*"
+                                                        MinWidth="320"/>
+
+                                    <DataGridTextColumn Header="Poznámka"
+                                                        Binding="{Binding Note}"
+                                                        Width="*"
+                                                        MinWidth="220"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </TabItem>
+
+                    <!-- OPERACE -->
+                    <TabItem Header="Operace">
+                        <DataGrid x:Name="DgvOperations"
+                                  Margin="12"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="True"
+                                  CanUserDeleteRows="True"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  CanUserResizeColumns="True"
+                                  CanUserReorderColumns="True">
+
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Operace"
+                                                    Binding="{Binding OperationNumber}"
+                                                    Width="Auto"
+                                                    MinWidth="90"/>
+
+                                <DataGridTextColumn Header="Typ"
+                                                    Binding="{Binding OperationTypeCode}"
+                                                    Width="Auto"
+                                                    MinWidth="80"/>
+
+                                <DataGridTextColumn Header="Skupina strojů"
+                                                    Binding="{Binding WorkCenterGroupCode}"
+                                                    Width="Auto"
+                                                    MinWidth="140"/>
+
+                                <DataGridTextColumn Header="Název"
+                                                    Binding="{Binding Name}"
+                                                    Width="*"
+                                                    MinWidth="240"/>
+
+                                <DataGridTextColumn Header="Norma/směna"
+                                                    Binding="{Binding ShiftStandardQuantity}"
+                                                    Width="Auto"
+                                                    MinWidth="120"/>
+
+                                <DataGridTextColumn Header="Jednotka"
+                                                    Binding="{Binding ShiftStandardUnit}"
+                                                    Width="Auto"
+                                                    MinWidth="100"/>
+
+                                <DataGridTextColumn Header="Odpad %"
+                                                    Binding="{Binding ExpectedScrapPercent}"
+                                                    Width="Auto"
+                                                    MinWidth="90"/>
+
+                                <DataGridTextColumn Header="Odpad ks"
+                                                    Binding="{Binding ExpectedScrapQuantity}"
+                                                    Width="Auto"
+                                                    MinWidth="90"/>
+
+                                <DataGridTextColumn Header="Poznámka"
+                                                    Binding="{Binding Note}"
+                                                    Width="2*"
+                                                    MinWidth="240"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </TabItem>
+
+                    <!-- TECHNOLOGICKÉ VAZBY -->
+                    <TabItem Header="Technologické vazby">
+                        <DataGrid x:Name="DgvTechnologyLinks"
+                                  Margin="12"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="True"
+                                  CanUserDeleteRows="True"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  CanUserResizeColumns="True"
+                                  CanUserReorderColumns="True">
+
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Operace"
+                                                    Binding="{Binding OperationNumber}"
+                                                    Width="Auto"
+                                                    MinWidth="90"/>
+
+                                <DataGridTextColumn Header="Typ vazby"
+                                                    Binding="{Binding LinkType}"
+                                                    Width="Auto"
+                                                    MinWidth="130"/>
+
+                                <DataGridTextColumn Header="Podtyp"
+                                                    Binding="{Binding SubTypeCode}"
+                                                    Width="Auto"
+                                                    MinWidth="110"/>
+
+                                <DataGridTextColumn Header="Číslo artiklu"
+                                                    Binding="{Binding ArticleNumber}"
+                                                    Width="Auto"
+                                                    MinWidth="130"/>
+
+                                <DataGridTextColumn Header="Popis"
+                                                    Binding="{Binding Description}"
+                                                    Width="*"
+                                                    MinWidth="260"/>
+
+                                <DataGridTextColumn Header="Pořadí"
+                                                    Binding="{Binding Sequence}"
+                                                    Width="Auto"
+                                                    MinWidth="80"/>
+
+                                <DataGridTextColumn Header="Poznámka"
+                                                    Binding="{Binding Note}"
+                                                    Width="2*"
+                                                    MinWidth="220"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </TabItem>
+
+                    <!-- SÍTA -->
+                    <TabItem Header="Síta">
+                        <DataGrid x:Name="DgvScreens"
+                                  Margin="12"
+                                  AutoGenerateColumns="False"
+                                  CanUserAddRows="True"
+                                  CanUserDeleteRows="True"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  CanUserResizeColumns="True"
+                                  CanUserReorderColumns="True">
+
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Operace"
+                                                    Binding="{Binding OperationNumber}"
+                                                    Width="Auto"
+                                                    MinWidth="90"/>
+
+                                <DataGridTextColumn Header="Účel"
+                                                    Binding="{Binding Purpose}"
+                                                    Width="Auto"
+                                                    MinWidth="110"/>
+
+                                <DataGridTextColumn Header="Typ stroje"
+                                                    Binding="{Binding MachineType}"
+                                                    Width="Auto"
+                                                    MinWidth="100"/>
+
+                                <DataGridTextColumn Header="Tkanina"
+                                                    Binding="{Binding Mesh}"
+                                                    Width="Auto"
+                                                    MinWidth="100"/>
+
+                                <DataGridTextColumn Header="Tisk"
+                                                    Binding="{Binding PrintPass}"
+                                                    Width="Auto"
+                                                    MinWidth="70"/>
+
+                                <DataGridTextColumn Header="Číslo síta"
+                                                    Binding="{Binding ScreenArticleNumber}"
+                                                    Width="Auto"
+                                                    MinWidth="130"/>
+
+                                <DataGridTextColumn Header="Poznámka"
+                                                    Binding="{Binding Note}"
+                                                    Width="*"
+                                                    MinWidth="260"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </TabItem>
+
+                    <!-- TOK ARTIKLU -->
+                    <TabItem Header="Tok artiklu">
+                        <Grid Margin="12">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0"
+                   Text="Vstupní / předchozí artikl"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource DmsForegroundBrush}"
+                   Margin="0,0,0,8"/>
+
+                            <Grid Grid.Row="1"
+              Margin="0,0,0,20">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0"
+                       Grid.Column="0"
+                       Text="Artikl:"
+                       Margin="0,0,8,8"/>
+
+                                <TextBox x:Name="TxtUpstreamArticleNumber"
+                     Grid.Row="0"
+                     Grid.Column="1"
+                     Height="30"
+                     Margin="0,0,0,8"/>
+
+                                <TextBlock Grid.Row="1"
+                       Grid.Column="0"
+                       Text="Popis:"
+                       Margin="0,0,8,8"/>
+
+                                <TextBox x:Name="TxtUpstreamArticleDescription"
+                     Grid.Row="1"
+                     Grid.Column="1"
+                     Height="30"
+                     Margin="0,0,0,8"/>
+
+                                <TextBlock Grid.Row="2"
+                       Grid.Column="0"
+                       Text="Typ vazby:"
+                       Margin="0,0,8,8"/>
+
+                                <TextBox x:Name="TxtUpstreamRelationKind"
+                     Grid.Row="2"
+                     Grid.Column="1"
+                     Height="30"
+                     Margin="0,0,0,8"
+                     ToolTip="Například RawGlass, SprayedInput, PreviousStep"/>
+
+                                <TextBlock Grid.Row="3"
+                       Grid.Column="0"
+                       Text="Poznámka:"
+                       Margin="0,0,8,8"/>
+
+                                <TextBox x:Name="TxtUpstreamNote"
+                     Grid.Row="3"
+                     Grid.Column="1"
+                     Height="30"/>
+                            </Grid>
+
+                            <TextBlock Grid.Row="2"
+                   Text="Výstupní / následující artikly"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource DmsForegroundBrush}"
+                   Margin="0,0,0,8"/>
+
+                            <DataGrid x:Name="DgvDownstreamArticles"
+                  Grid.Row="3"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="True"
+                  CanUserDeleteRows="True"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  CanUserResizeColumns="True"
+                  CanUserReorderColumns="True">
+
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Artikl"
+                                    Binding="{Binding RelatedArticleNumber}"
+                                    Width="Auto"
+                                    MinWidth="130"/>
+
+                                    <DataGridTextColumn Header="Popis"
+                                    Binding="{Binding RelatedArticleDescription}"
+                                    Width="*"
+                                    MinWidth="260"/>
+
+                                    <DataGridTextColumn Header="Typ vazby"
+                                    Binding="{Binding RelationKind}"
+                                    Width="Auto"
+                                    MinWidth="140"/>
+
+                                    <DataGridTextColumn Header="Operace"
+                                    Binding="{Binding OperationTypeCode}"
+                                    Width="Auto"
+                                    MinWidth="90"/>
+
+                                    <DataGridTextColumn Header="Pořadí"
+                                    Binding="{Binding Sequence}"
+                                    Width="Auto"
+                                    MinWidth="80"/>
+
+                                    <DataGridTextColumn Header="Poznámka"
+                                    Binding="{Binding Note}"
+                                    Width="2*"
+                                    MinWidth="220"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </TabItem>
+                </TabControl>
+
+                <StackPanel Grid.Row="2"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Margin="0,16,0,0">
+
+                    <Button Content="Uložit"
+                            Width="100"
+                            Height="32"
+                            Background="{DynamicResource DmsAccentBrush}"
+                            Foreground="{DynamicResource DmsOnAccentBrush}"
+                            BorderBrush="{DynamicResource DmsAccentBrush}"
+                            Click="BtnSave_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

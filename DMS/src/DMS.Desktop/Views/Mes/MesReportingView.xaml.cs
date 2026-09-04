@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using ReportingEnrichmentService = DMS.Integration.Mes.Reporting.MesReportingEnrichmentService;
 
 namespace DMS.Desktop.Views.Mes;
 
@@ -66,12 +67,13 @@ public partial class MesReportingView
         _translate =
             translate ?? (key => key);
 
-        ApplyLocalization();
-        LoadDefinitions();
+        ApplyLocalization();  
         InitializeDates();
         InitializeLeftFilterPanel();
         InitializeReportToolbar();
-
+        
+        LoadDefinitions();
+        
         Loaded += MesReportingView_Loaded;
     }
 
@@ -276,6 +278,60 @@ public partial class MesReportingView
 
         return true;
     }
+    /*
+    private void LoadDefinitions()
+    {
+        var selectedCode =
+            (CmbReport.SelectedItem
+                as MesReportDefinition)
+            ?.Code;
+
+        var loadedDefinitions =
+            _definitionService.Load(
+                _definitionsPath);
+
+        var visibleDefinitions =
+       loadedDefinitions
+           .Where(definition =>
+               !string.Equals(
+                   definition.DataSource,
+                   "Counters",
+                   StringComparison.OrdinalIgnoreCase))
+           .ToList();
+
+        _definitions =
+    EnsureFinalReportingDefinitions(
+        EnsureProductionGraphDefinition(
+            EnsureMachineTimelineDefinition(
+                visibleDefinitions)));
+
+        // DEBUG: vypsat kódy definic
+        _logger.AdminAction(
+    "MES06",
+    "LoadDefinitionsVisible",
+    _user,
+    $"Codes={string.Join(',', _definitions.Select(d => d.Code))}");
+
+        LocalizeDefinitions(
+            _definitions);
+
+        CmbReport.ItemsSource =
+            _definitions;
+
+        var selected =
+            _definitions.FirstOrDefault(definition =>
+                string.Equals(
+                    definition.Code,
+                    selectedCode,
+                    StringComparison.OrdinalIgnoreCase))
+            ?? _definitions.FirstOrDefault();
+
+        CmbReport.SelectedItem =
+            selected;
+
+        ApplySelectedDefinition();
+    }
+    */
 
     private void LoadDefinitions()
     {
@@ -298,10 +354,11 @@ public partial class MesReportingView
                 .ToList();
 
         _definitions =
-            EnsureFinalReportingDefinitions(
-                EnsureProductionGraphDefinition(
-                    EnsureMachineTimelineDefinition(
-                        visibleDefinitions)));
+            EnsureBonusReportDefinition(
+                EnsureFinalReportingDefinitions(
+                    EnsureProductionGraphDefinition(
+                        EnsureMachineTimelineDefinition(
+                            visibleDefinitions))));
 
         LocalizeDefinitions(
             _definitions);
@@ -309,8 +366,14 @@ public partial class MesReportingView
         CmbReport.ItemsSource =
             _definitions;
 
+        // Preferuj BONUS_BASE, pokud existuje
         var selected =
             _definitions.FirstOrDefault(definition =>
+                string.Equals(
+                    definition.Code,
+                    "BONUS_BASE",
+                    StringComparison.OrdinalIgnoreCase))
+            ?? _definitions.FirstOrDefault(definition =>
                 string.Equals(
                     definition.Code,
                     selectedCode,
@@ -322,7 +385,6 @@ public partial class MesReportingView
 
         ApplySelectedDefinition();
     }
-
 
     private void LocalizeDefinitions(
         IEnumerable<MesReportDefinition> definitions)
@@ -370,6 +432,8 @@ public partial class MesReportingView
             }
 
             if (IsProductionReport(
+                    definition)
+                && !IsLoggedOperatorsReport(
                     definition))
             {
                 definition.Name =
@@ -408,8 +472,8 @@ public partial class MesReportingView
                 .GetWorkcentersAsync();
 
         var enrichmentService =
-            new MesReportingEnrichmentService(
-                _settings);
+    new MesReportingEnrichmentService(
+        _settings);
 
         IReadOnlyDictionary<string, IReadOnlyList<string>> groupMap;
 
@@ -664,12 +728,57 @@ public partial class MesReportingView
 
             _mes06CounterReportMode =
                 IsProductionReport(
+                    definition)
+                && !IsLoggedOperatorsReport(
                     definition);
 
             IReadOnlyList<object> loadedRows;
+            if (IsLoggedOperatorsReport(
+        definition))
+            {
+                var rows =
+                    await service
+                        .GetLoggedOperatorsAsync(
+                            filter,
+                            GetSelectedWorkcenterCodes(),
+                            (CmbShift.SelectedItem as Mes06FilterChoice)?.Code
+                                ?? string.Empty,
+                            TxtOperation.Text?.Trim()
+                                ?? string.Empty);
 
-            if (IsOeeReport(
-                    definition))
+                loadedRows =
+                    rows
+                        .Cast<object>()
+                        .ToList();
+            }
+            else if (IsBonusReport(
+                         definition))
+            {
+                var enrichmentService =
+                    new MesReportingEnrichmentService(
+                        _settings);
+
+                var rows =
+                    await enrichmentService
+                        .GetBonusReportAsync(
+                            filter.From,
+                            filter.To,
+                            GetSelectedWorkcenterCodes(),
+                            (CmbShift.SelectedItem as Mes06FilterChoice)?.Code
+                                ?? string.Empty,
+                            filter.OrderCode,
+                            TxtOperation.Text?.Trim()
+                                ?? string.Empty,
+                            filter.ProductCode,
+                            filter.MaxRows);
+
+                loadedRows =
+                    rows
+                        .Cast<object>()
+                        .ToList();
+            }
+            else if (IsOeeReport(
+                         definition))
             {
                 var finalService =
                     new MesReportingEnrichmentService(
@@ -777,10 +886,10 @@ public partial class MesReportingView
                         loadedRows);
             }
 
-            if (!IsOeeReport(
-                    definition)
-                && !IsProcessValuesReport(
-                    definition))
+            if (!IsLoggedOperatorsReport(definition)
+                && !IsBonusReport(definition)
+                && !IsOeeReport(definition)
+                && !IsProcessValuesReport(definition))
             {
                 await LoadProductionEnrichmentAsync(
                     definition,
@@ -792,9 +901,20 @@ public partial class MesReportingView
                 loadedRows);
 
             ApplyPendingPresetShift();
-
-            if (IsProcessValuesReport(
+            if (IsLoggedOperatorsReport(
                     definition))
+            {
+                _currentRows =
+                    loadedRows;
+            }
+            else if (IsBonusReport(
+                         definition))
+            {
+                _currentRows =
+                    loadedRows;
+            }
+            else if (IsProcessValuesReport(
+                         definition))
             {
                 UpdateProcessValueStateChoices(
                     loadedRows);
@@ -885,6 +1005,7 @@ public partial class MesReportingView
         MesReportDefinition definition,
         MesReportFilter filter)
     {
+
         if (string.Equals(
                 definition.DataSource,
                 "States",
@@ -1269,8 +1390,8 @@ public partial class MesReportingView
     }
 
     private void BtnExportExcel_Click(
-        object sender,
-        RoutedEventArgs e)
+            object sender,
+            RoutedEventArgs e)
     {
         if (_mes06CounterReportMode)
         {
@@ -1308,6 +1429,13 @@ public partial class MesReportingView
             ExportFinalReportingVisibleGridExcel(
                 definition);
 
+            return;
+        }
+
+        if (IsBonusReport(
+                definition))
+        {
+            ExportBonusReportExcel();
             return;
         }
 
@@ -1408,4 +1536,160 @@ public partial class MesReportingView
                 MessageBoxImage.Error);
         }
     }
+    private static bool IsLoggedOperatorsReport(
+    MesReportDefinition? definition)
+    {
+        return definition is not null
+               && string.Equals(
+                   definition.Code,
+                   MesLoggedOperatorsReportSupport.ReportCode,
+                   StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsBonusReport(
+    MesReportDefinition? definition)
+    {
+        return definition is not null
+               && string.Equals(
+                   definition.Code,
+                   "BONUS_BASE",
+                   StringComparison.OrdinalIgnoreCase);
+    }
+    private IReadOnlyList<MesReportDefinition> EnsureBonusReportDefinition(
+    IReadOnlyList<MesReportDefinition> definitions)
+    {
+        if (definitions.Any(definition =>
+                string.Equals(
+                    definition.Code,
+                    "BONUS_BASE",
+                    StringComparison.OrdinalIgnoreCase)))
+        {
+            return definitions;
+        }
+
+        var list =
+            definitions.ToList();
+
+        list.Add(
+            new MesReportDefinition
+            {
+                Code = "BONUS_BASE",
+                Name = "Podklady pro prémie",
+                Description = "Souhrn výkonu operátorù pro výpoèet prémií: smìna, pøihlášení na stroji, hrubá a èistá produkce.",
+                DataSource = "BonusBase",
+                MaxRows = 10000,
+                NameKey = "MES06.Report.BonusBase.Name",
+                DescriptionKey = "MES06.Report.BonusBase.Description",
+                Columns =
+                {
+                new MesReportColumnDefinition
+                {
+                    Property = "OrderCode",
+                    Header = "Zakázka",
+                    Width = 100,
+                    Format = "",
+                    HeaderKey = "MES06.BonusBase.Column.Order"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "ProductCode",
+                    Header = "Artikl",
+                    Width = 150,
+                    Format = "",
+                    HeaderKey = "MES06.BonusBase.Column.Product"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "SapNumber",
+                    Header = "SAP èíslo",
+                    Width = 120,
+                    Format = "",
+                    HeaderKey = "MES06.BonusBase.Column.SapNumber"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "OperationCode",
+                    Header = "Operace",
+                    Width = 80,
+                    Format = "",
+                    HeaderKey = "MES06.BonusBase.Column.Operation"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "WorkcenterCode",
+                    Header = "Stroj",
+                    Width = 105,
+                    Format = "",
+                    HeaderKey = "MES06.BonusBase.Column.Workcenter"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "ShiftCode",
+                    Header = "Smìna",
+                    Width = 80,
+                    Format = "",
+                    HeaderKey = "MES06.BonusBase.Column.Shift"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "OperatorName",
+                    Header = "Pracovník",
+                    Width = 180,
+                    Format = "",
+                    HeaderKey = "MES06.BonusBase.Column.Operator"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "HumanCode",
+                    Header = "Osobní èíslo",
+                    Width = 105,
+                    Format = "",
+                    HeaderKey = "MES06.BonusBase.Column.HumanCode"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "LoginFrom",
+                    Header = "Èas od",
+                    Width = 135,
+                    Format = "dd.MM.yyyy HH:mm",
+                    HeaderKey = "MES06.BonusBase.Column.From"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "LoginTo",
+                    Header = "Èas do",
+                    Width = 135,
+                    Format = "dd.MM.yyyy HH:mm",
+                    HeaderKey = "MES06.BonusBase.Column.To"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "NetShiftDurationMinutes",
+                    Header = "Èistý èas na stroji [min]",
+                    Width = 160,
+                    Format = "0.0",
+                    HeaderKey = "MES06.BonusBase.Column.NetShiftDurationMinutes"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "GrossProduction",
+                    Header = "StrojS hrubé",
+                    Width = 120,
+                    Format = "0.###",
+                    HeaderKey = "MES06.BonusBase.Column.GrossProduction"
+                },
+                new MesReportColumnDefinition
+                {
+                    Property = "PrintedNet",
+                    Header = "Natisknuto",
+                    Width = 120,
+                    Format = "0.###",
+                    HeaderKey = "MES06.BonusBase.Column.PrintedNet"
+                }
+                }
+            });
+
+        return list;
+    }
+
 }

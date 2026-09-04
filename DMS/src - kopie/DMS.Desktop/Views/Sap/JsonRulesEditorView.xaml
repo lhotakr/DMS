@@ -1,0 +1,82 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Sap.JsonRulesEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock x:Name="TxtTitle"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+            <TextBlock x:Name="TxtFilePath"
+                       Margin="0,6,0,0"
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,12">
+
+            <Button Content="Načíst"
+                    x:Name="BtnReload"
+                    Width="110"
+                    Margin="0,0,8,0"
+                    Click="BtnReload_Click"/>
+
+            <Button Content="Validovat"
+                    x:Name="BtnValidate"
+                    Width="110"
+                    Margin="0,0,8,0"
+                    Click="BtnValidate_Click"/>
+
+            <Button Content="Uložit"
+                    x:Name="BtnSave"
+                    Width="110"
+                    Margin="0,0,8,0"
+                    Click="BtnSave_Click"/>
+
+            <Button Content="Vrátit změny"
+                    x:Name="BtnRevert"
+                    Width="130"
+                    Click="BtnRevert_Click"/>
+        </StackPanel>
+
+        <TextBox x:Name="TxtJson"
+                 Grid.Row="2"
+                 AcceptsReturn="True"
+                 AcceptsTab="True"
+                 FontFamily="Consolas"
+                 FontSize="14"
+                 TextWrapping="NoWrap"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto"
+                 Background="{DynamicResource DmsBackgroundBrush}"
+                 Foreground="{DynamicResource DmsForegroundBrush}"
+                 BorderBrush="{DynamicResource DmsBorderBrush}"
+                 Padding="10"/>
+
+        <Border Grid.Row="3"
+                Margin="0,12,0,0"
+                Padding="10"
+                CornerRadius="6"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                Background="{DynamicResource DmsBackgroundBrush}">
+
+            <TextBlock x:Name="TxtStatus"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,3 +1,4 @@
+using DMS.Integration.Mes.Database;
 using DMS.Integration.Mes.Live;
 using DMS.Integration.Mes.Reporting;
 using System;
@@ -11,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+
 namespace DMS.Integration.Mes.Workcenters;
 
 /// <summary>
@@ -19,20 +21,38 @@ namespace DMS.Integration.Mes.Workcenters;
 /// </summary>
 public sealed class MesWorkcenterDashboardService
 {
-    private readonly object _settings;
+    private readonly MesDatabaseConnectionSettings _settings;
     private readonly string _analyticsSchema;
     private readonly int _commandTimeoutSeconds;
     private readonly MesLiveOverviewDataService _liveService;
     private readonly MesReportingEnrichmentService _reportingService;
     private IReadOnlyList<MesReportingStateColor>? _stateColors;
 
-    public MesWorkcenterDashboardService(object settings)
+    public MesWorkcenterDashboardService(
+    MesDatabaseConnectionSettings settings)
     {
-        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-        _analyticsSchema = ReadString("ReportingSchema", "Schema", "SchemaName") ?? "ana";
-        _commandTimeoutSeconds = Math.Max(5, ReadInt(30, "CommandTimeoutSeconds", "SqlCommandTimeoutSeconds", "CommandTimeout"));
-        _liveService = new MesLiveOverviewDataService(settings);
-        _reportingService = new MesReportingEnrichmentService(settings);
+        _settings =
+            settings
+            ?? throw new ArgumentNullException(nameof(settings));
+
+        _analyticsSchema =
+            ReadString("ReportingSchema", "Schema", "SchemaName")
+            ?? "ana";
+
+        _commandTimeoutSeconds =
+            Math.Max(
+                5,
+                ReadInt(
+                    30,
+                    "CommandTimeoutSeconds",
+                    "SqlCommandTimeoutSeconds",
+                    "CommandTimeout"));
+
+        _liveService =
+            new MesLiveOverviewDataService(settings);
+
+        _reportingService =
+            new MesReportingEnrichmentService(settings);
     }
 
     public async Task<MesWorkcenterDashboardSnapshot> GetDashboardAsync(

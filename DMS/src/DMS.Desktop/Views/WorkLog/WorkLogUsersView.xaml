@@ -1,0 +1,277 @@
+<UserControl x:Class="DMS.Desktop.Views.WorkLog.WorkLogUsersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock x:Name="TxtTitle"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+            <TextBlock x:Name="TxtSubtitle"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Margin="0,0,0,10"
+                Padding="10"
+                Background="{DynamicResource DmsBackgroundBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <WrapPanel>
+                <TextBlock x:Name="LblFilter"
+                           Margin="0,0,8,0"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                <TextBox x:Name="TxtFilter"
+                         Width="260"
+                         Margin="0,0,14,0"
+                         TextChanged="TxtFilter_TextChanged"/>
+                <CheckBox x:Name="ChkShowArchived"
+                          Margin="0,0,14,0"
+                          VerticalAlignment="Center"
+                          Checked="ChkShowArchived_Changed"
+                          Unchecked="ChkShowArchived_Changed"/>
+                <Button x:Name="BtnReload"
+                        MinWidth="110"
+                        Click="BtnReload_Click"/>
+            </WrapPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.05*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="1.2*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Padding="10"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <DataGrid x:Name="GridUsers"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          CanUserAddRows="False"
+                          SelectionMode="Single"
+                          SelectionUnit="FullRow"
+                          SelectionChanged="GridUsers_SelectionChanged">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn x:Name="ColSurname"
+                                            Binding="{Binding Surname}"
+                                            Width="*"/>
+                        <DataGridTextColumn x:Name="ColFirstName"
+                                            Binding="{Binding FirstName}"
+                                            Width="*"/>
+                        <DataGridTextColumn x:Name="ColPersonalNumber"
+                                            Binding="{Binding PersonalNumber}"
+                                            Width="90"/>
+                        <DataGridTextColumn x:Name="ColWindows"
+                                            Binding="{Binding WindowsUsername}"
+                                            Width="125"/>
+                        <DataGridTextColumn x:Name="ColGroup"
+                                            Binding="{Binding UserGroupTitle}"
+                                            Width="120"/>
+                        <DataGridTextColumn x:Name="ColAccess"
+                                            Binding="{Binding LevelOfAccess}"
+                                            Width="70"/>
+                        <DataGridCheckBoxColumn x:Name="ColArchived"
+                                                Binding="{Binding IsArchived}"
+                                                Width="75"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Padding="12"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="TxtEditorTitle"
+                               Grid.Row="0"
+                               Grid.ColumnSpan="2"
+                               Margin="0,0,0,12"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                    <TextBlock x:Name="LblFirstName"
+                               Grid.Row="1"
+                               Grid.Column="0"
+                               Margin="0,0,8,8"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtFirstName"
+                             Grid.Row="1"
+                             Grid.Column="1"
+                             Margin="0,0,0,8"
+                             TextChanged="Editor_Changed"/>
+
+                    <TextBlock x:Name="LblSurname"
+                               Grid.Row="2"
+                               Grid.Column="0"
+                               Margin="0,0,8,8"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtSurname"
+                             Grid.Row="2"
+                             Grid.Column="1"
+                             Margin="0,0,0,8"
+                             TextChanged="Editor_Changed"/>
+
+                    <TextBlock x:Name="LblPersonalNumber"
+                               Grid.Row="3"
+                               Grid.Column="0"
+                               Margin="0,0,8,8"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtPersonalNumber"
+                             Grid.Row="3"
+                             Grid.Column="1"
+                             Margin="0,0,0,8"
+                             TextChanged="Editor_Changed"/>
+
+                    <TextBlock x:Name="LblWindowsUsername"
+                               Grid.Row="4"
+                               Grid.Column="0"
+                               Margin="0,0,8,8"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtWindowsUsername"
+                             Grid.Row="4"
+                             Grid.Column="1"
+                             Margin="0,0,0,8"
+                             TextChanged="Editor_Changed"/>
+
+                    <TextBlock x:Name="LblEmail"
+                               Grid.Row="5"
+                               Grid.Column="0"
+                               Margin="0,0,8,8"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtEmail"
+                             Grid.Row="5"
+                             Grid.Column="1"
+                             Margin="0,0,0,8"
+                             TextChanged="Editor_Changed"/>
+
+                    <TextBlock x:Name="LblAccess"
+                               Grid.Row="6"
+                               Grid.Column="0"
+                               Margin="0,0,8,8"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <ComboBox x:Name="CmbAccess"
+                              Grid.Row="6"
+                              Grid.Column="1"
+                              Margin="0,0,0,8"
+                              SelectionChanged="Editor_Changed"/>
+
+                    <TextBlock x:Name="LblType"
+                               Grid.Row="7"
+                               Grid.Column="0"
+                               Margin="0,0,8,8"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <ComboBox x:Name="CmbUserType"
+                              Grid.Row="7"
+                              Grid.Column="1"
+                              Margin="0,0,0,8"
+                              DisplayMemberPath="Text"
+                              SelectionChanged="CmbUserType_SelectionChanged"/>
+
+                    <TextBlock x:Name="LblGroup"
+                               Grid.Row="8"
+                               Grid.Column="0"
+                               Margin="0,0,8,8"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <ComboBox x:Name="CmbGroup"
+                              Grid.Row="8"
+                              Grid.Column="1"
+                              Margin="0,0,0,8"
+                              DisplayMemberPath="Title"
+                              SelectionChanged="Editor_Changed"/>
+
+                    <TextBlock x:Name="LblMasterUser"
+                               Grid.Row="9"
+                               Grid.Column="0"
+                               Margin="0,0,8,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <ComboBox x:Name="CmbMasterUser"
+                              Grid.Row="9"
+                              Grid.Column="1"
+                              DisplayMemberPath="DisplayText"
+                              SelectionChanged="Editor_Changed"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="BtnNew"
+                    Grid.Column="0"
+                    MinWidth="100"
+                    Margin="0,0,8,0"
+                    Click="BtnNew_Click"/>
+            <Button x:Name="BtnSave"
+                    Grid.Column="1"
+                    MinWidth="100"
+                    Margin="0,0,8,0"
+                    Click="BtnSave_Click"/>
+            <Button x:Name="BtnArchive"
+                    Grid.Column="2"
+                    MinWidth="110"
+                    Margin="0,0,8,0"
+                    Click="BtnArchive_Click"/>
+            <Button x:Name="BtnRestore"
+                    Grid.Column="3"
+                    MinWidth="110"
+                    Click="BtnRestore_Click"/>
+            <TextBlock x:Name="TxtStatus"
+                       Grid.Column="4"
+                       Margin="14,0,0,0"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,222 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Quality.QualityPrintVersionListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+    <UserControl.Resources>
+        <Style x:Key="DmsHintTextBoxStyle" TargetType="{x:Type TextBox}">
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TextBox}">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"/>
+
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="{TemplateBinding Padding}"/>
+
+                            <TextBlock Text="{TemplateBinding Tag}"
+                                       Margin="8,5,8,5"
+                                       Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                                       Opacity="0.75"
+                                       IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="Qa05DataGridCellStyle" TargetType="DataGridCell">
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding MissingSapMaterialNumber}" Value="True">
+                    <Setter Property="Background" Value="#4A1F25"/>
+                    <Setter Property="Foreground" Value="#FFD6D6"/>
+                </DataTrigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="Qa05DataGridRowStyle" TargetType="DataGridRow">
+            <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding MissingSapMaterialNumber}" Value="True">
+                    <Setter Property="Background" Value="#4A1F25"/>
+                    <Setter Property="Foreground" Value="#FFD6D6"/>
+                </DataTrigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="TxtTitle"
+                   Grid.Row="0"
+                   Text="QA05 - Print version overview"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Margin="0,0,0,10"
+                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+        <TextBlock x:Name="TxtHint"
+                   Grid.Row="1"
+                   Text="Double-click a print version to open QA03."
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,12"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+
+        <Grid Grid.Row="2"
+              Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="240"/>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="TxtFilterArticle"
+                     Grid.Column="0"
+                     Margin="0,0,8,0"
+                     Tag="SAP / print version"
+                     TextChanged="FilterChanged"
+                     Style="{StaticResource DmsHintTextBoxStyle}"/>
+
+            <TextBox x:Name="TxtFilterCustomer"
+                     Grid.Column="1"
+                     Margin="0,0,8,0"
+                     Tag="Customer"
+                     TextChanged="FilterChanged"
+                     Style="{StaticResource DmsHintTextBoxStyle}"/>
+
+            <TextBox x:Name="TxtFilterTitle"
+                     Grid.Column="2"
+                     Margin="0,0,8,0"
+                     Tag="Title"
+                     TextChanged="FilterChanged"
+                     Style="{StaticResource DmsHintTextBoxStyle}"/>
+
+            <TextBox x:Name="TxtFilterDecoration"
+                     Grid.Column="3"
+                     Margin="0,0,8,0"
+                     Tag="Decoration / color"
+                     TextChanged="FilterChanged"
+                     Style="{StaticResource DmsHintTextBoxStyle}"/>
+
+            <TextBlock x:Name="TxtCount"
+                       Grid.Column="4"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </Grid>
+
+        <DataGrid x:Name="GridPrintVersions"
+                  Grid.Row="3"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  MaxHeight="620"
+                  EnableRowVirtualization="True"
+                  EnableColumnVirtualization="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  ScrollViewer.CanContentScroll="True"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  MouseDoubleClick="GridPrintVersions_MouseDoubleClick"
+                  Background="{DynamicResource DmsBackgroundBrush}"
+                  Foreground="{DynamicResource DmsForegroundBrush}"
+                  BorderBrush="{DynamicResource DmsBorderBrush}"
+                  CellStyle="{StaticResource Qa05DataGridCellStyle}"
+                  RowStyle="{StaticResource Qa05DataGridRowStyle}">
+
+            <DataGrid.Resources>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="Padding" Value="8,5"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                    <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+                </Style>
+            </DataGrid.Resources>
+
+            <DataGrid.Columns>
+                <DataGridTextColumn x:Name="ColTaskStatus"
+                                    Header="Tasks"
+                                    Binding="{Binding TaskStatusIcon}"
+                                    Width="70"
+                                    MinWidth="60"/>
+
+                <DataGridTextColumn x:Name="ColSapId"
+                                    Header="SAP ID"
+                                    Binding="{Binding SapMaterialNumber}"
+                                    Width="130"
+                                    MinWidth="120"/>
+
+                <DataGridTextColumn x:Name="ColPrintVersion"
+                                    Header="Print version"
+                                    Binding="{Binding FullPrintVersionNumber}"
+                                    Width="180"
+                                    MinWidth="160"/>
+
+                <DataGridTextColumn x:Name="ColTitle"
+                                    Header="Title"
+                                    Binding="{Binding Title}"
+                                    Width="360"
+                                    MinWidth="260"/>
+
+                <DataGridTextColumn x:Name="ColDecoration"
+                                    Header="Decoration"
+                                    Binding="{Binding Decoration}"
+                                    Width="130"
+                                    MinWidth="100"/>
+
+                <DataGridTextColumn x:Name="ColCustomer"
+                                    Header="Customer"
+                                    Binding="{Binding Customer}"
+                                    Width="150"
+                                    MinWidth="120"/>
+
+                <DataGridTextColumn x:Name="ColColor"
+                                    Header="Color"
+                                    Binding="{Binding ColorType}"
+                                    Width="140"
+                                    MinWidth="110"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

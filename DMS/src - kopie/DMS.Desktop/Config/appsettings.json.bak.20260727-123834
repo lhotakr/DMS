@@ -1,0 +1,18 @@
+{
+  "environment": "DEV",
+  "configurationMode": "LocalJson",
+  "configurationRootPath": "Z:\\SAP\\DMS-db\\DEV\\Config",
+  "documentsRootPath": "Z:\\SAP\\DMS-db\\DEV\\Documents",
+  "logsRootPath": "Z:\\SAP\\DMS-db\\DEV\\Logs",
+  "articlesDataPath": "Z:\\SAP\\DMS-db\\DEV\\Data\\articles.json",
+  "defaultTestArticleNumber": "1000015148",
+  "sapMode": "Disabled",
+  "mesMode": "Disabled",
+  "databaseMode": "Disabled",
+  "Environment": "DEV",
+  "ConfigurationRootPath": "Z:\\SAP\\DMS-db\\DEV\\Config",
+  "DataRootPath": "Z:\\SAP\\DMS-db\\DEV\\Data",
+  "DocumentsRootPath": "Z:\\SAP\\DMS-db\\DEV\\Documents",
+  "LogsRootPath": "Z:\\SAP\\DMS-db\\DEV\\Logs",
+  "BrandingRootPath": "Z:\\SAP\\DMS-db\\DEV\\Branding"
+}

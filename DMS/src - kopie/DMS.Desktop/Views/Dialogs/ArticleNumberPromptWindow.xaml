@@ -1,0 +1,239 @@
+<Window x:Class="DMS.Desktop.Views.Dialogs.ArticleNumberPromptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SAP material selection"
+        Width="1120"
+        Height="680"
+        MinWidth="900"
+        MinHeight="540"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource DmsBackgroundBrush}">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0"
+                    Margin="0,0,0,14">
+
+            <TextBlock x:Name="TxtTitle"
+                       Text="SAP material selection"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+            <TextBlock x:Name="TxtSubtitle"
+                       Text="Select a SAP material from the local DMS mirror cache."
+                       FontSize="13"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Background="{DynamicResource DmsPanelBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,0,0,12">
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="125"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="125"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock x:Name="TxtSapNumberLabel"
+                           Grid.Row="0"
+                           Grid.Column="0"
+                           Text="SAP number:"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,8,8"/>
+
+                <TextBox x:Name="TxtSapNumber"
+                         Grid.Row="0"
+                         Grid.Column="1"
+                         Margin="0,0,16,8"
+                         KeyDown="Filter_KeyDown"
+                         TextChanged="Filter_TextChanged"/>
+
+                <TextBlock x:Name="TxtOldNumberLabel"
+                           Grid.Row="0"
+                           Grid.Column="2"
+                           Text="Old number:"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,8,8"/>
+
+                <TextBox x:Name="TxtOldNumber"
+                         Grid.Row="0"
+                         Grid.Column="3"
+                         Margin="0,0,0,8"
+                         KeyDown="Filter_KeyDown"
+                         TextChanged="Filter_TextChanged"/>
+
+                <TextBlock x:Name="TxtDescriptionLabel"
+                           Grid.Row="1"
+                           Grid.Column="0"
+                           Text="Description:"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,8,8"/>
+
+                <TextBox x:Name="TxtDescription"
+                         Grid.Row="1"
+                         Grid.Column="1"
+                         Margin="0,0,16,8"
+                         KeyDown="Filter_KeyDown"
+                         TextChanged="Filter_TextChanged"/>
+
+                <TextBlock x:Name="TxtInfoLabel"
+                           Grid.Row="1"
+                           Grid.Column="2"
+                           Text="Type / info:"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,8,8"/>
+
+                <TextBox x:Name="TxtInfo"
+                         Grid.Row="1"
+                         Grid.Column="3"
+                         Margin="0,0,0,8"
+                         KeyDown="Filter_KeyDown"
+                         TextChanged="Filter_TextChanged"/>
+
+                <TextBlock x:Name="TxtCachePath"
+                           Grid.Row="2"
+                           Grid.Column="0"
+                           Grid.ColumnSpan="4"
+                           Text="Cache: -"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+            </Grid>
+        </Border>
+
+        <DataGrid x:Name="DgArticles"
+                  Grid.Row="2"
+                  Style="{StaticResource DmsDataGridStyle}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  ClipboardCopyMode="IncludeHeader"
+                  MouseDoubleClick="DgArticles_MouseDoubleClick"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  EnableRowVirtualization="True"
+                  EnableColumnVirtualization="True"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column">
+
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource DmsAccentBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource DmsOnAccentBrush}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+
+            <DataGrid.Columns>
+                <DataGridTextColumn x:Name="ColSapNumber"
+                                    Header="SAP number"
+                                    Binding="{Binding SapNumber}"
+                                    Width="135"/>
+
+                <DataGridTextColumn x:Name="ColDescription"
+                                    Header="Description"
+                                    Binding="{Binding Description}"
+                                    Width="*"
+                                    MinWidth="260"/>
+
+                <DataGridTextColumn x:Name="ColOldNumber"
+                                    Header="Old number"
+                                    Binding="{Binding OldNumber}"
+                                    Width="155"/>
+
+                <DataGridTextColumn x:Name="ColStatus"
+                                    Header="Status"
+                                    Binding="{Binding Status}"
+                                    Width="95"/>
+
+                <DataGridTextColumn x:Name="ColMaterialKind"
+                                    Header="Type"
+                                    Binding="{Binding MaterialKindDisplay}"
+                                    Width="145"/>
+
+                <DataGridTextColumn x:Name="ColInfo"
+                                    Header="Info"
+                                    Binding="{Binding ExtraInfo}"
+                                    Width="220"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DockPanel Grid.Row="3"
+                   Margin="0,12,0,0"
+                   LastChildFill="False">
+
+            <TextBlock x:Name="TxtStatus"
+                       DockPanel.Dock="Left"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+
+            <StackPanel DockPanel.Dock="Right"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+
+                <Button x:Name="BtnSearch"
+                        Content="Search"
+                        MinWidth="100"
+                        Margin="0,0,8,0"
+                        Padding="10,6"
+                        Click="BtnSearch_Click"/>
+
+                <Button x:Name="BtnClear"
+                        Content="Clear"
+                        MinWidth="100"
+                        Margin="0,0,8,0"
+                        Padding="10,6"
+                        Click="BtnClear_Click"/>
+
+                <Button x:Name="BtnCancel"
+                        Content="Cancel"
+                        MinWidth="100"
+                        Margin="0,0,8,0"
+                        Padding="10,6"
+                        Click="BtnCancel_Click"/>
+
+                <Button x:Name="BtnOk"
+                        Content="Select"
+                        MinWidth="100"
+                        Padding="10,6"
+                        Style="{StaticResource DmsAccentButtonStyle}"
+                        Click="BtnOk_Click"/>
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>

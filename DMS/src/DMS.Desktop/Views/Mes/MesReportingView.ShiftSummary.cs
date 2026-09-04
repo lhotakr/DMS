@@ -112,111 +112,17 @@ public partial class MesReportingView
     /// for charts, KPI calculation and Excel export.
     /// </summary>
     private void ApplyGridPresentation(
-        MesReportDefinition definition)
+     MesReportDefinition definition)
     {
-        if (_mes06CounterReportMode)
+        if (IsBonusReport(definition))
         {
-            BuildCounterReportColumns();
-
-            GridReport.ItemsSource =
-                _currentRows;
-
+            BuildBonusReportColumns();
+            GridReport.ItemsSource = _currentRows;
             return;
         }
 
-        if (IsOeeReport(
-                definition))
-        {
-            BuildOeeReportPresentation(
-                definition);
-
-            return;
-        }
-
-        if (IsProcessValuesReport(
-                definition))
-        {
-            BuildProcessValuesPresentation(
-                definition);
-
-            return;
-        }
-
-        if (IsProductionGraphReport(
-                definition))
-        {
-            BuildProductionGraphPresentation(
-                definition);
-
-            return;
-        }
-
-        if (IsMachineTimelineReport(
-                definition))
-        {
-            BuildMachineTimelinePresentation(
-                definition);
-
-            return;
-        }
-
-        if (IsStatesReport(
-                definition))
-        {
-            BuildStatesReportPresentation(
-                definition);
-
-            return;
-        }
-
-        CounterSummaryBorder.Visibility =
-            Visibility.Collapsed;
-
-        GridCounterSummary.ItemsSource =
-            null;
-
-        BuildColumns(
-            definition);
-
-        if (!IsProductionReport(
-                definition))
-        {
-            GridReport.ItemsSource =
-                _currentRows;
-
-            return;
-        }
-
-        RebindDynamicColumnsForDisplayRows(
-            definition);
-
-        CustomizeProductionColumns(
-            definition);
-
-        GridReport.Columns.Insert(
-            0,
-            new DataGridTextColumn
-            {
-                Header =
-                    T(
-                        "MES06.Column.Shift",
-                        "Shift"),
-                Binding =
-                    new Binding(
-                        "[ShiftName]")
-                    {
-                        Mode =
-                            BindingMode.OneWay
-                    },
-                Width =
-                    new DataGridLength(
-                        150d)
-            });
-
-        GridReport.ItemsSource =
-            BuildProductionDisplayRows(
-                definition,
-                _currentRows);
+        BuildColumns(definition);
+        GridReport.ItemsSource = _currentRows;
     }
 
     private static bool IsStatesReport(

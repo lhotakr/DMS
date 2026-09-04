@@ -1,0 +1,314 @@
+<UserControl x:Class="DMS.Desktop.Views.WorkLog.WorkLogWorkView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock x:Name="TxtTitle"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+            <TextBlock x:Name="TxtSubtitle"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <TabControl x:Name="Tabs" Grid.Row="1">
+            <TabItem x:Name="TabProjects">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <WrapPanel Grid.Row="0" Margin="0,0,0,10">
+                        <TextBlock x:Name="LblProjectFilter"
+                                   Margin="0,0,8,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+                        <TextBox x:Name="TxtProjectFilter"
+                                 Width="260"
+                                 Margin="0,0,14,0"
+                                 TextChanged="TxtProjectFilter_TextChanged"/>
+                        <CheckBox x:Name="ChkShowArchivedProjects"
+                                  VerticalAlignment="Center"
+                                  Checked="ProjectFilter_Changed"
+                                  Unchecked="ProjectFilter_Changed"/>
+                    </WrapPanel>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <DataGrid x:Name="GridProjects"
+                                  Grid.Column="0"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  SelectionMode="Single"
+                                  SelectionChanged="GridProjects_SelectionChanged">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn x:Name="ColProjectTitle"
+                                                    Binding="{Binding ProjectTitle}"
+                                                    Width="1.4*"/>
+                                <DataGridTextColumn x:Name="ColProjectDescription"
+                                                    Binding="{Binding ProjectDescription}"
+                                                    Width="*"/>
+                                <DataGridTextColumn x:Name="ColProjectType"
+                                                    Binding="{Binding ProjectType}"
+                                                    Width="75"/>
+                                <DataGridTextColumn x:Name="ColProjectCreator"
+                                                    Binding="{Binding CreatedByName}"
+                                                    Width="130"/>
+                                <DataGridCheckBoxColumn x:Name="ColProjectArchived"
+                                                        Binding="{Binding IsArchived}"
+                                                        Width="75"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <Border Grid.Column="2"
+                                Padding="12"
+                                Background="{DynamicResource DmsBackgroundBrush}"
+                                BorderBrush="{DynamicResource DmsBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="135"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock x:Name="TxtProjectEditorTitle"
+                                           Grid.Row="0"
+                                           Grid.ColumnSpan="2"
+                                           Margin="0,0,0,12"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                                <TextBlock x:Name="LblProjectTitle"
+                                           Grid.Row="1"
+                                           Grid.Column="0"
+                                           Margin="0,0,8,8"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                                <TextBox x:Name="TxtProjectTitle"
+                                         Grid.Row="1"
+                                         Grid.Column="1"
+                                         Margin="0,0,0,8"/>
+
+                                <TextBlock x:Name="LblProjectDescription"
+                                           Grid.Row="2"
+                                           Grid.Column="0"
+                                           Margin="0,0,8,8"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                                <TextBox x:Name="TxtProjectDescription"
+                                         Grid.Row="2"
+                                         Grid.Column="1"
+                                         Margin="0,0,0,8"/>
+
+                                <TextBlock x:Name="LblProjectType"
+                                           Grid.Row="3"
+                                           Grid.Column="0"
+                                           Margin="0,0,8,8"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                                <TextBox x:Name="TxtProjectType"
+                                         Grid.Row="3"
+                                         Grid.Column="1"
+                                         Margin="0,0,0,8"/>
+
+                                <TextBlock x:Name="LblProjectFulfilled"
+                                           Grid.Row="4"
+                                           Grid.Column="0"
+                                           Margin="0,0,8,8"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                                <TextBox x:Name="TxtProjectFulfilled"
+                                         Grid.Row="4"
+                                         Grid.Column="1"
+                                         Margin="0,0,0,8"/>
+
+                                <TextBlock x:Name="LblProjectNote"
+                                           Grid.Row="5"
+                                           Grid.Column="0"
+                                           Margin="0,0,8,0"
+                                           VerticalAlignment="Top"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                                <TextBox x:Name="TxtProjectNote"
+                                         Grid.Row="5"
+                                         Grid.Column="1"
+                                         MinHeight="90"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <WrapPanel Grid.Row="2" Margin="0,10,0,0">
+                        <Button x:Name="BtnProjectNew"
+                                MinWidth="100"
+                                Margin="0,0,8,0"
+                                Click="BtnProjectNew_Click"/>
+                        <Button x:Name="BtnProjectSave"
+                                MinWidth="100"
+                                Margin="0,0,8,0"
+                                Click="BtnProjectSave_Click"/>
+                        <Button x:Name="BtnProjectArchive"
+                                MinWidth="110"
+                                Margin="0,0,8,0"
+                                Click="BtnProjectArchive_Click"/>
+                        <Button x:Name="BtnProjectRestore"
+                                MinWidth="110"
+                                Click="BtnProjectRestore_Click"/>
+                    </WrapPanel>
+                </Grid>
+            </TabItem>
+
+            <TabItem x:Name="TabEntryTypes">
+                <Grid Margin="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.2*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <DataGrid x:Name="GridEntryTypes"
+                              Grid.Column="0"
+                              Grid.Row="0"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              SelectionMode="Single"
+                              SelectionChanged="GridEntryTypes_SelectionChanged">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn x:Name="ColTypeTitle"
+                                                Binding="{Binding Title}"
+                                                Width="*"/>
+                            <DataGridTextColumn x:Name="ColTypeColor"
+                                                Binding="{Binding Color}"
+                                                Width="120"/>
+                            <DataGridTextColumn x:Name="ColTypeProjectType"
+                                                Binding="{Binding ForProjectType}"
+                                                Width="120"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Grid.Column="2"
+                            Grid.Row="0"
+                            Padding="12"
+                            Background="{DynamicResource DmsBackgroundBrush}"
+                            BorderBrush="{DynamicResource DmsBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="135"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock x:Name="TxtTypeEditorTitle"
+                                       Grid.Row="0"
+                                       Grid.ColumnSpan="2"
+                                       Margin="0,0,0,12"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                            <TextBlock x:Name="LblTypeTitle"
+                                       Grid.Row="1"
+                                       Grid.Column="0"
+                                       Margin="0,0,8,8"
+                                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+                            <TextBox x:Name="TxtTypeTitle"
+                                     Grid.Row="1"
+                                     Grid.Column="1"
+                                     Margin="0,0,0,8"/>
+
+                            <TextBlock x:Name="LblTypeColor"
+                                       Grid.Row="2"
+                                       Grid.Column="0"
+                                       Margin="0,0,8,8"
+                                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+                            <TextBox x:Name="TxtTypeColor"
+                                     Grid.Row="2"
+                                     Grid.Column="1"
+                                     Margin="0,0,0,8"/>
+
+                            <TextBlock x:Name="LblTypeProjectType"
+                                       Grid.Row="3"
+                                       Grid.Column="0"
+                                       Margin="0,0,8,8"
+                                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+                            <TextBox x:Name="TxtTypeProjectType"
+                                     Grid.Row="3"
+                                     Grid.Column="1"
+                                     Margin="0,0,0,8"/>
+
+                            <TextBlock x:Name="TxtEntryTypeHint"
+                                       Grid.Row="4"
+                                       Grid.ColumnSpan="2"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+                        </Grid>
+                    </Border>
+
+                    <WrapPanel Grid.Column="0"
+                               Grid.ColumnSpan="3"
+                               Grid.Row="1"
+                               Margin="0,10,0,0">
+                        <Button x:Name="BtnTypeNew"
+                                MinWidth="100"
+                                Margin="0,0,8,0"
+                                Click="BtnTypeNew_Click"/>
+                        <Button x:Name="BtnTypeSave"
+                                MinWidth="100"
+                                Click="BtnTypeSave_Click"/>
+                    </WrapPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <Grid Grid.Row="2" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="BtnReload"
+                    Grid.Column="0"
+                    MinWidth="110"
+                    Click="BtnReload_Click"/>
+            <TextBlock x:Name="TxtStatus"
+                       Grid.Column="1"
+                       Margin="14,0,0,0"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </Grid>
+    </Grid>
+</UserControl>

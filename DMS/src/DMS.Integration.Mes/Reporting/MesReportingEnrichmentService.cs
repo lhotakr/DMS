@@ -1,3 +1,4 @@
+using DMS.Integration.Mes.Database;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -17,12 +18,12 @@ namespace DMS.Integration.Mes.Reporting;
 /// </summary>
 public sealed class MesReportingEnrichmentService
 {
-    private readonly object _settings;
+    private readonly MesDatabaseConnectionSettings _settings;
     private readonly string _analyticsSchema;
     private readonly int _commandTimeoutSeconds;
 
     public MesReportingEnrichmentService(
-        object settings)
+     MesDatabaseConnectionSettings settings)
     {
         _settings =
             settings
@@ -45,6 +46,7 @@ public sealed class MesReportingEnrichmentService
                     "SqlCommandTimeoutSeconds",
                     "CommandTimeout"));
     }
+
 
     public async Task<(DateTime From, DateTime To)> GetShiftRelatedPeriodAsync(
         DateTime fromDate,
@@ -1824,6 +1826,168 @@ public sealed class MesReportingEnrichmentService
         });
     }
 
+    public async Task<IReadOnlyList<MesBonusReportRecord>> GetBonusReportAsync(
+    DateTime from,
+    DateTime to,
+    IReadOnlyList<string> workcenterCodes,
+    string shiftCode,
+    string orderCode,
+    string operationCode,
+    string productCode,
+    int maxRows)
+    {
+        var filter =
+            new MesReportFilter
+            {
+                From = from,
+                To = to,
+                OrderCode = orderCode ?? string.Empty,
+                ProductCode = productCode ?? string.Empty,
+                MaxRows = maxRows
+            };
+
+        var dataService =
+            new MesReportingDataService(
+                _settings);
+
+        var loggedOperators =
+            await dataService.GetLoggedOperatorsAsync(
+                filter,
+                workcenterCodes,
+                shiftCode ?? string.Empty,
+                operationCode ?? string.Empty);
+
+        var counters =
+            await dataService.GetCountersAsync(
+                filter);
+
+        var sapNumbersByOrder =
+            await GetSapNumbersByOrderAsync(
+                loggedOperators
+                    .Where(login => !string.IsNullOrWhiteSpace(login.OrderCode))
+                    .Select(login => login.OrderCode));
+
+        var result =
+            new List<MesBonusReportRecord>();
+
+        foreach (var login in loggedOperators)
+        {
+            if (!login.LoginFrom.HasValue)
+            {
+                continue;
+            }
+
+            var loginFrom =
+                login.LoginFrom.Value;
+
+            var loginTo =
+                login.LoginTo ?? to;
+
+            if (loginTo <= loginFrom)
+            {
+                continue;
+            }
+
+            var matchingCounters =
+                counters
+                    .Where(counter =>
+                        string.Equals(
+                            counter.WorkcenterCode,
+                            login.WorkcenterCode,
+                            StringComparison.OrdinalIgnoreCase)
+                        && (string.IsNullOrWhiteSpace(login.OrderCode)
+                            || string.Equals(
+                                counter.OrderCode,
+                                login.OrderCode,
+                                StringComparison.OrdinalIgnoreCase))
+                        && counter.Timestamp >= loginFrom
+                        && counter.Timestamp < loginTo)
+                    .ToList();
+
+            var grossProduction =
+                matchingCounters
+                    .Where(counter =>
+                        string.Equals(
+                            counter.CounterName,
+                            "Vyrobeno - stroj",
+                            StringComparison.OrdinalIgnoreCase))
+                    .Sum(counter => counter.Value);
+
+            var scrapProduction =
+                matchingCounters
+                    .Where(counter =>
+                        string.Equals(
+                            counter.CounterName,
+                            "Odpad - produkce",
+                            StringComparison.OrdinalIgnoreCase))
+                    .Sum(counter => counter.Value);
+
+            var scrapGlass =
+                matchingCounters
+                    .Where(counter =>
+                        string.Equals(
+                            counter.CounterName,
+                            "Odpad - sklo",
+                            StringComparison.OrdinalIgnoreCase))
+                    .Sum(counter => counter.Value);
+
+            var washedBottles =
+                matchingCounters
+                    .Where(counter =>
+                        string.Equals(
+                            counter.CounterName,
+                            "Myté flakony",
+                            StringComparison.OrdinalIgnoreCase))
+                    .Sum(counter => counter.Value);
+
+            var printedNet =
+                grossProduction
+                - scrapProduction
+                - scrapGlass
+                - washedBottles;
+
+            var durationMinutes =
+                (loginTo - loginFrom).TotalMinutes;
+
+            var netShiftDurationMinutes =
+                durationMinutes > 270d
+                    ? durationMinutes - 30d
+                    : durationMinutes;
+
+            var sapNumber =
+                !string.IsNullOrWhiteSpace(login.OrderCode)
+                && sapNumbersByOrder.TryGetValue(
+                    login.OrderCode,
+                    out var resolvedSapNumber)
+                    ? resolvedSapNumber
+                    : string.Empty;
+
+            result.Add(
+                new MesBonusReportRecord
+                {
+                    OrderCode = login.OrderCode ?? string.Empty,
+                    ProductCode = login.ProductCode ?? string.Empty,
+                    SapNumber = sapNumber,
+                    OperationCode = login.OperationCode ?? string.Empty,
+                    WorkcenterCode = login.WorkcenterCode ?? string.Empty,
+                    ShiftCode = shiftCode ?? string.Empty,
+                    OperatorName = login.OperatorName ?? string.Empty,
+                    HumanCode = login.HumanCode ?? string.Empty,
+                    LoginFrom = loginFrom,
+                    LoginTo = loginTo,
+                    NetShiftDurationMinutes = netShiftDurationMinutes,
+                    GrossProduction = (double)grossProduction,
+                    PrintedNet = (double)printedNet
+                });
+        }
+
+        return result
+            .OrderBy(row => row.WorkcenterCode, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(row => row.LoginFrom)
+            .Take(maxRows > 0 ? maxRows : int.MaxValue)
+            .ToList();
+    }
+
     private static int MainWorkerMetadataScore(
         Mes06MetadataTable table)
     {
@@ -3298,6 +3462,8 @@ public sealed class MesReportingEnrichmentService
         };
     }
 }
+
+
 
 public sealed class Mes06CounterReportRecord
 {

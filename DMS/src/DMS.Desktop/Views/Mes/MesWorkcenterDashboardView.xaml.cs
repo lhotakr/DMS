@@ -832,7 +832,8 @@ public partial class MesWorkcenterDashboardView : UserControl
             var bucketEnd = bucket + step;
             if (bucketEnd > to) bucketEnd = to;
             var seconds = (bucketEnd - bucket).TotalSeconds;
-            if (seconds <= 0d) break;
+            if (seconds <= 0d) 
+                ;
 
             double weighted = 0d;
             foreach (var interval in intervals)

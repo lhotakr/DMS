@@ -1,0 +1,601 @@
+﻿using DMS.Core.Quality;
+using DMS.Core.Sap;
+using DMS.Desktop.Logging;
+using DMS.Desktop.UI;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+
+namespace DMS.Desktop.Views.Quality;
+
+public partial class QualityArticleView : UserControl
+{
+    private readonly QualityArticleOverviewService _service;
+    private readonly DmsLogger? _logger;
+    private readonly string _currentUserName;
+    private readonly Func<string, string>? _translate;
+    private readonly Func<string, object[], string>? _translateFormat;
+
+    public event Action<string>? TransactionRequested;
+
+    public QualityArticleView(string query)
+        : this(
+            query,
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..")))
+    {
+    }
+
+    public QualityArticleView(
+        string query,
+        string dmsRootPath,
+        DmsLogger? logger = null,
+        string? currentUserName = null,
+        Func<string, string>? translate = null,
+        Func<string, object[], string>? translateFormat = null)
+    {
+        InitializeComponent();
+
+        _logger = logger;
+        _currentUserName = string.IsNullOrWhiteSpace(currentUserName)
+            ? "UNKNOWN"
+            : currentUserName;
+        _translate = translate;
+        _translateFormat = translateFormat;
+
+        var basePath = Path.GetFullPath(dmsRootPath);
+
+        var sapStoragePaths = new SapStoragePaths(basePath);
+        sapStoragePaths.EnsureDirectories();
+
+        var sapMaterials =
+            new JsonSapMaterialRepository(
+                    sapStoragePaths.SapMaterialsFilePath)
+                .LoadAll();
+
+        var qualityPaths = new QualityStoragePaths(basePath);
+        qualityPaths.EnsureDirectories();
+
+        var qualityRepository =
+            new JsonQualityRepository(qualityPaths);
+
+        var statusRulesPath = Path.Combine(
+            basePath,
+            "Config",
+            "sap-material-status-rules.json");
+
+        var statusRules =
+            new SapMaterialStatusRuleLoader()
+                .LoadFromJson(statusRulesPath);
+
+        var statusRuleService =
+            new SapMaterialStatusRuleService(statusRules);
+
+        var qualityArticles = qualityRepository.LoadArticles();
+        var printVersions = qualityRepository.LoadPrintVersions();
+        var orders = qualityRepository.LoadOrders();
+
+        _service = new QualityArticleOverviewService(
+            sapMaterials,
+            qualityArticles,
+            printVersions,
+            orders,
+            statusRuleService);
+
+        _logger?.AdminAction(
+            "QA03",
+            "OpenQualityArticle",
+            _currentUserName,
+            $"Query={query}; Root={basePath}; SapMaterials={sapMaterials.Count}; QualityArticles={qualityArticles.Count}; PrintVersions={printVersions.Count}; Orders={orders.Count}");
+
+        Render(query);
+    }
+
+    private void Render(string query)
+    {
+        RootPanel.Children.Clear();
+
+        var overview = _service.BuildOverview(query);
+
+        _logger?.AdminAction(
+            "QA03",
+            "RenderQualityArticle",
+            _currentUserName,
+            $"Query={query}; HasData={overview.HasData}; SapMaterial={overview.SapMaterialNumber}; PrintVersions={overview.PrintVersions.Count}; Tasks={overview.Tasks.Count}; Orders={overview.Orders.Count}");
+
+        RootPanel.Children.Add(
+            DmsUiFactory.CreateTitle(
+                TF("QA03.Title", "QA03 - Quality card {0}", overview.Query)));
+
+        if (!overview.HasData)
+        {
+            _logger?.AdminAction(
+                "QA03",
+                "QualityArticleNotFound",
+                _currentUserName,
+                $"Query={query}");
+
+            RootPanel.Children.Add(
+                DmsUiFactory.CreateWarning(
+                    T("QA03.NotFound.Title", "No quality data found"),
+                    T("QA03.NotFound.Body", "No SAP or quality data was found for the entered query.\n\nTry the SAP number, full print version number, or historical seven-digit article number.")));
+
+            return;
+        }
+
+        RootPanel.Children.Add(CreateActionBar(overview));
+        RootPanel.Children.Add(CreateSapSection(overview));
+        RootPanel.Children.Add(CreateQualityArticleSection(overview));
+        RootPanel.Children.Add(CreatePrintVersionsSection(overview));
+        RootPanel.Children.Add(CreateTasksSection(overview));
+        RootPanel.Children.Add(CreateOrdersSection(overview));
+
+        if (overview.Messages.Count > 0)
+        {
+            RootPanel.Children.Add(
+                DmsUiFactory.CreateInfoCard(
+                    T("QA03.Section.Messages", "Messages"),
+                    string.Join(
+                        Environment.NewLine,
+                        overview.Messages)));
+        }
+    }
+
+    private UIElement CreateActionBar(QualityArticleOverview overview)
+    {
+        var panel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 0, 0, 14)
+        };
+
+        if (!string.IsNullOrWhiteSpace(overview.SapMaterialNumber))
+        {
+            panel.Children.Add(
+                CreatePrimaryActionButton(
+                    T("QA03.Action.Edit", "Edit quality data"),
+                    () => RequestTransaction("QA02", overview.SapMaterialNumber)));
+
+            var orderCreateParameter = SelectOrderCreateParameter(overview);
+            if (!string.IsNullOrWhiteSpace(orderCreateParameter))
+            {
+                panel.Children.Add(
+                    CreatePrimaryActionButton(
+                        T("QA03.Action.OpenQO01", "Create quality order"),
+                        () => RequestTransaction("QO01", orderCreateParameter)));
+            }
+
+            panel.Children.Add(
+                CreatePrimaryActionButton(
+                    T("QA03.Action.OpenSap03", "Open SAP material"),
+                    () => RequestTransaction("SAP03", overview.SapMaterialNumber)));
+
+            panel.Children.Add(
+                CreatePrimaryActionButton(
+                    T("QA03.Action.OpenTec03", "Open technical summary"),
+                    () => RequestTransaction("TEC03", overview.SapMaterialNumber)));
+
+            panel.Children.Add(
+                CreatePrimaryActionButton(
+                    T("QA03.Action.OpenDoc03", "Open documents"),
+                    () => RequestTransaction("DOC03", overview.SapMaterialNumber)));
+        }
+
+        panel.Children.Add(
+            CreatePrimaryActionButton(
+                T("QA03.Action.Refresh", "Refresh"),
+                () =>
+                {
+                    _logger?.AdminAction(
+                        "QA03",
+                        "RefreshQualityArticle",
+                        _currentUserName,
+                        $"Query={overview.Query}");
+
+                    Render(overview.Query);
+                }));
+
+        return panel;
+    }
+
+    private UIElement CreatePrimaryActionButton(string text, Action action)
+    {
+        var button = new Button
+        {
+            Content = text,
+            Padding = new Thickness(12, 6, 12, 6),
+            Margin = new Thickness(0, 0, 8, 0),
+            MinWidth = 90
+        };
+
+        var style = TryFindResource("DmsPrimaryButtonStyle") as Style
+                    ?? TryFindResource("DmsAccentButtonStyle") as Style;
+
+        if (style is not null)
+        {
+            button.Style = style;
+        }
+
+        // Important for the HG theme: yellow accent buttons must use dark text.
+        // Do not hardcode White here; DmsOnAccentBrush is black in HG and white in dark/light DMS themes.
+        button.SetResourceReference(Control.BackgroundProperty, "DmsAccentBrush");
+        button.SetResourceReference(Control.BorderBrushProperty, "DmsAccentBrush");
+        button.SetResourceReference(Control.ForegroundProperty, "DmsOnAccentBrush");
+
+        button.Click += (_, _) => action();
+
+        return button;
+    }
+
+    private void RequestTransaction(string transactionCode, string parameter)
+    {
+        if (string.IsNullOrWhiteSpace(transactionCode) ||
+            string.IsNullOrWhiteSpace(parameter))
+        {
+            return;
+        }
+
+        _logger?.AdminAction(
+            "QA03",
+            "OpenRelatedTransaction",
+            _currentUserName,
+            $"Transaction={transactionCode}; Parameter={parameter.Trim()}");
+
+        TransactionRequested?.Invoke($"{transactionCode} {parameter.Trim()}");
+    }
+
+    private UIElement CreateSapSection(QualityArticleOverview overview)
+    {
+        var section = DmsDisplayFactory.CreateSection(
+            T("QA03.Section.Sap", "SAP base data"));
+
+        if (overview.SapMaterial is null)
+        {
+            section.Children.Add(
+                DmsUiFactory.CreateMutedText(
+                    T("QA03.Sap.NotFound", "SAP material was not found.")));
+
+            return section;
+        }
+
+        var material = overview.SapMaterial;
+
+        section.Children.Add(
+            DmsDisplayFactory.CreateFieldGrid(
+                3,
+                new[]
+                {
+                    new DmsDisplayField(
+                        T("QA03.Field.OldMaterialNumber", "Old material number"),
+                        material.OldMaterialNumber),
+
+                    new DmsDisplayField(
+                        T("QA03.Field.Status", "Status"),
+                        overview.FormattedMaterialStatus),
+
+                    new DmsDisplayField(
+                        T("QA03.Field.Ktext", "Description (KTEXT)"),
+                        material.Description)
+                }));
+
+        return section;
+    }
+
+    private UIElement CreateQualityArticleSection(QualityArticleOverview overview)
+    {
+        var section = DmsDisplayFactory.CreateSection(
+            T("QA03.Section.ArticleInfo", "Article information"));
+
+        if (overview.QualityArticle is null)
+        {
+            section.Children.Add(
+                DmsUiFactory.CreateMutedText(
+                    T("QA03.ArticleInfo.Empty", "No local quality information is stored for this article.")));
+
+            return section;
+        }
+
+        section.Children.Add(
+            DmsDisplayFactory.CreateFieldGrid(
+                2,
+                new[]
+                {
+                    new DmsDisplayField(
+                        T("QA03.Field.ImportantInfo", "Important information"),
+                        overview.QualityArticle.ImportantInfo),
+
+                    new DmsDisplayField(
+                        T("QA03.Field.Notes", "Notes"),
+                        overview.QualityArticle.Notes)
+                }));
+
+        return section;
+    }
+
+    private UIElement CreatePrintVersionsSection(QualityArticleOverview overview)
+    {
+        var section = DmsDisplayFactory.CreateSection(
+            TF("QA03.Section.PrintVersions", "Print versions ({0})", overview.PrintVersions.Count));
+
+        if (overview.PrintVersions.Count == 0)
+        {
+            section.Children.Add(
+                DmsUiFactory.CreateMutedText(
+                    T("QA03.PrintVersions.Empty", "No print versions are recorded.")));
+
+            return section;
+        }
+
+        foreach (var printVersion in overview.PrintVersions
+                     .OrderByDescending(item => item.FullPrintVersionNumber))
+        {
+            section.Children.Add(CreatePrintVersionCard(printVersion));
+        }
+
+        return section;
+    }
+
+    private UIElement CreatePrintVersionCard(QualityPrintVersion item)
+    {
+        var root = new StackPanel();
+
+        root.Children.Add(
+            DmsDisplayFactory.CreateFieldGrid(
+                5,
+                new[]
+                {
+                    new DmsDisplayField(T("QA03.Field.Title", "Title"), item.Title),
+                    new DmsDisplayField(T("QA03.Field.Customer", "Customer"), item.Customer),
+                    new DmsDisplayField(T("QA03.Field.HdNumber", "HD number"), item.HdNumber),
+                    new DmsDisplayField(T("QA03.Field.SampleLocation", "Sample location"), item.SampleLocation),
+                    new DmsDisplayField(T("QA03.Field.Gauge", "Gauge"), BuildGaugeText(item))
+                }));
+
+        root.Children.Add(
+            DmsDisplayFactory.CreateFieldGrid(
+                7,
+                new[]
+                {
+                    new DmsDisplayField(T("QA03.Field.Decoration", "Decoration"), item.DecorationCode),
+                    new DmsDisplayField(T("QA03.Field.GlassTreatment", "Glass treatment"), item.GlassTreatment),
+                    new DmsDisplayField(T("QA03.Field.Color", "Color"), item.ColorType),
+                    new DmsDisplayField(T("QA03.Field.Complaint", "Complaint"), ToYesNo(item.HasComplaint)),
+                    new DmsDisplayField(T("QA03.Field.TasksCompleted", "Tasks completed"), ToYesNo(ArePrintVersionTasksCompleted(item))),
+                    new DmsDisplayField(T("QA03.Field.SamplesOnCamera", "Samples on camera"), ToYesNo(item.SamplesOnCamera)),
+                    new DmsDisplayField(T("QA03.Field.BoardLocation", "Board location"), item.BoardLocation)
+                }));
+
+        root.Children.Add(
+            DmsDisplayFactory.CreateFieldGrid(
+                1,
+                new[]
+                {
+                    new DmsDisplayField(T("QA03.Field.Notes", "Notes"), item.Notes)
+                }));
+
+        return DmsDisplayFactory.CreateExpanderCard(
+            item.FullPrintVersionNumber,
+            root);
+    }
+
+    private static bool ArePrintVersionTasksCompleted(QualityPrintVersion item)
+    {
+        var realTasks = item.Tasks
+            .Where(task => !string.IsNullOrWhiteSpace(task.Text))
+            .ToList();
+
+        return realTasks.Count == 0 ||
+               realTasks.All(task => task.CompletedAt.HasValue);
+    }
+
+    private string BuildGaugeText(QualityPrintVersion item)
+    {
+        if (!item.HasGauge &&
+            string.IsNullOrWhiteSpace(item.GaugeLocation))
+        {
+            return T("Common.No", "No");
+        }
+
+        if (string.IsNullOrWhiteSpace(item.GaugeLocation))
+        {
+            return ToYesNo(item.HasGauge);
+        }
+
+        return item.HasGauge
+            ? TF("QA03.Value.YesWithDetail", "Yes - {0}", item.GaugeLocation)
+            : item.GaugeLocation;
+    }
+
+    private UIElement CreateTasksSection(QualityArticleOverview overview)
+    {
+        var section = DmsDisplayFactory.CreateSection(
+            TF("QA03.Section.Tasks", "Quality tasks ({0})", overview.Tasks.Count));
+
+        if (overview.Tasks.Count == 0)
+        {
+            section.Children.Add(
+                DmsUiFactory.CreateMutedText(
+                    T("QA03.Tasks.Empty", "No quality tasks are recorded.")));
+
+            return section;
+        }
+
+        var grid = DmsUiFactory.CreateDataGrid(ForwardMouseWheelToOuterScroll);
+
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Number", "Number"), "Number", 70));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Task", "Task"), "Text", 520));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.TaskAuthor", "Task author"), "CreatedBy", 140));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.DueDate", "Due date"), "DueDateText", 125));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.State", "State"), "CompletedText", 120));
+
+        grid.ItemsSource = overview.Tasks;
+        section.Children.Add(grid);
+
+        return section;
+    }
+
+    private UIElement CreateOrdersSection(QualityArticleOverview overview)
+    {
+        var section = DmsDisplayFactory.CreateSection(
+            TF("QA03.Section.Orders", "Orders ({0})", overview.Orders.Count));
+
+        if (overview.Orders.Count == 0)
+        {
+            section.Children.Add(
+                DmsUiFactory.CreateMutedText(
+                    T("QA03.Orders.Empty", "No orders are recorded.")));
+
+            return section;
+        }
+
+        var rows = overview.Orders
+            .Select(CreateOrderDisplayRow)
+            .ToList();
+
+        var grid = DmsUiFactory.CreateDataGrid(ForwardMouseWheelToOuterScroll);
+
+        grid.MouseDoubleClick += (_, _) =>
+        {
+            if (grid.SelectedItem is not QualityOrderDisplayRow row)
+            {
+                return;
+            }
+
+            RequestTransaction("QO03", row.OrderNumber);
+        };
+
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Order", "Order"), nameof(QualityOrderDisplayRow.OrderNumber), 100));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Machines", "Machines"), nameof(QualityOrderDisplayRow.Machines), 150));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.From", "From"), nameof(QualityOrderDisplayRow.ProductionStartText), 105));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.To", "To"), nameof(QualityOrderDisplayRow.ProductionEndText), 105));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Ordered", "Ordered"), nameof(QualityOrderDisplayRow.OrderedQuantity), 100));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Produced", "Produced"), nameof(QualityOrderDisplayRow.ProducedQuantity), 100));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.LabOrder", "Lab order"), nameof(QualityOrderDisplayRow.LabOrderNumber), 125));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Loreal", "L'Oréal"), nameof(QualityOrderDisplayRow.LorealText), 75));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.QualityClass", "Class"), nameof(QualityOrderDisplayRow.QualityClass), 90));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.SortingInHd", "Sorting in HD"), nameof(QualityOrderDisplayRow.SortingInHdText), 105));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.StaysInHd", "Stays in HD"), nameof(QualityOrderDisplayRow.StaysInHdText), 110));
+        grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Notes", "Notes"), nameof(QualityOrderDisplayRow.Notes), 360));
+
+        grid.ItemsSource = rows;
+
+        section.Children.Add(
+            DmsUiFactory.CreateSmallHint(
+                T("QA03.Orders.Hint", "Double-click opens the order in QO03.")));
+
+        section.Children.Add(grid);
+
+        return section;
+    }
+
+    private QualityOrderDisplayRow CreateOrderDisplayRow(QualityOrder order)
+    {
+        return new QualityOrderDisplayRow
+        {
+            OrderNumber = order.OrderNumber,
+            Machines = NormalizeMultiValue(order.Machine),
+            ProductionStartText = order.ProductionStart?.ToString("dd.MM.yyyy") ?? string.Empty,
+            ProductionEndText = order.ProductionEnd?.ToString("dd.MM.yyyy") ?? string.Empty,
+            OrderedQuantity = order.OrderedQuantity,
+            ProducedQuantity = order.ProducedQuantity,
+            LabOrderNumber = order.LabOrderNumber,
+            LorealText = ToYesNo(order.Loreal),
+            QualityClass = order.QualityClass,
+            SortingInHdText = ToYesNo(order.SortingInHd),
+            StaysInHdText = ToYesNo(order.StaysInHd),
+            Notes = order.Notes,
+            Source = order
+        };
+    }
+
+    private void ForwardMouseWheelToOuterScroll(object sender, MouseWheelEventArgs e)
+    {
+        if (RootScrollViewer is null)
+        {
+            return;
+        }
+
+        e.Handled = true;
+
+        RootScrollViewer.ScrollToVerticalOffset(
+            RootScrollViewer.VerticalOffset - e.Delta);
+    }
+
+    private static string NormalizeMultiValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return string.Join(
+            ", ",
+            value
+                .Split(
+                    new[] { ";#" },
+                    StringSplitOptions.RemoveEmptyEntries)
+                .Select(item => item.Trim())
+                .Where(item => !string.IsNullOrWhiteSpace(item))
+                .Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+
+    private string ToYesNo(bool value)
+    {
+        return value
+            ? T("Common.Yes", "Yes")
+            : T("Common.No", "No");
+    }
+
+    private string T(string key, string fallback)
+    {
+        var value = _translate?.Invoke(key) ?? key;
+        return IsMissing(value, key) ? fallback : value;
+    }
+
+    private string TF(string key, string fallback, params object[] args)
+    {
+        if (_translateFormat is not null)
+        {
+            var translated = _translateFormat(key, args);
+            if (!IsMissing(translated, key))
+            {
+                return translated;
+            }
+        }
+
+        var pattern = T(key, fallback);
+
+        try
+        {
+            return string.Format(pattern, args);
+        }
+        catch
+        {
+            return pattern;
+        }
+    }
+
+    private static bool IsMissing(string? value, string key)
+    {
+        return string.IsNullOrWhiteSpace(value)
+               || string.Equals(value, key, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class QualityOrderDisplayRow
+    {
+        public string OrderNumber { get; init; } = string.Empty;
+        public string Machines { get; init; } = string.Empty;
+        public string ProductionStartText { get; init; } = string.Empty;
+        public string ProductionEndText { get; init; } = string.Empty;
+        public int? OrderedQuantity { get; init; }
+        public int? ProducedQuantity { get; init; }
+        public string LabOrderNumber { get; init; } = string.Empty;
+        public string LorealText { get; init; } = string.Empty;
+        public string QualityClass { get; init; } = string.Empty;
+        public string SortingInHdText { get; init; } = string.Empty;
+        public string StaysInHdText { get; init; } = string.Empty;
+        public string Notes { get; init; } = string.Empty;
+        public QualityOrder Source { get; init; } = null!;
+    }
+}

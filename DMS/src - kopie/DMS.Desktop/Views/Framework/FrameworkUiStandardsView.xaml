@@ -1,0 +1,87 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Framework.FrameworkUiStandardsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock x:Name="TitleText" FontSize="26" FontWeight="Bold"/>
+            <TextBlock x:Name="SubtitleText" Margin="0,6,0,0" TextWrapping="Wrap" Opacity="0.85"/>
+        </StackPanel>
+
+        <WrapPanel Grid.Row="1" Margin="0,16,0,12">
+            <Button x:Name="ReloadButton" Click="ReloadButton_Click" MinWidth="130" Padding="14,8" Margin="0,0,8,0"/>
+            <Button x:Name="ClientSettingsButton" Click="ClientSettingsButton_Click" MinWidth="145" Padding="14,8" Margin="0,0,8,0"/>
+            <Button x:Name="DiagnosticsButton" Click="DiagnosticsButton_Click" MinWidth="145" Padding="14,8"/>
+        </WrapPanel>
+
+        <UniformGrid Grid.Row="2" Columns="4" Margin="0,0,0,12">
+            <Border Margin="0,0,8,0" Padding="10" BorderBrush="{DynamicResource DmsBorderBrush}" BorderThickness="1" CornerRadius="6">
+                <StackPanel>
+                    <TextBlock x:Name="ResourcesLabel" Opacity="0.75"/>
+                    <TextBlock x:Name="ResourcesValue" FontSize="20" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+            <Border Margin="0,0,8,0" Padding="10" BorderBrush="{DynamicResource DmsBorderBrush}" BorderThickness="1" CornerRadius="6">
+                <StackPanel>
+                    <TextBlock x:Name="StylesLabel" Opacity="0.75"/>
+                    <TextBlock x:Name="StylesValue" FontSize="20" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+            <Border Margin="0,0,8,0" Padding="10" BorderBrush="{DynamicResource DmsBorderBrush}" BorderThickness="1" CornerRadius="6">
+                <StackPanel>
+                    <TextBlock x:Name="FeaturesLabel" Opacity="0.75"/>
+                    <TextBlock x:Name="FeaturesValue" FontSize="20" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+            <Border Padding="10" BorderBrush="{DynamicResource DmsBorderBrush}" BorderThickness="1" CornerRadius="6">
+                <StackPanel>
+                    <TextBlock x:Name="HealthLabel" Opacity="0.75"/>
+                    <TextBlock x:Name="HealthValue" FontSize="20" FontWeight="Bold"/>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <DataGrid x:Name="StandardsGrid"
+                  Grid.Row="3"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  CanUserResizeColumns="True"
+                  CanUserReorderColumns="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn x:Name="CategoryColumn" CanUserResize="True" Binding="{Binding Category}" Width="150"/>
+                <DataGridTextColumn x:Name="StandardColumn" CanUserResize="True" Binding="{Binding Standard}" Width="260"/>
+                <DataGridTextColumn x:Name="StatusColumn" CanUserResize="True" Binding="{Binding Status}" Width="105"/>
+                <DataGridTextColumn x:Name="DetailsColumn" CanUserResize="True" Binding="{Binding Details}" Width="2*" MinWidth="400"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <DataGrid x:Name="ResourceGrid"
+                  Grid.Row="4"
+                  Margin="0,12,0,0"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  CanUserResizeColumns="True"
+                  CanUserReorderColumns="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn x:Name="ResourceTypeColumn" CanUserResize="True" Binding="{Binding ResourceType}" Width="160"/>
+                <DataGridTextColumn x:Name="ResourceKeyColumn" CanUserResize="True" Binding="{Binding Key}" Width="300"/>
+                <DataGridTextColumn x:Name="ResourceStatusColumn" CanUserResize="True" Binding="{Binding Status}" Width="105"/>
+                <DataGridTextColumn x:Name="ResourceValueColumn" CanUserResize="True" Binding="{Binding Value}" Width="2*" MinWidth="400"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock x:Name="FooterText" Grid.Row="5" Margin="0,10,0,0" TextWrapping="Wrap" Opacity="0.75"/>
+    </Grid>
+</UserControl>

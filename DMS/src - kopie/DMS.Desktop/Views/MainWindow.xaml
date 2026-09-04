@@ -1,0 +1,497 @@
+﻿<Window x:Class="DMS.Desktop.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="DMS FiGUI Shell"
+        Height="720"
+        Width="1200"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Assets/DMS_SystemIcon.ico"
+        Background="{DynamicResource DmsBackgroundBrush}">
+
+
+
+    <Window.Resources>
+        <Style TargetType="{x:Type ToolTip}">
+            <Setter Property="Background"
+                Value="{DynamicResource DmsPanelBrush}"/>
+
+            <Setter Property="Foreground"
+                Value="{DynamicResource DmsForegroundBrush}"/>
+
+            <Setter Property="BorderBrush"
+                Value="{DynamicResource DmsBorderBrush}"/>
+
+            <Setter Property="BorderThickness"
+                Value="1"/>
+
+            <Setter Property="Padding"
+                Value="8,5"/>
+
+            <Setter Property="FontSize"
+                Value="13"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToolTip}">
+                        <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+
+        </Style>
+        <Style TargetType="{x:Type ScrollBar}">
+            <Setter Property="Background"
+            Value="{DynamicResource DmsBackgroundBrush}"/>
+
+            <Setter Property="Foreground"
+            Value="{DynamicResource DmsMutedForegroundBrush}"/>
+
+            <Setter Property="BorderBrush"
+            Value="{DynamicResource DmsBorderBrush}"/>
+
+            <Setter Property="Width"
+            Value="12"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ScrollBar}">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Track x:Name="PART_Track"
+                           IsDirectionReversed="True">
+
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand"
+                                          Opacity="0"
+                                          Focusable="False"/>
+                                </Track.DecreaseRepeatButton>
+
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="{x:Type Thumb}">
+                                                <Border Margin="2"
+                                                CornerRadius="4"
+                                                Background="{DynamicResource DmsBorderBrush}"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand"
+                                          Opacity="0"
+                                          Focusable="False"/>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+        <!-- Shell local styles: context menu text must stay readable in HG/dark themes. -->
+        <Style x:Key="DmsFavoriteContextMenuStyle" TargetType="{x:Type ContextMenu}">
+            <Setter Property="Background" Value="#F4F7FB"/>
+            <Setter Property="Foreground" Value="#111111"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <Style x:Key="DmsFavoriteMenuItemStyle" TargetType="{x:Type MenuItem}">
+            <Setter Property="Foreground" Value="#111111"/>
+            <Setter Property="Background" Value="#F4F7FB"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type MenuItem}">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="Transparent"
+                                BorderThickness="1"
+                                Padding="{TemplateBinding Padding}">
+                            <TextBlock Text="{TemplateBinding Header}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#FFE600"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#111111"/>
+                                <Setter Property="Foreground" Value="#111111"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#666666"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Window.Resources>
+
+    <Window.CommandBindings>
+        <CommandBinding Command="ApplicationCommands.New"
+                        Executed="NewWindowCommand_Executed" />
+    </Window.CommandBindings>
+
+    <Window.InputBindings>
+        <KeyBinding Key="N"
+                    Modifiers="Control"
+                    Command="ApplicationCommands.New" />
+    </Window.InputBindings>
+
+    <DockPanel x:Name="RootPanel"
+               Background="{DynamicResource DmsBackgroundBrush}">
+
+        <!-- Horní lišta -->
+        <Border x:Name="TopBar"
+        DockPanel.Dock="Top"
+        Background="{DynamicResource DmsAccentBrush}"
+        BorderBrush="{DynamicResource DmsBorderBrush}"
+        BorderThickness="0,0,0,1"
+        Padding="18,10">
+
+            <Grid Height="92">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- VLEVO: logo firmy -->
+                <Border Grid.Column="0"
+                Background="Transparent"
+                VerticalAlignment="Center"
+                Margin="0,0,24,0">
+                    <Image x:Name="ImgSecondaryHeaderLogo"
+                   MaxHeight="72"
+                   MaxWidth="360"
+                   Stretch="Uniform"
+                   Visibility="Collapsed"/>
+                </Border>
+
+                <!-- UPROSTŘED: název systému -->
+                <StackPanel Grid.Column="1"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                    <TextBlock x:Name="TxtAppTitle"
+                       Text="DMS"
+                       FontSize="30"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource DmsOnAccentBrush}"
+                       HorizontalAlignment="Center"/>
+
+                    <TextBlock x:Name="TxtAppSubtitle"
+                       Text="Documentation Management System"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource DmsOnAccentBrush}"
+                       Opacity="0.92"
+                       HorizontalAlignment="Center"
+                       Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <!-- VPRAVO: uživatel + aktuální transakce -->
+                <StackPanel Grid.Column="2"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Right"
+                    Margin="24,0,0,0">
+                    <TextBlock x:Name="TxtCurrentUser"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource DmsOnAccentBrush}"
+                       TextAlignment="Right"
+                       HorizontalAlignment="Right"/>
+
+                    <TextBlock x:Name="TxtCurrentTransaction"
+                       FontSize="13"
+                       Foreground="{DynamicResource DmsOnAccentBrush}"
+                       Opacity="0.92"
+                       Text="Transakce: -"
+                       TextAlignment="Right"
+                       HorizontalAlignment="Right"
+                       Margin="0,4,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Transakční řádek -->
+        <Border x:Name="TransactionBar"
+                DockPanel.Dock="Top"
+                Background="{DynamicResource DmsPanelBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="10">
+
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="BtnBack"
+                          Content="←"
+                          ToolTip="Zpět"
+                          IsEnabled="False"
+                          Click="BtnBack_Click"
+                          Style="{StaticResource DmsToolbarButtonStyle}"/>
+
+                <Button x:Name="BtnForward"
+                          Content="→"
+                          ToolTip="Vpřed"
+                          IsEnabled="False"
+                          Click="BtnForward_Click"
+                          Style="{StaticResource DmsToolbarButtonStyle}"/>
+
+                <Button x:Name="BtnRefreshTransaction"
+                          Content="⟳"
+                          ToolTip="Aktualizovat aktuální transakci"
+                          IsEnabled="False"
+                          Click="BtnRefreshTransaction_Click"
+                          Style="{StaticResource DmsToolbarButtonStyle}"/>
+                <TextBlock x:Name="TxtTransactionLabel"
+                           Text="Transakce:"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"
+                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                <ComboBox x:Name="CmbTransaction"
+                          Width="420"
+                          Height="32"
+                          IsEditable="True"
+                          IsTextSearchEnabled="False"
+                          StaysOpenOnEdit="True"
+                          Style="{StaticResource DmsTransactionComboBoxStyle}"
+                          KeyDown="CmbTransaction_KeyDown"
+                          SelectionChanged="CmbTransaction_SelectionChanged"/>
+
+                <Button Content="★"
+                        Width="40"
+                        Height="32"
+                        Margin="8,0,0,0"
+                        Style="{StaticResource DmsFavoriteToolbarButtonStyle}"
+                        Click="BtnAddFavorite_Click"/>
+
+                <Button x:Name="BtnToggleLeftPanel"
+                        Width="42"
+                        Height="32"
+                        Margin="8,0,0,0"
+                        ToolTip="Skrýt levý panel"
+                        Background="{DynamicResource DmsPanelBrush}"
+                        Foreground="{DynamicResource DmsForegroundBrush}"
+                        BorderBrush="{DynamicResource DmsBorderBrush}"
+                        Style="{StaticResource DmsToolbarButtonStyle}"
+                        Click="BtnToggleLeftPanel_Click">
+                    <Grid Width="16" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Border Height="2" CornerRadius="1" Background="{DynamicResource DmsForegroundBrush}" VerticalAlignment="Top"/>
+                        <Border Height="2" CornerRadius="1" Background="{DynamicResource DmsForegroundBrush}" VerticalAlignment="Center"/>
+                        <Border Height="2" CornerRadius="1" Background="{DynamicResource DmsForegroundBrush}" VerticalAlignment="Bottom"/>
+                    </Grid>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- Stavový řádek -->
+        <StatusBar DockPanel.Dock="Bottom"
+                   Background="{DynamicResource DmsPanelBrush}"
+                   Foreground="{DynamicResource DmsForegroundBrush}">
+            <StatusBarItem x:Name="StatusDatabase" Content="DB: lokální režim" />
+            <StatusBarItem x:Name="StatusSap" Content="SAP TEST: nepřipojeno" />
+            <StatusBarItem x:Name="StatusMes" Content="MES: připojování..." />
+            <StatusBarItem x:Name="StatusSso" Content="SSO: Windows login" />
+            <StatusBarItem x:Name="StatusVersion" Content="verze ..." />
+            <StatusBarItem x:Name="StatusDate" Content="build ..." />
+        </StatusBar>
+
+        <!-- Levé menu -->
+        <!-- Hlavní obsah: levý panel + splitter + pracovní plocha -->
+        <Grid x:Name="MainContentGrid"
+              Background="{DynamicResource DmsBackgroundBrush}">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="LeftPanelColumn"
+                          Width="283"
+                          MinWidth="220"
+                          MaxWidth="520"/>
+
+                <ColumnDefinition x:Name="LeftPanelSplitterColumn"
+                          Width="5"/>
+
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Levé menu -->
+            <Border x:Name="LeftMenuPanel"
+            Grid.Column="0"
+            Background="{DynamicResource DmsPanelBrush}"
+            Padding="16"
+            BorderBrush="{DynamicResource DmsBorderBrush}"
+            BorderThickness="0,0,1,0">
+
+                <ScrollViewer x:Name="LeftMenuScrollViewer"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              CanContentScroll="False"
+                              PreviewMouseWheel="LeftMenuScrollViewer_PreviewMouseWheel">
+
+                    <StackPanel>
+                        <TextBlock x:Name="TxtFavoritesTitle"
+                           Text="Oblíbené"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,0,8"/>
+
+                        <ListBox x:Name="LstFavorites"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource DmsForegroundBrush}"
+                                 DisplayMemberPath="DisplayText"
+                                 PreviewMouseWheel="LeftMenuChild_PreviewMouseWheel"
+                                 PreviewMouseRightButtonDown="LstFavorites_PreviewMouseRightButtonDown"
+                                 Margin="0,0,0,8">
+
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListBoxItem}">
+                                    <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <EventSetter Event="MouseLeftButtonUp"
+                                         Handler="FavoriteItem_MouseLeftButtonUp"/>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+
+                            <ListBox.ContextMenu>
+                                <ContextMenu Style="{StaticResource DmsFavoriteContextMenuStyle}">
+                                    <MenuItem x:Name="MnuRemoveFavorite"
+                                              Header="Odebrat z oblíbených"
+                                              Style="{StaticResource DmsFavoriteMenuItemStyle}"
+                                              Click="RemoveFavoriteMenuItem_Click"/>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+                        </ListBox>
+
+                        <Separator Margin="0,12"
+                           Background="{DynamicResource DmsBorderBrush}"/>
+
+                        <TextBlock x:Name="TxtModulesTitle"
+                           Text="Moduly"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,0,8"/>
+
+                        <ListBox x:Name="LstModules"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource DmsForegroundBrush}"
+                                 DisplayMemberPath="DisplayText"
+                                 SelectionChanged="LstModules_SelectionChanged"
+                                 PreviewMouseWheel="LeftMenuChild_PreviewMouseWheel"
+                                 Margin="0,0,0,8"/>
+
+                        <Separator Margin="0,12"
+                           Background="{DynamicResource DmsBorderBrush}"/>
+
+                        <TextBlock x:Name="TxtModuleTransactionsTitle"
+                           Text="Transakce v modulu"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,0,8"/>
+
+                        <ListBox x:Name="LstModuleTransactions"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Foreground="{DynamicResource DmsForegroundBrush}"
+                                 Margin="0,0,0,8"
+                                 HorizontalContentAlignment="Stretch"
+                                 PreviewMouseWheel="LeftMenuChild_PreviewMouseWheel">
+
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="24"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Button Grid.Column="0"
+                                                Style="{StaticResource DmsFavoriteStarButtonStyle}"
+                                                Content="{Binding FavoriteIcon}"
+                                                ToolTip="{Binding FavoriteToolTip}"
+                                                Tag="{Binding Code}"
+                                                Click="BtnToggleFavorite_Click"/>
+
+                                        <Button Grid.Column="1"
+                                                Style="{StaticResource DmsFlatIconButtonStyle}"
+                                                Tag="{Binding Code}"
+                                                HorizontalContentAlignment="Left"
+                                                Click="BtnExecuteModuleTransaction_Click">
+
+                                            <TextBlock Text="{Binding DisplayText}"
+                                                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                                       VerticalAlignment="Center"/>
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Resizer levého panelu -->
+            <GridSplitter x:Name="LeftPanelSplitter"
+                  Grid.Column="1"
+                  Width="5"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch"
+                  Background="{DynamicResource DmsBorderBrush}"
+                  ResizeBehavior="PreviousAndNext"
+                  ResizeDirection="Columns"
+                  ShowsPreview="True"/>
+
+            <!-- Pracovní plocha -->
+            <Grid Grid.Column="2"
+          Background="{DynamicResource DmsBackgroundBrush}"
+          Margin="20">
+
+                <ScrollViewer x:Name="WorkspaceScrollViewer"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Auto"
+                      CanContentScroll="False">
+
+                    <Border x:Name="WorkspaceHost"
+                    Background="{DynamicResource DmsPanelBrush}"
+                    Padding="24"
+                    CornerRadius="4"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1">
+
+                        <Grid x:Name="WorkspacePanel">
+                            <StackPanel>
+                                <TextBlock x:Name="TxtWelcomeTitle"
+                                   Text="Vítejte v DMS"
+                                   FontSize="24"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   Margin="0,0,0,16"/>
+
+                                <TextBlock x:Name="TxtWelcomeSubtitle"
+                                   Text="Zadejte transakci nebo vyberte položku z menu."
+                                   FontSize="16"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   Margin="0,4"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>

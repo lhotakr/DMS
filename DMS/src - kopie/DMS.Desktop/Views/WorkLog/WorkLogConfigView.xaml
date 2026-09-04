@@ -1,0 +1,178 @@
+<UserControl x:Class="DMS.Desktop.Views.WorkLog.WorkLogConfigView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsPanelBrush}">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock x:Name="TxtTitle"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource DmsForegroundBrush}"/>
+            <TextBlock x:Name="TxtSubtitle"
+                       Margin="0,4,0,0"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Margin="0,0,0,10"
+                Padding="12"
+                Background="{DynamicResource DmsBackgroundBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="LblDatabase"
+                           Grid.Row="0"
+                           Grid.Column="0"
+                           Margin="0,0,8,8"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                <TextBox x:Name="TxtDatabasePath"
+                         Grid.Row="0"
+                         Grid.Column="1"
+                         Margin="0,0,8,8"/>
+                <Button x:Name="BtnBrowse"
+                        Grid.Row="0"
+                        Grid.Column="2"
+                        MinWidth="90"
+                        Margin="0,0,0,8"
+                        Click="BtnBrowse_Click"/>
+
+                <WrapPanel Grid.Row="1"
+                           Grid.Column="1"
+                           Grid.ColumnSpan="2">
+                    <Button x:Name="BtnTest"
+                            MinWidth="120"
+                            Margin="0,0,8,0"
+                            Click="BtnTest_Click"/>
+                    <Button x:Name="BtnSave"
+                            MinWidth="120"
+                            Margin="0,0,8,0"
+                            Click="BtnSave_Click"/>
+                    <Button x:Name="BtnReload"
+                            MinWidth="120"
+                            Click="BtnReload_Click"/>
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0"
+                    Padding="12"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <TextBlock x:Name="TxtDatabaseInfoTitle"
+                               Margin="0,0,0,10"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBlock x:Name="TxtDatabaseInfo"
+                               TextWrapping="Wrap"
+                               FontFamily="Consolas"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Padding="12"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="190"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="TxtServerTitle"
+                               Grid.Row="0"
+                               Grid.ColumnSpan="2"
+                               Margin="0,0,0,10"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+
+                    <CheckBox x:Name="ChkServerEnabled"
+                              Grid.Row="1"
+                              Grid.ColumnSpan="2"
+                              Margin="0,0,0,8"/>
+
+                    <TextBlock x:Name="LblInterval"
+                               Grid.Row="2"
+                               Grid.Column="0"
+                               Margin="0,0,8,8"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DmsForegroundBrush}"/>
+                    <TextBox x:Name="TxtInterval"
+                             Grid.Row="2"
+                             Grid.Column="1"
+                             Width="120"
+                             HorizontalAlignment="Left"
+                             Margin="0,0,0,8"/>
+
+                    <TextBlock x:Name="TxtServerHint"
+                               Grid.Row="3"
+                               Grid.ColumnSpan="2"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="3"
+                Padding="12"
+                Background="{DynamicResource DmsBackgroundBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8">
+            <StackPanel>
+                <TextBlock x:Name="TxtSchemaTitle"
+                           Margin="0,0,0,8"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                <TextBlock x:Name="TxtSchemaHint"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+            </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="TxtStatus"
+                   Grid.Row="4"
+                   Margin="0,10,0,0"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+    </Grid>
+</UserControl>

@@ -1,0 +1,18 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Quality.QualityMenuView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsBackgroundBrush}">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="18">
+            <TextBlock Text="Modul kvality – hlavní menu"
+                       FontSize="26" FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource DmsForegroundBrush}"
+                       Margin="0,0,0,24"/>
+            <StackPanel x:Name="MenuRows"/>
+            <TextBlock Text="Neaktivní tlačítko znamená, že transakce není dostupná nebo k ní uživatel nemá oprávnění."
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                       TextWrapping="Wrap" Margin="0,14,0,0"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

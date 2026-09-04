@@ -1,0 +1,335 @@
+﻿[
+  {
+    "code": "PRODUCTION",
+    "name": "Výrobní intervaly",
+    "description": "Read-only detail výrobních intervalů FASTEC. Hodnoty nejsou v tomto pohledu agregovány.",
+    "dataSource": "Production",
+    "maxRows": 5000,
+    "columns": [
+      {
+        "property": "Starttime",
+        "header": "Od",
+        "width": 145,
+        "format": "dd.MM.yyyy HH:mm:ss",
+        "headerKey": "MES06.Column.From"
+      },
+      {
+        "property": "Endtime",
+        "header": "Do",
+        "width": 145,
+        "format": "dd.MM.yyyy HH:mm:ss",
+        "headerKey": "MES06.Column.To"
+      },
+      {
+        "property": "WorkcenterCode",
+        "header": "Pracoviště",
+        "width": 105,
+        "format": "",
+        "headerKey": "MES06.Column.Workcenter"
+      },
+      {
+        "property": "OrderCode",
+        "header": "Zakázka",
+        "width": 100,
+        "format": "",
+        "headerKey": "MES06.Column.Order"
+      },
+      {
+        "property": "OperationCode",
+        "header": "Operace",
+        "width": 80,
+        "format": "",
+        "headerKey": "MES06.Column.Operation"
+      },
+      {
+        "property": "ProductCode",
+        "header": "Artikl",
+        "width": 150,
+        "format": "",
+        "headerKey": "MES06.Column.Product"
+      },
+      {
+        "property": "ProductDescription",
+        "header": "Popis artiklu",
+        "width": 260,
+        "format": "",
+        "headerKey": "MES06.Column.ProductDescription"
+      },
+      {
+        "property": "OrderQuantity",
+        "header": "Množství zakázky",
+        "width": 120,
+        "format": "0.###",
+        "headerKey": "MES06.Column.OrderQuantity"
+      },
+      {
+        "property": "PerformanceTotal",
+        "header": "Celkem",
+        "width": 95,
+        "format": "0.###",
+        "headerKey": "MES06.Column.Total"
+      },
+      {
+        "property": "PerformanceGood",
+        "header": "OK",
+        "width": 95,
+        "format": "0.###",
+        "headerKey": "MES06.Column.Good"
+      },
+      {
+        "property": "PerformanceBad",
+        "header": "NOK",
+        "width": 95,
+        "format": "0.###",
+        "headerKey": "MES06.Column.Bad"
+      },
+      {
+        "property": "PerformanceRework",
+        "header": "Přepracování",
+        "width": 110,
+        "format": "0.###",
+        "headerKey": "MES06.Column.Rework"
+      },
+      {
+        "property": "DurationUtilization",
+        "header": "Využití [s]",
+        "width": 110,
+        "format": "0.###",
+        "headerKey": "MES06.Column.UtilizationSeconds"
+      },
+      {
+        "property": "DurationDown",
+        "header": "Prostoj [s]",
+        "width": 110,
+        "format": "0.###",
+        "headerKey": "MES06.Column.DownSeconds"
+      }
+    ],
+    "nameKey": "MES06.Report.Production.Name",
+    "descriptionKey": "MES06.Report.Production.Description"
+  },
+  {
+    "code": "STATES",
+    "name": "Stavy a prostoje",
+    "description": "Timeline stavů pracovišť. Graf sčítá délku stavů podle kategorie v zadaném období.",
+    "dataSource": "States",
+    "maxRows": 10000,
+    "chart": {
+      "kind": "Column",
+      "groupBy": "CategoryName",
+      "measure": "DurationMinutes",
+      "aggregation": "Sum",
+      "title": "Délka stavů podle kategorie [min]",
+      "top": 12,
+      "titleKey": "MES06.Report.States.ChartTitle"
+    },
+    "columns": [
+      {
+        "property": "Starttime",
+        "header": "Od",
+        "width": 145,
+        "format": "dd.MM.yyyy HH:mm:ss",
+        "headerKey": "MES06.Column.From"
+      },
+      {
+        "property": "Endtime",
+        "header": "Do",
+        "width": 145,
+        "format": "dd.MM.yyyy HH:mm:ss",
+        "headerKey": "MES06.Column.To"
+      },
+      {
+        "property": "WorkcenterCode",
+        "header": "Pracoviště",
+        "width": 105,
+        "format": "",
+        "headerKey": "MES06.Column.Workcenter"
+      },
+      {
+        "property": "OrderCode",
+        "header": "Zakázka",
+        "width": 100,
+        "format": "",
+        "headerKey": "MES06.Column.Order"
+      },
+      {
+        "property": "ProductCode",
+        "header": "Artikl",
+        "width": 150,
+        "format": "",
+        "headerKey": "MES06.Column.Product"
+      },
+      {
+        "property": "StateName",
+        "header": "Stav",
+        "width": 210,
+        "format": "",
+        "headerKey": "MES06.Column.State"
+      },
+      {
+        "property": "CategoryName",
+        "header": "Kategorie",
+        "width": 180,
+        "format": "",
+        "headerKey": "MES06.Column.Category"
+      },
+      {
+        "property": "DurationMinutes",
+        "header": "Délka [min]",
+        "width": 105,
+        "format": "0.00",
+        "headerKey": "MES06.Column.DurationMinutes"
+      },
+      {
+        "property": "CustomText",
+        "header": "Poznámka",
+        "width": 240,
+        "format": "",
+        "headerKey": "MES06.Column.Comment"
+      }
+    ],
+    "nameKey": "MES06.Report.States.Name",
+    "descriptionKey": "MES06.Report.States.Description"
+  },
+  {
+    "code": "COUNTERS",
+    "name": "Události čítačů",
+    "description": "Surové čítačové události. Záměrně bez SUM grafu: před agregací je nutné potvrdit semantiku resetů a korekcí jednotlivých čítačů.",
+    "dataSource": "Counters",
+    "maxRows": 10000,
+    "columns": [
+      {
+        "property": "Timestamp",
+        "header": "Čas",
+        "width": 145,
+        "format": "dd.MM.yyyy HH:mm:ss",
+        "headerKey": "MES06.Column.Timestamp"
+      },
+      {
+        "property": "WorkcenterCode",
+        "header": "Pracoviště",
+        "width": 105,
+        "format": "",
+        "headerKey": "MES06.Column.Workcenter"
+      },
+      {
+        "property": "OrderCode",
+        "header": "Zakázka",
+        "width": 100,
+        "format": "",
+        "headerKey": "MES06.Column.Order"
+      },
+      {
+        "property": "ProductCode",
+        "header": "Artikl",
+        "width": 150,
+        "format": "",
+        "headerKey": "MES06.Column.Product"
+      },
+      {
+        "property": "CounterName",
+        "header": "Čítač",
+        "width": 200,
+        "format": "",
+        "headerKey": "MES06.Column.Counter"
+      },
+      {
+        "property": "CounterDescription",
+        "header": "Popis",
+        "width": 260,
+        "format": "",
+        "headerKey": "MES06.Column.Description"
+      },
+      {
+        "property": "Value",
+        "header": "Hodnota",
+        "width": 110,
+        "format": "0.###",
+        "headerKey": "MES06.Column.Value"
+      },
+      {
+        "property": "CustomText",
+        "header": "Poznámka / korekce",
+        "width": 260,
+        "format": "",
+        "headerKey": "MES06.Column.CommentCorrection"
+      }
+    ],
+    "nameKey": "MES06.Report.Counters.Name",
+    "descriptionKey": "MES06.Report.Counters.Description"
+  },
+{
+  "code": "LoggedOperators",
+  "name": "Logged operators",
+  "nameKey": "MES06.Report.LoggedOperators.Name",
+  "description": "Operator login history for the selected period.",
+  "descriptionKey": "MES06.Report.LoggedOperators.Description",
+  "dataSource": "LoggedOperators",
+  "maxRows": 5000,
+  "columns": [
+    {
+      "property": "WorkcenterCode",
+      "header": "Work center",
+      "headerKey": "MES06.LoggedOperators.Column.Workcenter",
+      "width": 105
+    },
+    {
+      "property": "Shift",
+      "header": "Shift",
+      "headerKey": "MES06.LoggedOperators.Column.Shift",
+      "width": 100
+    },
+    {
+      "property": "OperatorName",
+      "header": "Operator",
+      "headerKey": "MES06.LoggedOperators.Column.Operator",
+      "width": 180
+    },
+    {
+      "property": "HumanCode",
+      "header": "Personnel no.",
+      "headerKey": "MES06.LoggedOperators.Column.HumanCode",
+      "width": 105
+    },
+    {
+      "property": "LoginFrom",
+      "header": "Login",
+      "headerKey": "MES06.LoggedOperators.Column.LoginFrom",
+      "format": "dd.MM.yyyy HH:mm",
+      "width": 135
+    },
+    {
+      "property": "LoginTo",
+      "header": "Logout",
+      "headerKey": "MES06.LoggedOperators.Column.LoginTo",
+      "format": "dd.MM.yyyy HH:mm",
+      "width": 135
+    },
+    {
+      "property": "DurationText",
+      "header": "Duration",
+      "headerKey": "MES06.LoggedOperators.Column.Duration",
+      "width": 100
+    },
+    {
+      "property": "OrderCode",
+      "header": "Order",
+      "headerKey": "MES06.LoggedOperators.Column.Order",
+      "width": 105
+    },
+    {
+      "property": "ProductCode",
+      "header": "Article",
+      "headerKey": "MES06.LoggedOperators.Column.Article",
+      "width": 145
+    },
+    {
+      "property": "OperationCode",
+      "header": "Operation",
+      "headerKey": "MES06.LoggedOperators.Column.Operation",
+      "width": 105
+    }
+  ],
+  "chart": null
+}
+]

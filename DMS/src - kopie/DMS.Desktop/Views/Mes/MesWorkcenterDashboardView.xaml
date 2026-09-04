@@ -1,0 +1,539 @@
+<UserControl x:Class="DMS.Desktop.Views.Mes.MesWorkcenterDashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinHeight="720"
+             MinWidth="1100">
+    <UserControl.Resources>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+        </Style>
+
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,0,9"/>
+        </Style>
+
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource DmsMutedForegroundBrush}"/>
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Margin" Value="0,0,0,2"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="Value" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <Style x:Key="MetricCell" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,0,12,8"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource DmsBackgroundBrush}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <Grid Margin="0,0,4,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                        <TextBlock x:Name="TxtTitle"
+                                   FontSize="24"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"/>
+                        <TextBlock x:Name="TxtSubtitle"
+                                   Margin="0,3,0,0"
+                                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <TextBlock x:Name="TxtLastRefresh"
+                                   Margin="0,0,12,0"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+                        <Button x:Name="BtnRefresh"
+                                MinWidth="90"
+                                Padding="12,5"
+                                Click="BtnRefresh_Click"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 1) SHIFT -->
+                <Border Grid.Row="1" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock x:Name="TxtShiftPanelTitle"
+                                   Grid.Row="0"
+                                   Style="{StaticResource SectionTitle}"/>
+
+                        <!-- Shift row 1 -->
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="0.9*"/>
+                                <ColumnDefinition Width="1.2*"/>
+                                <ColumnDefinition Width="1.35*"/>
+                                <ColumnDefinition Width="0.9*"/>
+                                <ColumnDefinition Width="1.05*"/>
+                                <ColumnDefinition Width="1.0*"/>
+                                <ColumnDefinition Width="0.75*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblShift" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtShift" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblShiftPeriod" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtShiftPeriod" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblState" Style="{StaticResource Caption}"/>
+                                <Border x:Name="StateBadge"
+                                        HorizontalAlignment="Left"
+                                        Padding="6,3">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="TxtState"
+                                                   FontWeight="Bold"
+                                                   Foreground="Black"/>
+                                        <TextBlock x:Name="TxtStateDuration"
+                                                   Margin="8,0,0,0"
+                                                   Foreground="Black"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblOrder" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtOrder" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="4" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblArticle" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtArticle" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="5" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblSapNumber" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtSapNumber" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="6" Margin="0,0,0,8">
+                                <TextBlock x:Name="LblOperation" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtOperation" Style="{StaticResource Value}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Shift row 2 -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.15*"/>
+                                <ColumnDefinition Width="1.0*"/>
+                                <ColumnDefinition Width="1.0*"/>
+                                <ColumnDefinition Width="1.0*"/>
+                                <ColumnDefinition Width="1.1*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblAveragePerformance" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtAveragePerformance" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblGross" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtGross" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblNet" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtNet" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblShiftScrap" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtShiftScrap"
+                                           Style="{StaticResource Value}"
+                                           Foreground="#FF9D9D"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="4" Margin="0,0,0,8">
+                                <TextBlock x:Name="LblExpected" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtExpected" Style="{StaticResource Value}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Shift row 3 -->
+                        <Grid Grid.Row="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblCounterScrapProduction" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtCounterScrapProduction"
+                                           Style="{StaticResource Value}"
+                                           Foreground="#FFB8B8"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblCounterScrapGlass" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtCounterScrapGlass"
+                                           Style="{StaticResource Value}"
+                                           Foreground="#FFB8B8"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Margin="0,0,0,8">
+                                <TextBlock x:Name="LblCounterWashedBottles" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtCounterWashedBottles"
+                                           Style="{StaticResource Value}"
+                                           Foreground="#B8DFFF"/>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- 2) ORDER -->
+                <Border Grid.Row="2" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock x:Name="TxtOrderPanelTitle"
+                                   Grid.Row="0"
+                                   Style="{StaticResource SectionTitle}"/>
+
+                        <!-- Order row 1 -->
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1.45*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblPlannedPerformance" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtPlannedPerformance" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblOrderSize" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtOrderSize" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblOrderFinished" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtOrderFinished"
+                                           Style="{StaticResource Value}"
+                                           Foreground="#B9FFB9"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblOrderScrap" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtOrderScrap"
+                                           Style="{StaticResource Value}"
+                                           Foreground="#FFB8B8"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="4" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblOrderRemaining" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtOrderRemaining" Style="{StaticResource Value}"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="5" Margin="0,0,0,8">
+                                <TextBlock x:Name="LblOrderProgress" Style="{StaticResource Caption}"/>
+                                <Grid>
+                                    <ProgressBar x:Name="PbOrderProgress"
+                                                 Height="22"
+                                                 Minimum="0"
+                                                 Maximum="100"/>
+                                    <TextBlock x:Name="TxtOrderProgress"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               FontWeight="Bold"
+                                               Foreground="Black"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Order row 2 -->
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblCounterDevelopment" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtCounterDevelopment"
+                                           Style="{StaticResource Value}"
+                                           Foreground="#FFB8B8"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblCounterQuality" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtCounterQuality"
+                                           Style="{StaticResource Value}"
+                                           Foreground="#FFB8B8"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Style="{StaticResource MetricCell}">
+                                <TextBlock x:Name="LblCounterSetup" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtCounterSetup"
+                                           Style="{StaticResource Value}"
+                                           Foreground="#FFB8B8"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3" Margin="0,0,0,8">
+                                <TextBlock x:Name="LblCounterTransport" Style="{StaticResource Caption}"/>
+                                <TextBlock x:Name="TxtCounterTransport"
+                                           Style="{StaticResource Value}"
+                                           Foreground="#FFB8B8"/>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- OEE / STATES / OPERATORS -->
+                <Grid Grid.Row="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.1*"/>
+                        <ColumnDefinition Width="1.55*"/>
+                        <ColumnDefinition Width="1.35*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border Grid.Column="0" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock x:Name="TxtOeeTitle"
+                                       Style="{StaticResource SectionTitle}"/>
+
+                            <Grid Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="105"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="68"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblAvailability"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                                <ProgressBar x:Name="PbAvailability"
+                                             Grid.Column="1"
+                                             Height="18"
+                                             Maximum="100"/>
+                                <TextBlock x:Name="TxtAvailability"
+                                           Grid.Column="2"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                            </Grid>
+
+                            <Grid Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="105"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="68"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblPerformance"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                                <ProgressBar x:Name="PbPerformance"
+                                             Grid.Column="1"
+                                             Height="18"
+                                             Maximum="150"/>
+                                <TextBlock x:Name="TxtPerformance"
+                                           Grid.Column="2"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                            </Grid>
+
+                            <Grid Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="105"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="68"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblQuality"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                                <ProgressBar x:Name="PbQuality"
+                                             Grid.Column="1"
+                                             Height="18"
+                                             Maximum="100"/>
+                                <TextBlock x:Name="TxtQuality"
+                                           Grid.Column="2"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                            </Grid>
+
+                            <Grid Margin="0,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="105"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="68"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="OEE"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                                <ProgressBar x:Name="PbOee"
+                                             Grid.Column="1"
+                                             Height="18"
+                                             Maximum="130"/>
+                                <TextBlock x:Name="TxtOee"
+                                           Grid.Column="2"
+                                           HorizontalAlignment="Right"
+                                           VerticalAlignment="Center"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="190"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock x:Name="TxtStatesTitle"
+                                       Style="{StaticResource SectionTitle}"/>
+
+                            <DataGrid x:Name="GridStates"
+                                      Grid.Row="1"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      CanUserResizeColumns="True"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="All"
+                                      MinColumnWidth="80"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      Background="{DynamicResource DmsPanelBrush}"
+                                      Foreground="{DynamicResource DmsForegroundBrush}"
+                                      BorderBrush="{DynamicResource DmsBorderBrush}">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn x:Name="ColStateName"
+                                                        Binding="{Binding StateName}"
+                                                        Width="*"
+                                                        MinWidth="210"/>
+                                    <DataGridTextColumn x:Name="ColStateCount"
+                                                        Binding="{Binding Occurrences}"
+                                                        Width="80"
+                                                        MinWidth="80"/>
+                                    <DataGridTextColumn x:Name="ColStateDuration"
+                                                        Binding="{Binding DurationText}"
+                                                        Width="110"
+                                                        MinWidth="110"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="190"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock x:Name="TxtOperatorsTitle"
+                                       Style="{StaticResource SectionTitle}"/>
+
+                            <DataGrid x:Name="GridOperators"
+                                      Grid.Row="1"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      CanUserAddRows="False"
+                                      CanUserResizeColumns="True"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="All"
+                                      MinColumnWidth="100"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      Background="{DynamicResource DmsPanelBrush}"
+                                      Foreground="{DynamicResource DmsForegroundBrush}"
+                                      BorderBrush="{DynamicResource DmsBorderBrush}">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn x:Name="ColOperatorLogin"
+                                                        Binding="{Binding LoginTimeText}"
+                                                        Width="150"
+                                                        MinWidth="150"/>
+                                    <DataGridTextColumn x:Name="ColOperatorName"
+                                                        Binding="{Binding Personnel}"
+                                                        Width="*"
+                                                        MinWidth="220"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- Graph remains as before -->
+                <Border Grid.Row="4" Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="290"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock x:Name="TxtGraphTitle"
+                                   Style="{StaticResource SectionTitle}"/>
+
+                        <Grid x:Name="GraphHost"
+                              Grid.Row="1"
+                              Background="White"
+                              SizeChanged="GraphHost_SizeChanged"/>
+                    </Grid>
+                </Border>
+
+                <TextBlock x:Name="TxtStatus"
+                           Grid.Row="5"
+                           Margin="4,2,4,0"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

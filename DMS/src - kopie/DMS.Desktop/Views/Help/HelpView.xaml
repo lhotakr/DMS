@@ -1,0 +1,218 @@
+<UserControl x:Class="DMS.Desktop.Views.Help.HelpView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsBackgroundBrush}">
+
+    <UserControl.Resources>
+        <Style x:Key="HelpGridTextBlockStyle"
+               TargetType="{x:Type TextBlock}">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="8,0,8,0"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+        </Style>
+
+        <Style x:Key="HelpGridRowStyle"
+               TargetType="{x:Type DataGridRow}">
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
+                    <Setter Property="Background" Value="#3E3A18"/>
+                </Trigger>
+
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
+                    <Setter Property="Background" Value="#243A5C"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="HelpGridCellStyle"
+               TargetType="{x:Type DataGridCell}">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="HelpGridHeaderStyle"
+               TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="8,0,8,0"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="0"
+          Background="{DynamicResource DmsBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0"
+                    Margin="0,0,0,14">
+            <TextBlock x:Name="TxtTitle"
+                       Text="HELP - Transaction help"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource DmsForegroundBrush}"
+                       Margin="0,0,0,8"/>
+
+            <TextBlock x:Name="TxtSubtitle"
+                       Text="List of available DMS transactions for the current user."
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Padding="12"
+                Margin="0,0,0,12"
+                CornerRadius="6"
+                BorderThickness="1"
+                Background="{DynamicResource DmsPanelBrush}"
+                BorderBrush="{DynamicResource DmsBorderBrush}">
+
+            <WrapPanel VerticalAlignment="Center">
+                <TextBlock x:Name="TxtSearchLabel"
+                           Text="Search:"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,6,8"/>
+
+                <TextBox x:Name="TxtSearch"
+                         Width="260"
+                         Height="30"
+                         Margin="0,0,14,8"
+                         TextChanged="TxtSearch_TextChanged"/>
+
+                <TextBlock x:Name="TxtModuleLabel"
+                           Text="Module:"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource DmsForegroundBrush}"
+                           Margin="0,0,6,8"/>
+
+                <ComboBox x:Name="CmbModule"
+                          Width="220"
+                          Height="30"
+                          Margin="0,0,14,8"
+                          SelectionChanged="CmbModule_SelectionChanged"/>
+
+                <Button x:Name="BtnClear"
+                        Content="Clear"
+                        Width="90"
+                        Height="30"
+                        Margin="0,0,14,8"
+                        Style="{StaticResource DmsFormButtonStyle}"
+                        Click="BtnClear_Click"/>
+
+                <TextBlock x:Name="TxtVisibleCount"
+                           Text="Visible transactions: 0"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                           Margin="0,0,0,8"/>
+            </WrapPanel>
+        </Border>
+
+        <DataGrid x:Name="GridTransactions"
+                  Grid.Row="2"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  RowHeaderWidth="0"
+                  MinRowHeight="30"
+                  FontSize="13"
+                  EnableRowVirtualization="True"
+                  EnableColumnVirtualization="True"
+                  Background="{DynamicResource DmsPanelBrush}"
+                  Foreground="{DynamicResource DmsForegroundBrush}"
+                  BorderBrush="{DynamicResource DmsBorderBrush}"
+                  RowStyle="{StaticResource HelpGridRowStyle}"
+                  CellStyle="{StaticResource HelpGridCellStyle}"
+                  ColumnHeaderStyle="{StaticResource HelpGridHeaderStyle}">
+
+            <DataGrid.Columns>
+                <DataGridTextColumn x:Name="ColCode"
+                                    Binding="{Binding Code}"
+                                    Width="90"
+                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
+
+                <DataGridTextColumn x:Name="ColName"
+                                    Binding="{Binding Name}"
+                                    Width="210"
+                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
+
+                <DataGridTextColumn x:Name="ColModule"
+                                    Binding="{Binding Module}"
+                                    Width="150"
+                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
+
+                <DataGridTextColumn x:Name="ColDescription"
+                                    Binding="{Binding Description}"
+                                    Width="*"
+                                    MinWidth="300"
+                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
+
+                <DataGridTextColumn x:Name="ColParameter"
+                                    Binding="{Binding ParameterDisplay}"
+                                    Width="150"
+                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
+
+                <DataGridTextColumn x:Name="ColRoles"
+                                    Binding="{Binding RolesDisplay}"
+                                    Width="220"
+                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
+
+                <DataGridTemplateColumn x:Name="ColAction"
+                                        Width="105">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="{Binding RunText}"
+                                    Tag="{Binding Code}"
+                                    Height="24"
+                                    MinWidth="74"
+                                    Padding="8,0,8,0"
+                                    Style="{StaticResource DmsPrimaryButtonStyle}"
+                                    Click="BtnRun_Click"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <TextBlock x:Name="TxtHint"
+                   Grid.Row="3"
+                   Margin="0,10,0,0"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                   Text="Tip: transactions requiring an article number can be started without a parameter; DMS will ask for it."/>
+    </Grid>
+</UserControl>

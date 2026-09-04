@@ -1,0 +1,283 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.SystemSettings.SystemSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource DmsBackgroundBrush}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  CanContentScroll="False">
+
+        <StackPanel Margin="0">
+
+            <TextBlock x:Name="TxtTitle"
+                       Text="SYS01 - Nastavení systému DMS"
+                       Style="{StaticResource DmsTitleTextStyle}"/>
+
+            <Border Style="{StaticResource DmsCardBorderStyle}"
+                    Margin="0,0,0,12">
+
+                <StackPanel>
+
+                    <TextBlock x:Name="TxtDocumentStorageTitle"
+                               Text="Dokumentové úložiště"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,14"/>
+
+                    <TextBlock x:Name="TxtDocumentsRootPathLabel"
+                               Text="Kořen dokumentů"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,4"/>
+
+                    <TextBox x:Name="TxtDocumentsRootPath"
+                             Margin="0,0,0,12"/>
+
+                    <TextBlock x:Name="TxtArticleFoldersRootPathLabel"
+                               Text="Kořen složek SAP ID / artiklů"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,0,0,4"/>
+
+                    <TextBox x:Name="TxtArticleFoldersRootPath"
+                             Margin="0,0,0,12"/>
+
+                    <CheckBox x:Name="ChkCreateArticleFoldersOnSapImport"
+                              Content="Zakládat složky automaticky při SAP importu"
+                              Foreground="{DynamicResource DmsForegroundBrush}"
+                              Margin="0,0,0,18"/>
+
+                    <TextBlock x:Name="TxtSubFoldersTitle"
+                               Text="Podsložky artiklu"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,4,0,8"/>
+
+                    <DataGrid x:Name="GridSubFolders"
+                              Style="{StaticResource DmsDataGridStyle}"
+                              MinHeight="160"
+                              Margin="0,0,0,18"
+                              CanUserAddRows="True"
+                              CanUserDeleteRows="True">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn Header="Kód"
+                                                Binding="{Binding Code, UpdateSourceTrigger=PropertyChanged}"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                EditingElementStyle="{StaticResource DmsDataGridTextBoxEditingStyle}"
+                                                Width="120"
+                                                MinWidth="100"/>
+
+                            <DataGridTextColumn Header="Název"
+                                                Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                EditingElementStyle="{StaticResource DmsDataGridTextBoxEditingStyle}"
+                                                Width="280"
+                                                MinWidth="220"/>
+
+                            <DataGridTextColumn Header="Relativní cesta"
+                                                Binding="{Binding RelativePath, UpdateSourceTrigger=PropertyChanged}"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                EditingElementStyle="{StaticResource DmsDataGridTextBoxEditingStyle}"
+                                                Width="240"
+                                                MinWidth="180"/>
+
+                            <DataGridCheckBoxColumn Header="Aktivní"
+                                                    Binding="{Binding IsActive, UpdateSourceTrigger=PropertyChanged}"
+                                                    ElementStyle="{StaticResource DmsCenteredCheckBoxStyle}"
+                                                    EditingElementStyle="{StaticResource DmsCenteredCheckBoxStyle}"
+                                                    Width="110"
+                                                    MinWidth="100"/>
+
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBlock x:Name="TxtMaterialRangesTitle"
+                               Text="Rozsahy SAP ID pro zakládání složek"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,4,0,8"/>
+
+                    <TextBlock x:Name="TxtMaterialRangesHelp"
+                               Text="Aktivní rozsahy určují, pro které SAP ID se budou zakládat složky. Výchozí doporučení je pouze rozsah 1000000000–1099999999 pro hlavní artikly / flakony."
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                               Margin="0,0,0,8"/>
+
+                    <DataGrid x:Name="GridMaterialRanges"
+                              Style="{StaticResource DmsDataGridStyle}"
+                              MinHeight="150"
+                              Margin="0,0,0,18"
+                              CanUserAddRows="True"
+                              CanUserDeleteRows="True">
+
+                        <DataGrid.Columns>
+
+                            <DataGridTextColumn Header="Název"
+                                                Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                EditingElementStyle="{StaticResource DmsDataGridTextBoxEditingStyle}"
+                                                Width="360"
+                                                MinWidth="260"/>
+
+                            <DataGridTextColumn Header="Od"
+                                                Binding="{Binding From, UpdateSourceTrigger=PropertyChanged}"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                EditingElementStyle="{StaticResource DmsDataGridTextBoxEditingStyle}"
+                                                Width="170"
+                                                MinWidth="150"/>
+
+                            <DataGridTextColumn Header="Do"
+                                                Binding="{Binding To, UpdateSourceTrigger=PropertyChanged}"
+                                                ElementStyle="{StaticResource DmsDataGridTextBlockElementStyle}"
+                                                EditingElementStyle="{StaticResource DmsDataGridTextBoxEditingStyle}"
+                                                Width="170"
+                                                MinWidth="150"/>
+
+                            <DataGridCheckBoxColumn Header="Aktivní"
+                                                    Binding="{Binding IsActive, UpdateSourceTrigger=PropertyChanged}"
+                                                    ElementStyle="{StaticResource DmsCenteredCheckBoxStyle}"
+                                                    EditingElementStyle="{StaticResource DmsCenteredCheckBoxStyle}"
+                                                    Width="110"
+                                                    MinWidth="100"/>
+
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBlock x:Name="TxtBrandingTitle"
+                               Text="Branding záhlaví"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,4,0,8"/>
+
+                    <TextBlock x:Name="TxtBrandingHelp"
+                               Text="Doplňkové logo v záhlaví se automaticky zmenší podle zadané maximální velikosti. Obrázek se uloží jako optimalizovaná kopie do Config\Branding."
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                               Margin="0,0,0,8"/>
+
+                    <Grid Margin="0,0,0,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="170"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock x:Name="TxtHeaderSecondaryLogoPathLabel"
+                                   Grid.Row="0"
+                                   Grid.Column="0"
+                                   Text="Cesta k logu"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,8"/>
+
+                        <TextBox x:Name="TxtHeaderSecondaryLogoPath"
+                                 Grid.Row="0"
+                                 Grid.Column="1"
+                                 IsReadOnly="True"
+                                 Margin="0,0,8,8"/>
+
+                        <Button x:Name="BtnBrowseHeaderLogo"
+                                Grid.Row="0"
+                                Grid.Column="2"
+                                Content="Vybrat..."
+                                MinWidth="100"
+                                Margin="0,0,0,8"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnBrowseHeaderLogo_Click"/>
+
+                        <TextBlock x:Name="TxtHeaderSecondaryLogoMaxWidthLabel"
+                                   Grid.Row="1"
+                                   Grid.Column="0"
+                                   Text="Max. šířka"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,8"/>
+
+                        <TextBox x:Name="TxtHeaderSecondaryLogoMaxWidth"
+                                 Grid.Row="1"
+                                 Grid.Column="1"
+                                 Width="120"
+                                 HorizontalAlignment="Left"
+                                 Margin="0,0,8,8"/>
+
+                        <TextBlock x:Name="TxtHeaderSecondaryLogoMaxHeightLabel"
+                                   Grid.Row="2"
+                                   Grid.Column="0"
+                                   Text="Max. výška"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,8"/>
+
+                        <TextBox x:Name="TxtHeaderSecondaryLogoMaxHeight"
+                                 Grid.Row="2"
+                                 Grid.Column="1"
+                                 Width="120"
+                                 HorizontalAlignment="Left"
+                                 Margin="0,0,8,8"/>
+
+                        <Border Grid.Row="3"
+                                Grid.Column="1"
+                                Grid.ColumnSpan="2"
+                                BorderBrush="{DynamicResource DmsBorderBrush}"
+                                Background="{DynamicResource DmsBackgroundBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="8"
+                                Margin="0,0,0,8"
+                                HorizontalAlignment="Left">
+
+                            <Image x:Name="ImgHeaderSecondaryLogoPreview"
+                                   Stretch="Uniform"
+                                   MaxWidth="360"
+                                   MaxHeight="70"
+                                   Visibility="Collapsed"/>
+                        </Border>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right">
+
+                        <Button x:Name="BtnGenerateFolders"
+                                Content="Vygenerovat složky"
+                                MinWidth="160"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnGenerateFolders_Click"/>
+
+                        <Button x:Name="BtnTestPaths"
+                                Content="Test cest"
+                                MinWidth="110"
+                                Margin="0,0,8,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnTestPaths_Click"/>
+
+                        <Button x:Name="BtnSave"
+                                Content="Uložit"
+                                MinWidth="110"
+                                Style="{StaticResource DmsPrimaryButtonStyle}"
+                                Click="BtnSave_Click"/>
+
+                    </StackPanel>
+
+                </StackPanel>
+            </Border>
+
+            <TextBlock x:Name="TxtStatus"
+                       Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

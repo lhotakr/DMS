@@ -1,0 +1,577 @@
+﻿<UserControl x:Class="DMS.Desktop.Views.Quality.QualityArticleEditView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:DMS.Desktop.UI"
+             Background="{DynamicResource DmsPanelBrush}">
+
+    <UserControl.Resources>
+        <ui:CzechDateConverter x:Key="CzechDateConverter"/>
+    </UserControl.Resources>
+
+    <ScrollViewer x:Name="RootScrollViewer"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Auto"
+                  PanningMode="VerticalOnly">
+
+        <StackPanel Margin="18">
+
+            <TextBlock x:Name="TxtPageTitle"
+                       Text="QA02 - Edit quality data"
+                       Style="{StaticResource DmsTitleTextStyle}"
+                       Margin="0,0,0,14"/>
+
+            <StackPanel Orientation="Horizontal"
+                        Margin="0,0,0,14">
+
+                <Button x:Name="BtnSave"
+                        Content="Save"
+                        Margin="0,0,8,0"
+                        Style="{StaticResource DmsPrimaryButtonStyle}"
+                        Click="BtnSave_Click"/>
+
+                <Button x:Name="BtnBackToQa03"
+                        Content="Back to QA03"
+                        Margin="0,0,8,0"
+                        Style="{StaticResource DmsFormButtonStyle}"
+                        Click="BtnBackToQa03_Click"/>
+
+                <Button x:Name="BtnReload"
+                        Content="Reload"
+                        Style="{StaticResource DmsFormButtonStyle}"
+                        Click="BtnReload_Click"/>
+            </StackPanel>
+
+            <TextBlock x:Name="LblSelectedPrintVersion"
+                       Text="Selected print version"
+                       Style="{StaticResource DmsFormLabelStyle}"
+                       Margin="0,0,0,5"/>
+
+            <Grid Width="620"
+                  HorizontalAlignment="Left"
+                  Margin="0,0,0,16">
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="42"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox x:Name="TxtSelectedPrintVersion"
+                         Grid.Column="0"
+                         Style="{StaticResource DmsReadOnlyTextBoxStyle}"
+                         Padding="10,6"
+                         Margin="0"/>
+
+                <Button x:Name="BtnOpenPrintVersionSelector"
+                        Grid.Column="1"
+                        Style="{StaticResource DmsSelectorButtonStyle}"
+                        Click="BtnOpenPrintVersionSelector_Click"/>
+
+                <Popup x:Name="PopupPrintVersions"
+                       PlacementTarget="{Binding ElementName=TxtSelectedPrintVersion}"
+                       Placement="Bottom"
+                       StaysOpen="False"
+                       AllowsTransparency="True">
+
+                    <Border Style="{StaticResource DmsSelectorPopupBorderStyle}"
+                            Width="620"
+                            MaxHeight="320">
+
+                        <ListBox x:Name="ListPrintVersions"
+                                 Style="{StaticResource DmsSelectorListBoxStyle}"
+                                 MinWidth="600"
+                                 MouseDoubleClick="ListPrintVersions_MouseDoubleClick"
+                                 SelectionChanged="ListPrintVersions_SelectionChanged"/>
+                    </Border>
+                </Popup>
+            </Grid>
+
+            <TextBlock x:Name="TxtSectionArticleInfo"
+                       Text="Article information"
+                       Style="{StaticResource DmsSectionTitleStyle}"/>
+
+            <Grid Margin="0,0,0,12">
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="LblImportantInfo"
+                           Grid.Row="0"
+                           Grid.Column="0"
+                           Text="Important info"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtImportantInfo"
+                         Grid.Row="0"
+                         Grid.Column="1"
+                         MinHeight="70"
+                         Style="{StaticResource DmsMultilineTextBoxStyle}"
+                         TextChanged="EditableControl_TextChanged"/>
+
+                <TextBlock x:Name="LblArticleNotes"
+                           Grid.Row="1"
+                           Grid.Column="0"
+                           Text="Article notes"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtArticleNotes"
+                         Grid.Row="1"
+                         Grid.Column="1"
+                         MinHeight="70"
+                         Style="{StaticResource DmsMultilineTextBoxStyle}"
+                         TextChanged="EditableControl_TextChanged"/>
+            </Grid>
+
+            <DockPanel Margin="0,10,0,10"
+                       LastChildFill="True">
+
+                <Button x:Name="BtnEnableIdentityEdit"
+                        DockPanel.Dock="Right"
+                        Content="Allow identifier changes"
+                        Margin="12,0,0,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource DmsFormButtonStyle}"
+                        Click="BtnEnableIdentityEdit_Click"/>
+
+                <TextBlock x:Name="TxtSectionPrintVersion"
+                           Text="Print version"
+                           Style="{StaticResource DmsSectionTitleStyle}"
+                           Margin="0"/>
+            </DockPanel>
+
+            <Grid x:Name="PrintVersionForm"
+                  Margin="0,0,0,8">
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="180"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock x:Name="LblPrintVersionNumber"
+                           Grid.Row="0"
+                           Grid.Column="0"
+                           Text="Print version number"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtPrintVersion"
+                         Grid.Row="0"
+                         Grid.Column="1"
+                         Margin="0,4,16,4"
+                         IsReadOnly="True"
+                         Style="{StaticResource DmsFormTextBoxStyle}"
+                         TextChanged="IdentityField_TextChanged"/>
+
+                <TextBlock x:Name="LblSapMaterial"
+                           Grid.Row="0"
+                           Grid.Column="2"
+                           Text="SAP ID"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtSapMaterial"
+                         Grid.Row="0"
+                         Grid.Column="3"
+                         IsReadOnly="True"
+                         Style="{StaticResource DmsFormTextBoxStyle}"
+                         TextChanged="IdentityField_TextChanged"/>
+
+                <TextBlock x:Name="LblTitle"
+                           Grid.Row="1"
+                           Grid.Column="0"
+                           Text="Title"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtTitle"
+                         Grid.Row="1"
+                         Grid.Column="1"
+                         Margin="0,4,16,4"
+                         Style="{StaticResource DmsFormTextBoxStyle}"
+                         TextChanged="EditableControl_TextChanged"/>
+
+                <TextBlock x:Name="LblCustomer"
+                           Grid.Row="1"
+                           Grid.Column="2"
+                           Text="Customer"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <Grid Grid.Row="1"
+                      Grid.Column="3"
+                      Margin="0,4,0,4">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="42"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="TxtCustomer"
+                             Grid.Column="0"
+                             IsReadOnly="True"
+                             Style="{StaticResource DmsReadOnlyTextBoxStyle}"
+                             TextChanged="EditableControl_TextChanged"/>
+
+                    <Button Grid.Column="1"
+                            Style="{StaticResource DmsSelectorButtonStyle}"
+                            Click="BtnOpenCustomerSelector_Click"/>
+
+                    <Popup x:Name="PopupCustomers"
+                           PlacementTarget="{Binding ElementName=TxtCustomer}"
+                           Placement="Bottom"
+                           StaysOpen="False"
+                           AllowsTransparency="True">
+
+                        <Border Style="{StaticResource DmsSelectorPopupBorderStyle}">
+                            <ListBox x:Name="ListCustomers"
+                                     Style="{StaticResource DmsSelectorListBoxStyle}"
+                                     DisplayMemberPath="Name"
+                                     SelectionChanged="ListCustomers_SelectionChanged"/>
+                        </Border>
+                    </Popup>
+                </Grid>
+
+                <TextBlock x:Name="LblDecoration"
+                           Grid.Row="2"
+                           Grid.Column="0"
+                           Text="Decoration"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtDecoration"
+                         Grid.Row="2"
+                         Grid.Column="1"
+                         Margin="0,4,16,4"
+                         IsReadOnly="True"
+                         Style="{StaticResource DmsReadOnlyTextBoxStyle}"/>
+
+                <TextBlock x:Name="LblColorType"
+                           Grid.Row="2"
+                           Grid.Column="2"
+                           Text="Color"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <Grid Grid.Row="2"
+                      Grid.Column="3"
+                      Margin="0,4,0,4">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="42"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="TxtColorType"
+                             Grid.Column="0"
+                             IsReadOnly="True"
+                             Style="{StaticResource DmsReadOnlyTextBoxStyle}"
+                             TextChanged="EditableControl_TextChanged"/>
+
+                    <Button Grid.Column="1"
+                            Style="{StaticResource DmsSelectorButtonStyle}"
+                            Click="BtnOpenColorTypeSelector_Click"/>
+
+                    <Popup x:Name="PopupColorTypes"
+                           PlacementTarget="{Binding ElementName=TxtColorType}"
+                           Placement="Bottom"
+                           StaysOpen="False"
+                           AllowsTransparency="True">
+
+                        <Border Style="{StaticResource DmsSelectorPopupBorderStyle}"
+                                Width="460"
+                                MaxHeight="380">
+
+                            <DockPanel LastChildFill="True">
+
+                                <StackPanel DockPanel.Dock="Bottom"
+                                            Orientation="Horizontal"
+                                            HorizontalAlignment="Right"
+                                            Margin="0,8,0,0">
+
+                                    <Button x:Name="BtnClearColorTypes"
+                                            Content="Clear"
+                                            Width="90"
+                                            Margin="0,0,8,0"
+                                            Style="{StaticResource DmsFormButtonStyle}"
+                                            Click="BtnClearColorTypes_Click"/>
+
+                                    <Button x:Name="BtnApplyColorTypes"
+                                            Content="Apply"
+                                            Width="90"
+                                            Style="{StaticResource DmsPrimaryButtonStyle}"
+                                            Click="BtnApplyColorTypes_Click"/>
+                                </StackPanel>
+
+                                <ListBox x:Name="ListColorTypes"
+                                         Style="{StaticResource DmsSelectorListBoxStyle}"
+                                         DisplayMemberPath="Name"
+                                         SelectionMode="Multiple"
+                                         MinWidth="430"/>
+                            </DockPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
+
+                <TextBlock x:Name="LblGlassTreatment"
+                           Grid.Row="3"
+                           Grid.Column="0"
+                           Text="Glass treatment"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <Grid Grid.Row="3"
+                      Grid.Column="1"
+                      Margin="0,4,16,4">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="42"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="TxtGlassTreatment"
+                             Grid.Column="0"
+                             IsReadOnly="True"
+                             Style="{StaticResource DmsReadOnlyTextBoxStyle}"
+                             TextChanged="EditableControl_TextChanged"/>
+
+                    <Button Grid.Column="1"
+                            Style="{StaticResource DmsSelectorButtonStyle}"
+                            Click="BtnOpenGlassTreatmentSelector_Click"/>
+
+                    <Popup x:Name="PopupGlassTreatments"
+                           PlacementTarget="{Binding ElementName=TxtGlassTreatment}"
+                           Placement="Bottom"
+                           StaysOpen="False"
+                           AllowsTransparency="True">
+
+                        <Border Style="{StaticResource DmsSelectorPopupBorderStyle}">
+                            <ListBox x:Name="ListGlassTreatments"
+                                     Style="{StaticResource DmsSelectorListBoxStyle}"
+                                     DisplayMemberPath="Name"
+                                     SelectionChanged="ListGlassTreatments_SelectionChanged"/>
+                        </Border>
+                    </Popup>
+                </Grid>
+
+                <TextBlock x:Name="LblHdNumber"
+                           Grid.Row="3"
+                           Grid.Column="2"
+                           Text="HD number"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtHdNumber"
+                         Grid.Row="3"
+                         Grid.Column="3"
+                         Style="{StaticResource DmsFormTextBoxStyle}"
+                         TextChanged="EditableControl_TextChanged"/>
+
+                <TextBlock x:Name="LblSampleLocation"
+                           Grid.Row="4"
+                           Grid.Column="0"
+                           Text="Sample location"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtSampleLocation"
+                         Grid.Row="4"
+                         Grid.Column="1"
+                         Margin="0,4,16,4"
+                         Style="{StaticResource DmsFormTextBoxStyle}"
+                         TextChanged="EditableControl_TextChanged"/>
+
+                <TextBlock x:Name="LblBoardLocation"
+                           Grid.Row="4"
+                           Grid.Column="2"
+                           Text="Board location"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtBoardLocation"
+                         Grid.Row="4"
+                         Grid.Column="3"
+                         Style="{StaticResource DmsFormTextBoxStyle}"
+                         TextChanged="EditableControl_TextChanged"/>
+
+                <TextBlock x:Name="LblGaugeLocation"
+                           Grid.Row="5"
+                           Grid.Column="0"
+                           Text="Gauge location"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtGaugeLocation"
+                         Grid.Row="5"
+                         Grid.Column="1"
+                         Margin="0,4,16,4"
+                         Style="{StaticResource DmsFormTextBoxStyle}"
+                         TextChanged="EditableControl_TextChanged"/>
+
+                <TextBlock x:Name="LblQualityClass"
+                           Grid.Row="5"
+                           Grid.Column="2"
+                           Text="Quality class"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <Grid Grid.Row="5"
+                      Grid.Column="3"
+                      Margin="0,4,0,4">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="42"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="TxtQualityClass"
+                             Grid.Column="0"
+                             IsReadOnly="True"
+                             Style="{StaticResource DmsReadOnlyTextBoxStyle}"
+                             TextChanged="EditableControl_TextChanged"/>
+
+                    <Button Grid.Column="1"
+                            Style="{StaticResource DmsSelectorButtonStyle}"
+                            Click="BtnOpenQualityClassSelector_Click"/>
+
+                    <Popup x:Name="PopupQualityClasses"
+                           PlacementTarget="{Binding ElementName=TxtQualityClass}"
+                           Placement="Bottom"
+                           StaysOpen="False"
+                           AllowsTransparency="True">
+
+                        <Border Style="{StaticResource DmsSelectorPopupBorderStyle}">
+                            <ListBox x:Name="ListQualityClasses"
+                                     Style="{StaticResource DmsSelectorListBoxStyle}"
+                                     DisplayMemberPath="Name"
+                                     SelectionChanged="ListQualityClasses_SelectionChanged"/>
+                        </Border>
+                    </Popup>
+                </Grid>
+
+                <StackPanel Grid.Row="6"
+                            Grid.Column="1"
+                            Grid.ColumnSpan="3"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Margin="0,8,0,8">
+
+                    <CheckBox x:Name="ChkHasGauge"
+                              Content="Gauge"
+                              Margin="0,0,18,0"
+                              Checked="EditableControl_Changed"
+                              Unchecked="EditableControl_Changed"/>
+
+                    <CheckBox x:Name="ChkComplaint"
+                              Content="Complaint"
+                              Margin="0,0,18,0"
+                              Checked="EditableControl_Changed"
+                              Unchecked="EditableControl_Changed"/>
+
+                    <CheckBox x:Name="ChkSamplesOnCamera"
+                              Content="Samples on camera"
+                              Checked="EditableControl_Changed"
+                              Unchecked="EditableControl_Changed"/>
+                </StackPanel>
+
+                <TextBlock x:Name="LblPrintVersionNotes"
+                           Grid.Row="7"
+                           Grid.Column="0"
+                           Text="Notes"
+                           Style="{StaticResource DmsFormLabelStyle}"/>
+
+                <TextBox x:Name="TxtPrintVersionNotes"
+                         Grid.Row="7"
+                         Grid.Column="1"
+                         Grid.ColumnSpan="3"
+                         MinHeight="90"
+                         Style="{StaticResource DmsMultilineTextBoxStyle}"
+                         TextChanged="EditableControl_TextChanged"/>
+            </Grid>
+
+            <TextBlock x:Name="TxtSectionTasks"
+                       Text="Quality tasks"
+                       Style="{StaticResource DmsSectionTitleStyle}"/>
+
+            <Border x:Name="TaskStatusBorder"
+                    Margin="0,0,0,8"
+                    Padding="10,7"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Background="{DynamicResource DmsBackgroundBrush}"
+                    BorderBrush="{DynamicResource DmsBorderBrush}">
+
+                <TextBlock x:Name="TxtTaskStatus"
+                           Text="No tasks"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource DmsForegroundBrush}"/>
+            </Border>
+
+            <DataGrid x:Name="GridTasks"
+                      Style="{StaticResource DmsDataGridStyle}"
+                      RowStyle="{StaticResource DmsEditableGridRowStyle}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="False"
+                      Height="300"
+                      MinWidth="900"
+                      SelectionUnit="FullRow"
+                      PreviewMouseWheel="GridTasks_PreviewMouseWheel"
+                      CellEditEnding="GridTasks_CellEditEnding">
+
+                <DataGrid.Columns>
+
+                    <DataGridTextColumn x:Name="ColTaskNumber"
+                                        Header="Number"
+                                        Binding="{Binding Number}"
+                                        Width="75"
+                                        MinWidth="75"
+                                        IsReadOnly="True"/>
+
+                    <DataGridTextColumn x:Name="ColTaskText"
+                                        Header="Task"
+                                        Binding="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="*"
+                                        MinWidth="420"/>
+
+                    <DataGridTextColumn x:Name="ColTaskDueDate"
+                                        Header="Due date"
+                                        Width="130"
+                                        MinWidth="120">
+                        <DataGridTextColumn.Binding>
+                            <Binding Path="DueDate"
+                                     Converter="{StaticResource CzechDateConverter}"
+                                     UpdateSourceTrigger="LostFocus"/>
+                        </DataGridTextColumn.Binding>
+                    </DataGridTextColumn>
+
+                    <DataGridCheckBoxColumn x:Name="ColTaskCompleted"
+                                            Header="Completed"
+                                            Binding="{Binding IsCompleted, UpdateSourceTrigger=PropertyChanged}"
+                                            ElementStyle="{StaticResource DmsCenteredCheckBoxStyle}"
+                                            EditingElementStyle="{StaticResource DmsCenteredCheckBoxStyle}"
+                                            Width="110"
+                                            MinWidth="100"/>
+
+                    <DataGridTextColumn x:Name="ColTaskCompletedAt"
+                                        Header="Completed at"
+                                        Width="155"
+                                        MinWidth="145">
+                        <DataGridTextColumn.Binding>
+                            <Binding Path="CompletedAt"
+                                     Converter="{StaticResource CzechDateConverter}"
+                                     UpdateSourceTrigger="LostFocus"/>
+                        </DataGridTextColumn.Binding>
+                    </DataGridTextColumn>
+
+                </DataGrid.Columns>
+            </DataGrid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
