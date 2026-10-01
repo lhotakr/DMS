@@ -1,7 +1,7 @@
 ﻿using DMS.Core.Mes;
 using DMS.Desktop.Configuration.Mes;
-using DMS.Desktop.Logging;
 using DMS.Desktop.Localization;
+using DMS.Desktop.Logging;
 using DMS.Desktop.Services.Mes;
 using DMS.Integration.Mes.Models;
 using DMS.Integration.Mes.Services;

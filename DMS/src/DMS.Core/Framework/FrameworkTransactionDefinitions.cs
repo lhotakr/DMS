@@ -39,14 +39,14 @@ public static class FrameworkTransactionDefinitions
         string name,
         string description,
         string handlerKey = "FrameworkHub") => new()
-    {
-        Code = code,
-        Name = name,
-        Module = "ADMIN",
-        Description = description,
-        HandlerKey = handlerKey,
-        RequiresArticleNumber = false,
-        IsActive = true,
-        Roles = new List<string> { "DMS_ADMIN" }
-    };
+        {
+            Code = code,
+            Name = name,
+            Module = "ADMIN",
+            Description = description,
+            HandlerKey = handlerKey,
+            RequiresArticleNumber = false,
+            IsActive = true,
+            Roles = new List<string> { "DMS_ADMIN" }
+        };
 }

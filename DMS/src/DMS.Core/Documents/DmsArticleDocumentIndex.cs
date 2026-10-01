@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace DMS.Core.Documents;
 
 public sealed class DmsArticleDocumentIndex

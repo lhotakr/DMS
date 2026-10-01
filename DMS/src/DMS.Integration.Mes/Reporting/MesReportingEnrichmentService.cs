@@ -1,12 +1,11 @@
 using DMS.Integration.Mes.Database;
-using System;
-using System.Collections.Generic;
+using DMS.Integration.Mes.Reporting.Models;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
+using System.Globalization;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+
 
 namespace DMS.Integration.Mes.Reporting;
 
@@ -1867,25 +1866,58 @@ public sealed class MesReportingEnrichmentService
                     .Where(login => !string.IsNullOrWhiteSpace(login.OrderCode))
                     .Select(login => login.OrderCode));
 
+        var validLogins =
+    loggedOperators
+        .Where(login =>
+            login.HasOperator
+            && login.LoginFrom.HasValue
+            && !string.IsNullOrWhiteSpace(
+                login.OrderCode))
+        .ToList();
+
+        var shiftNorms =
+            await LoadBonusShiftNormsAsync(
+                validLogins);
+
+        var productionGroups =
+            validLogins
+                .GroupBy(login => new
+                {
+                    login.WorkcenterCode,
+                    login.OrderCode,
+                    login.OperationCode,
+                    login.ProductCode,
+                    login.Shift,
+                    login.ShiftStart,
+                    login.ShiftEnd
+                })
+                .ToList();
+
+
         var result =
             new List<MesBonusReportRecord>();
 
-        foreach (var login in loggedOperators)
+        foreach (var group in productionGroups)
         {
-            if (!login.LoginFrom.HasValue)
+            var productionFrom =
+                group.Key.ShiftStart
+                ?? group.Min(login =>
+                    login.LoginFrom!.Value);
+
+            var productionTo =
+                group.Key.ShiftEnd
+                ?? group.Max(login =>
+                    login.LoginTo
+                    ?? to);
+
+            if (productionFrom < from)
             {
-                continue;
+                productionFrom = from;
             }
 
-            var loginFrom =
-                login.LoginFrom.Value;
-
-            var loginTo =
-                login.LoginTo ?? to;
-
-            if (loginTo <= loginFrom)
+            if (productionTo > to)
             {
-                continue;
+                productionTo = to;
             }
 
             var matchingCounters =
@@ -1893,25 +1925,31 @@ public sealed class MesReportingEnrichmentService
                     .Where(counter =>
                         string.Equals(
                             counter.WorkcenterCode,
-                            login.WorkcenterCode,
+                            group.Key.WorkcenterCode,
                             StringComparison.OrdinalIgnoreCase)
-                        && (string.IsNullOrWhiteSpace(login.OrderCode)
-                            || string.Equals(
-                                counter.OrderCode,
-                                login.OrderCode,
-                                StringComparison.OrdinalIgnoreCase))
-                        && counter.Timestamp >= loginFrom
-                        && counter.Timestamp < loginTo)
+                        && string.Equals(
+                            counter.OrderCode,
+                            group.Key.OrderCode,
+                            StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(
+                            counter.OperationCode,
+                            group.Key.OperationCode,
+                            StringComparison.OrdinalIgnoreCase)
+                        && counter.Timestamp >=
+                            productionFrom
+                        && counter.Timestamp <
+                            productionTo)
                     .ToList();
 
             var grossProduction =
-                matchingCounters
-                    .Where(counter =>
-                        string.Equals(
-                            counter.CounterName,
-                            "Vyrobeno - stroj",
-                            StringComparison.OrdinalIgnoreCase))
-                    .Sum(counter => counter.Value);
+            matchingCounters
+                .Where(counter =>
+                    string.Equals(
+                        counter.CounterName,
+                        "Vyrobeno - stroj",
+                        StringComparison.OrdinalIgnoreCase))
+                .Sum(counter =>
+                    counter.Value);
 
             var scrapProduction =
                 matchingCounters
@@ -1920,7 +1958,8 @@ public sealed class MesReportingEnrichmentService
                             counter.CounterName,
                             "Odpad - produkce",
                             StringComparison.OrdinalIgnoreCase))
-                    .Sum(counter => counter.Value);
+                    .Sum(counter =>
+                        counter.Value);
 
             var scrapGlass =
                 matchingCounters
@@ -1929,7 +1968,12 @@ public sealed class MesReportingEnrichmentService
                             counter.CounterName,
                             "Odpad - sklo",
                             StringComparison.OrdinalIgnoreCase))
-                    .Sum(counter => counter.Value);
+                    .Sum(counter =>
+                        counter.Value);
+
+            var totalScrap =
+                scrapProduction
+                + scrapGlass;
 
             var washedBottles =
                 matchingCounters
@@ -1938,54 +1982,148 @@ public sealed class MesReportingEnrichmentService
                             counter.CounterName,
                             "Myté flakony",
                             StringComparison.OrdinalIgnoreCase))
-                    .Sum(counter => counter.Value);
+                    .Sum(counter =>
+                        counter.Value);
 
             var printedNet =
                 grossProduction
-                - scrapProduction
-                - scrapGlass
+                - totalScrap
                 - washedBottles;
 
-            var durationMinutes =
-                (loginTo - loginFrom).TotalMinutes;
+            var normKey =
+         BuildBonusRoutingKey(
+             group.Key.OrderCode,
+             group.Key.OperationCode);
 
-            var netShiftDurationMinutes =
-                durationMinutes > 270d
-                    ? durationMinutes - 30d
-                    : durationMinutes;
+            decimal? plannedShiftNorm =
+                shiftNorms.TryGetValue(
+                    normKey,
+                    out var norm)
+                    ? norm
+                    : null;
 
-            var sapNumber =
-                !string.IsNullOrWhiteSpace(login.OrderCode)
-                && sapNumbersByOrder.TryGetValue(
-                    login.OrderCode,
-                    out var resolvedSapNumber)
-                    ? resolvedSapNumber
-                    : string.Empty;
+            foreach (var login in group)
+            {
+                var loginFrom =
+                    login.LoginFrom!.Value;
 
-            result.Add(
-                new MesBonusReportRecord
+                var loginTo =
+                    login.LoginTo
+                    ?? to;
+
+                if (loginTo <= loginFrom)
                 {
-                    OrderCode = login.OrderCode ?? string.Empty,
-                    ProductCode = login.ProductCode ?? string.Empty,
-                    SapNumber = sapNumber,
-                    OperationCode = login.OperationCode ?? string.Empty,
-                    WorkcenterCode = login.WorkcenterCode ?? string.Empty,
-                    ShiftCode = shiftCode ?? string.Empty,
-                    OperatorName = login.OperatorName ?? string.Empty,
-                    HumanCode = login.HumanCode ?? string.Empty,
-                    LoginFrom = loginFrom,
-                    LoginTo = loginTo,
-                    NetShiftDurationMinutes = netShiftDurationMinutes,
-                    GrossProduction = (double)grossProduction,
-                    PrintedNet = (double)printedNet
-                });
+                    continue;
+                }
+
+                var durationMinutes =
+                    login.DurationMinutes > 0d
+                        ? login.DurationMinutes
+                        : Math.Max(
+                            0d,
+                            (loginTo - loginFrom)
+                                .TotalMinutes);
+
+                var netShiftDurationMinutes =
+                    durationMinutes > 270d
+                        ? durationMinutes - 30d
+                        : durationMinutes;
+
+                double? adjustedShiftNorm =
+     plannedShiftNorm.HasValue
+         ? (double)plannedShiftNorm.Value
+           * Math.Clamp(
+               durationMinutes / 480d,
+               0d,
+               1d)
+         : null;
+
+
+                var sapNumber =
+         !string.IsNullOrWhiteSpace(
+             login.OrderCode)
+         && sapNumbersByOrder.TryGetValue(
+             login.OrderCode,
+             out var resolvedSapNumber)
+             ? resolvedSapNumber
+             : string.Empty;
+
+                result.Add(
+           new MesBonusReportRecord
+           {
+               OrderCode =
+                   login.OrderCode
+                   ?? string.Empty,
+
+               ProductCode =
+                   login.ProductCode
+                   ?? string.Empty,
+
+               SapNumber =
+                   sapNumber,
+
+               OperationCode =
+                   login.OperationCode
+                   ?? string.Empty,
+
+               WorkcenterCode =
+                   login.WorkcenterCode
+                   ?? string.Empty,
+
+               ShiftCode =
+                   login.Shift
+                   ?? string.Empty,
+
+               OperatorName =
+                   login.OperatorName
+                   ?? string.Empty,
+
+               HumanCode =
+                   login.HumanCode
+                   ?? string.Empty,
+
+               LoginFrom =
+                   loginFrom,
+
+               LoginTo =
+                   loginTo,
+
+               NetShiftDurationMinutes =
+                   netShiftDurationMinutes,
+
+               PlannedShiftNorm =
+                   plannedShiftNorm.HasValue
+                       ? (double?)plannedShiftNorm.Value
+                       : null,
+
+               AdjustedShiftNorm =
+                   adjustedShiftNorm,
+
+               GrossProduction =
+                   (double)grossProduction,
+
+               TotalScrap =
+                   (double)totalScrap,
+
+               PrintedNet =
+                   (double)printedNet
+           });
+            }
         }
 
+
         return result
-            .OrderBy(row => row.WorkcenterCode, StringComparer.CurrentCultureIgnoreCase)
-            .ThenBy(row => row.LoginFrom)
-            .Take(maxRows > 0 ? maxRows : int.MaxValue)
+            .OrderBy(row =>
+                row.WorkcenterCode,
+                StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(row =>
+                row.LoginFrom)
+            .Take(
+                maxRows > 0
+                    ? maxRows
+                    : int.MaxValue)
             .ToList();
+
     }
 
     private static int MainWorkerMetadataScore(
@@ -3461,8 +3599,173 @@ public sealed class MesReportingEnrichmentService
                     : null
         };
     }
-}
 
+    private static readonly Regex BonusShiftNormRegex =
+    new(
+        @"(?<!\d)(\d+(?:[\.,]\d+)?)",
+        RegexOptions.CultureInvariant
+        | RegexOptions.Compiled);
+
+    private static decimal? ParseBonusShiftNorm(
+        string? routingDescription)
+    {
+        if (string.IsNullOrWhiteSpace(
+                routingDescription))
+        {
+            return null;
+        }
+
+        var match =
+            BonusShiftNormRegex.Match(
+                routingDescription);
+
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var raw =
+            match.Groups[1]
+                .Value
+                .Replace(',', '.');
+
+        return decimal.TryParse(
+            raw,
+            NumberStyles.Number,
+            CultureInfo.InvariantCulture,
+            out var value)
+            ? value
+            : null;
+    }
+
+    private static string BuildBonusRoutingKey(
+        string orderCode,
+        string operationCode) =>
+        $"{orderCode.Trim()}\u001F{operationCode.Trim()}";
+
+    private async Task<IReadOnlyDictionary<string, decimal>>
+    LoadBonusShiftNormsAsync(
+        IEnumerable<MesLoggedOperatorRecord> rows)
+    {
+        var orderCodes =
+            rows
+                .Select(row =>
+                    row.OrderCode?.Trim()
+                    ?? string.Empty)
+                .Where(code =>
+                    !string.IsNullOrWhiteSpace(
+                        code))
+                .Distinct(
+                    StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+        var result =
+            new Dictionary<string, decimal>(
+                StringComparer.OrdinalIgnoreCase);
+
+        if (orderCodes.Count == 0)
+        {
+            return result;
+        }
+
+        const int batchSize = 300;
+
+        for (var offset = 0;
+             offset < orderCodes.Count;
+             offset += batchSize)
+        {
+            var batch =
+                orderCodes
+                    .Skip(offset)
+                    .Take(batchSize)
+                    .ToList();
+
+            await using var connection =
+                CreateConnection();
+
+            await connection.OpenAsync();
+
+            await using var command =
+                connection.CreateCommand();
+
+            command.CommandTimeout =
+                _commandTimeoutSeconds;
+
+            var parameters =
+                new List<string>();
+
+            for (var index = 0;
+                 index < batch.Count;
+                 index++)
+            {
+                var parameterName =
+                    $"@bonusOrder{index}";
+
+                parameters.Add(
+                    parameterName);
+
+                AddParameter(
+                    command,
+                    parameterName,
+                    batch[index]);
+            }
+
+            command.CommandText =
+                $"""
+            SELECT
+                po.[code] AS OrderCode,
+                r.[code] AS OperationCode,
+                r.[description] AS RoutingDescription
+            FROM dbo.[d_pda_po] po
+            INNER JOIN dbo.[d_pda_po_routing] r
+                ON r.[production_order_id] = po.[id]
+            WHERE po.[code] IN (
+                {string.Join(", ", parameters)}
+            );
+            """;
+
+            await using var reader =
+                await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                var orderCode =
+                    GetString(
+                        reader,
+                        "OrderCode");
+
+                var operationCode =
+                    GetString(
+                        reader,
+                        "OperationCode");
+
+                var description =
+                    GetString(
+                        reader,
+                        "RoutingDescription");
+
+                var norm =
+                    ParseBonusShiftNorm(
+                        description);
+
+                if (!norm.HasValue)
+                {
+                    continue;
+                }
+
+                result[
+                    BuildBonusRoutingKey(
+                        orderCode,
+                        operationCode)] =
+                    norm.Value;
+            }
+        }
+
+        return result;
+    }
+
+
+}
 
 
 public sealed class Mes06CounterReportRecord
@@ -3480,6 +3783,7 @@ public sealed class Mes06CounterReportRecord
     public string OrderCode { get; init; } = string.Empty;
     public string OperationCode { get; init; } = string.Empty;
     public string ProductCode { get; init; } = string.Empty;
+public string ProductDescription { get; init; } = string.Empty;
     public decimal? OrderQuantity { get; init; }
     public string SapArticleNumber { get; init; } = string.Empty;
 

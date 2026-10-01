@@ -1,6 +1,5 @@
 using DMS.Desktop.Configuration.Roles;
 using DMS.Desktop.Localization;
-using System;
 using System.Globalization;
 using System.Windows.Data;
 

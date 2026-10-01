@@ -1,11 +1,9 @@
 using ClosedXML.Excel;
-using DMS.Desktop.UI;
 using DMS.Integration.Mes.Reporting;
 using DMS.Integration.Mes.Reporting.Definitions;
 using Microsoft.Win32;
 using System.ComponentModel;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows;
@@ -366,10 +364,10 @@ public partial class MesReportingView
                     dpi);
 
                 var current = 0d;
-                DrawStack(dc, x, bar, ref current, row.Oee, Color.FromRgb(35,230,85), Y, dpi);
-                DrawStack(dc, x, bar, ref current, row.AvailabilityLoss, Color.FromRgb(255,55,50), Y, dpi);
-                DrawStack(dc, x, bar, ref current, row.PerformanceLoss, Color.FromRgb(255,245,175), Y, dpi);
-                DrawStack(dc, x, bar, ref current, row.QualityLoss, Color.FromRgb(55,55,235), Y, dpi);
+                DrawStack(dc, x, bar, ref current, row.Oee, Color.FromRgb(35, 230, 85), Y, dpi);
+                DrawStack(dc, x, bar, ref current, row.AvailabilityLoss, Color.FromRgb(255, 55, 50), Y, dpi);
+                DrawStack(dc, x, bar, ref current, row.PerformanceLoss, Color.FromRgb(255, 245, 175), Y, dpi);
+                DrawStack(dc, x, bar, ref current, row.QualityLoss, Color.FromRgb(55, 55, 235), Y, dpi);
             }
 
             DrawOeeLegendBottom(dc, left, plotBottom + 18d, right - left, dpi, _legendLabels);
@@ -393,17 +391,17 @@ public partial class MesReportingView
             dc.DrawText(ft, new Point(centerX - maxWidth / 2d, y));
         }
 
-        private static void DrawStack(DrawingContext dc, double x, double width, ref double current, double value, Color color, Func<double,double> y, double dpi)
+        private static void DrawStack(DrawingContext dc, double x, double width, ref double current, double value, Color color, Func<double, double> y, double dpi)
         {
             if (value <= 0d) return;
             var y0 = y(current);
             current += value;
             var y1 = y(current);
-            dc.DrawRectangle(new SolidColorBrush(color), null, new Rect(x, y1, width, Math.Max(0.8d, y0-y1)));
+            dc.DrawRectangle(new SolidColorBrush(color), null, new Rect(x, y1, width, Math.Max(0.8d, y0 - y1)));
             if (value >= 3d)
             {
                 var ft = new FormattedText($"{value:0.00}%", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 6.2d, Brushes.Black, dpi);
-                dc.DrawText(ft, new Point(x + (width-ft.Width)/2d, y1 + (y0-y1-ft.Height)/2d));
+                dc.DrawText(ft, new Point(x + (width - ft.Width) / 2d, y1 + (y0 - y1 - ft.Height) / 2d));
             }
         }
 
@@ -422,13 +420,13 @@ public partial class MesReportingView
             {
                 var item = items[index];
                 var x = left + index * itemWidth;
-                dc.DrawRectangle(new SolidColorBrush(item.Item2), new Pen(Brushes.Gray,0.4d), new Rect(x, y+1d, 11d, 11d));
+                dc.DrawRectangle(new SolidColorBrush(item.Item2), new Pen(Brushes.Gray, 0.4d), new Rect(x, y + 1d, 11d, 11d));
                 var ft = new FormattedText(item.Item1, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), 6.8d, Brushes.Black, dpi)
                 {
                     MaxTextWidth = Math.Max(40d, itemWidth - 19d),
                     Trimming = TextTrimming.CharacterEllipsis
                 };
-                dc.DrawText(ft, new Point(x+16d, y));
+                dc.DrawText(ft, new Point(x + 16d, y));
             }
         }
     }
@@ -475,7 +473,7 @@ public partial class MesReportingView
         _mes06ProcessValuesActive = false;
         ChartBorder.Height = 220d;
         ChartBorder.MinHeight = 0d;
-        Grid.SetRowSpan(ChartBorder,1);
+        Grid.SetRowSpan(ChartBorder, 1);
         ChartHost.Content = null;
         GridReport.Visibility = Visibility.Visible;
 
@@ -730,23 +728,23 @@ public partial class MesReportingView
 
     private FrameworkElement CreateProcessValuesTimelineElement(bool compact, double requestedWidth)
     {
-        var rows=_currentRows.OfType<Mes06ProcessValueRecord>().OrderBy(r=>r.WorkcenterCode).ThenBy(r=>r.StateName).ThenBy(r=>r.Starttime).ToList();
-        var from=_mes06EffectiveFrom;
-        var to=_mes06EffectiveTo>from?_mes06EffectiveTo:from.AddDays(1);
-        var now=DateTime.Now;
+        var rows = _currentRows.OfType<Mes06ProcessValueRecord>().OrderBy(r => r.WorkcenterCode).ThenBy(r => r.StateName).ThenBy(r => r.Starttime).ToList();
+        var from = _mes06EffectiveFrom;
+        var to = _mes06EffectiveTo > from ? _mes06EffectiveTo : from.AddDays(1);
+        var now = DateTime.Now;
         if (from <= now && to > now)
         {
-            to=now;
+            to = now;
         }
-        var lanes=rows.GroupBy(r=>$"{r.WorkcenterCode}|{r.StateName}").Select(g=>new Mes06ProcessLane{Label=g.Key,Rows=g.ToList()}).ToList();
-        var width=Math.Max(requestedWidth, 130d + Math.Max(1d,(to-from).TotalHours)*44d);
-        return new Mes06ProcessTimelineElement(lanes,from,to,width,compact);
+        var lanes = rows.GroupBy(r => $"{r.WorkcenterCode}|{r.StateName}").Select(g => new Mes06ProcessLane { Label = g.Key, Rows = g.ToList() }).ToList();
+        var width = Math.Max(requestedWidth, 130d + Math.Max(1d, (to - from).TotalHours) * 44d);
+        return new Mes06ProcessTimelineElement(lanes, from, to, width, compact);
     }
 
     private sealed class Mes06ProcessLane
     {
-        public string Label { get; init; }=string.Empty;
-        public IReadOnlyList<Mes06ProcessValueRecord> Rows { get; init; }=Array.Empty<Mes06ProcessValueRecord>();
+        public string Label { get; init; } = string.Empty;
+        public IReadOnlyList<Mes06ProcessValueRecord> Rows { get; init; } = Array.Empty<Mes06ProcessValueRecord>();
     }
 
     private sealed class Mes06ProcessValueSummaryRow
@@ -765,45 +763,45 @@ public partial class MesReportingView
         private readonly DateTime _from;
         private readonly DateTime _to;
         private readonly bool _compact;
-        public Mes06ProcessTimelineElement(IReadOnlyList<Mes06ProcessLane> lanes,DateTime from,DateTime to,double width,bool compact)
+        public Mes06ProcessTimelineElement(IReadOnlyList<Mes06ProcessLane> lanes, DateTime from, DateTime to, double width, bool compact)
         {
-            _lanes=lanes; _from=from; _to=to; _compact=compact; Width=width;
-            var rowH=compact?10d:16d;
-            Height=Math.Max(compact?180d:220d,28d+lanes.Count*rowH+38d);
+            _lanes = lanes; _from = from; _to = to; _compact = compact; Width = width;
+            var rowH = compact ? 10d : 16d;
+            Height = Math.Max(compact ? 180d : 220d, 28d + lanes.Count * rowH + 38d);
         }
         protected override void OnRender(DrawingContext dc)
         {
-            dc.DrawRectangle(Brushes.White,null,new Rect(0,0,ActualWidth,ActualHeight));
-            if(_to<=_from||_lanes.Count==0)return;
-            var dpi=VisualTreeHelper.GetDpi(this).PixelsPerDip;
-            var left=_compact?125d:175d; var right=ActualWidth-8d; var top=8d; var rowH=_compact?10d:16d; var bottom=top+_lanes.Count*rowH;
-            double X(DateTime t)=>left+Math.Clamp((t-_from).TotalSeconds/(_to-_from).TotalSeconds,0d,1d)*(right-left);
-            var tick=new DateTime(_from.Year,_from.Month,_from.Day,_from.Hour,_from.Minute<30?0:30,0);
-            if(tick<_from)tick=tick.AddMinutes(30);
-            while(tick<_to)
+            dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, ActualWidth, ActualHeight));
+            if (_to <= _from || _lanes.Count == 0) return;
+            var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            var left = _compact ? 125d : 175d; var right = ActualWidth - 8d; var top = 8d; var rowH = _compact ? 10d : 16d; var bottom = top + _lanes.Count * rowH;
+            double X(DateTime t) => left + Math.Clamp((t - _from).TotalSeconds / (_to - _from).TotalSeconds, 0d, 1d) * (right - left);
+            var tick = new DateTime(_from.Year, _from.Month, _from.Day, _from.Hour, _from.Minute < 30 ? 0 : 30, 0);
+            if (tick < _from) tick = tick.AddMinutes(30);
+            while (tick < _to)
             {
-                var x=X(tick); var pen=new Pen(tick.Minute==0?Brushes.Gray:Brushes.LightGray,tick.Minute==0?0.8:0.45);
-                dc.DrawLine(pen,new Point(x,top),new Point(x,bottom));
-                if(tick.Minute==0)
+                var x = X(tick); var pen = new Pen(tick.Minute == 0 ? Brushes.Gray : Brushes.LightGray, tick.Minute == 0 ? 0.8 : 0.45);
+                dc.DrawLine(pen, new Point(x, top), new Point(x, bottom));
+                if (tick.Minute == 0)
                 {
-                    var ft=new FormattedText(tick.ToString("dd.MM HH:mm"),CultureInfo.CurrentCulture,FlowDirection.LeftToRight,new Typeface("Segoe UI"),_compact?5.8:7,Brushes.Black,dpi);
-                    dc.DrawText(ft,new Point(x-ft.Width/2,bottom+5));
+                    var ft = new FormattedText(tick.ToString("dd.MM HH:mm"), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), _compact ? 5.8 : 7, Brushes.Black, dpi);
+                    dc.DrawText(ft, new Point(x - ft.Width / 2, bottom + 5));
                 }
-                tick=tick.AddMinutes(30);
+                tick = tick.AddMinutes(30);
             }
-            for(var i=0;i<_lanes.Count;i++)
+            for (var i = 0; i < _lanes.Count; i++)
             {
-                var y=top+i*rowH;
-                dc.DrawLine(new Pen(Brushes.Gainsboro,0.4),new Point(left,y),new Point(right,y));
-                var ft=new FormattedText(_lanes[i].Label,CultureInfo.CurrentCulture,FlowDirection.LeftToRight,new Typeface("Segoe UI"),_compact?5.8:7.2,Brushes.Black,dpi){MaxTextWidth=left-8,Trimming=TextTrimming.CharacterEllipsis};
-                dc.DrawText(ft,new Point(3,y+Math.Max(0,(rowH-ft.Height)/2)));
-                foreach(var r in _lanes[i].Rows)
+                var y = top + i * rowH;
+                dc.DrawLine(new Pen(Brushes.Gainsboro, 0.4), new Point(left, y), new Point(right, y));
+                var ft = new FormattedText(_lanes[i].Label, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("Segoe UI"), _compact ? 5.8 : 7.2, Brushes.Black, dpi) { MaxTextWidth = left - 8, Trimming = TextTrimming.CharacterEllipsis };
+                dc.DrawText(ft, new Point(3, y + Math.Max(0, (rowH - ft.Height) / 2)));
+                foreach (var r in _lanes[i].Rows)
                 {
-                    var x1=X(r.Starttime); var x2=X(r.Endtime);
-                    dc.DrawRectangle(Brushes.LimeGreen,null,new Rect(x1,y+1,Math.Max(1,x2-x1),Math.Max(1,rowH-2)));
+                    var x1 = X(r.Starttime); var x2 = X(r.Endtime);
+                    dc.DrawRectangle(Brushes.LimeGreen, null, new Rect(x1, y + 1, Math.Max(1, x2 - x1), Math.Max(1, rowH - 2)));
                 }
             }
-            dc.DrawRectangle(null,new Pen(Brushes.Gray,0.7),new Rect(left,top,right-left,bottom-top));
+            dc.DrawRectangle(null, new Pen(Brushes.Gray, 0.7), new Rect(left, top, right - left, bottom - top));
         }
     }
 
@@ -818,65 +816,65 @@ public partial class MesReportingView
 
     private void AppendOeeChartToDocument(System.Windows.Documents.FlowDocument document)
     {
-        var rows=_currentRows.OfType<Mes06OeeReportRecord>().ToList();
-        if(rows.Count==0)return;
-        var width=Math.Max(700d,document.PageWidth-document.PagePadding.Left-document.PagePadding.Right);
-        var element=new Mes06OeeChartElement(rows,width,true,GetOeeLegendLabels());
-        AppendFinalReportingElementToDocument(document,element,width,285d);
+        var rows = _currentRows.OfType<Mes06OeeReportRecord>().ToList();
+        if (rows.Count == 0) return;
+        var width = Math.Max(700d, document.PageWidth - document.PagePadding.Left - document.PagePadding.Right);
+        var element = new Mes06OeeChartElement(rows, width, true, GetOeeLegendLabels());
+        AppendFinalReportingElementToDocument(document, element, width, 285d);
     }
 
     private void AppendProcessValuesTimelineToDocument(System.Windows.Documents.FlowDocument document)
     {
-        if(_currentRows.Count==0)return;
-        var width=Math.Max(700d,document.PageWidth-document.PagePadding.Left-document.PagePadding.Right);
-        var element=CreateProcessValuesTimelineElement(true,width);
-        AppendFinalReportingElementToDocument(document,element,width,390d);
+        if (_currentRows.Count == 0) return;
+        var width = Math.Max(700d, document.PageWidth - document.PagePadding.Left - document.PagePadding.Right);
+        var element = CreateProcessValuesTimelineElement(true, width);
+        AppendFinalReportingElementToDocument(document, element, width, 390d);
     }
 
-    private static void AppendFinalReportingElementToDocument(System.Windows.Documents.FlowDocument document,FrameworkElement element,double width,double maxHeight)
+    private static void AppendFinalReportingElementToDocument(System.Windows.Documents.FlowDocument document, FrameworkElement element, double width, double maxHeight)
     {
-        element.Measure(new Size(element.Width,element.Height));
-        element.Arrange(new Rect(0,0,element.Width,element.Height));
+        element.Measure(new Size(element.Width, element.Height));
+        element.Arrange(new Rect(0, 0, element.Width, element.Height));
         element.UpdateLayout();
-        const double dpi=144d; var scale=dpi/96d;
-        var bitmap=new RenderTargetBitmap(Math.Max(1,(int)Math.Ceiling(element.Width*scale)),Math.Max(1,(int)Math.Ceiling(element.Height*scale)),dpi,dpi,PixelFormats.Pbgra32);
-        bitmap.Render(element); if(bitmap.CanFreeze)bitmap.Freeze();
-        var displayScale=Math.Min(1d,maxHeight/Math.Max(1d,element.Height));
-        document.Blocks.Add(new System.Windows.Documents.BlockUIContainer(new Image{Source=bitmap,Width=width*displayScale,Height=element.Height*displayScale,Stretch=Stretch.Uniform,HorizontalAlignment=HorizontalAlignment.Left}){Margin=new Thickness(0,0,0,10)});
+        const double dpi = 144d; var scale = dpi / 96d;
+        var bitmap = new RenderTargetBitmap(Math.Max(1, (int)Math.Ceiling(element.Width * scale)), Math.Max(1, (int)Math.Ceiling(element.Height * scale)), dpi, dpi, PixelFormats.Pbgra32);
+        bitmap.Render(element); if (bitmap.CanFreeze) bitmap.Freeze();
+        var displayScale = Math.Min(1d, maxHeight / Math.Max(1d, element.Height));
+        document.Blocks.Add(new System.Windows.Documents.BlockUIContainer(new Image { Source = bitmap, Width = width * displayScale, Height = element.Height * displayScale, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Left }) { Margin = new Thickness(0, 0, 0, 10) });
     }
 
     private void ExportFinalReportingVisibleGridExcel(MesReportDefinition definition)
     {
-        var rows=GridReport.Items.Cast<object>().Where(item=>item!=System.Windows.Data.CollectionView.NewItemPlaceholder).ToList();
-        if(rows.Count==0)
+        var rows = GridReport.Items.Cast<object>().Where(item => item != System.Windows.Data.CollectionView.NewItemPlaceholder).ToList();
+        if (rows.Count == 0)
         {
-            DmsMessage.Show(T("MES06.Status.NoData","There is no report data to export."),"MES06",MessageBoxButton.OK,MessageBoxImage.Information);
+            DmsMessage.Show(T("MES06.Status.NoData", "There is no report data to export."), "MES06", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-        var dialog=new SaveFileDialog{Filter="Excel workbook (*.xlsx)|*.xlsx",FileName=$"MES06_{definition.Code}_{DateTime.Now:yyyyMMdd-HHmmss}.xlsx"};
-        if(dialog.ShowDialog()!=true)return;
+        var dialog = new SaveFileDialog { Filter = "Excel workbook (*.xlsx)|*.xlsx", FileName = $"MES06_{definition.Code}_{DateTime.Now:yyyyMMdd-HHmmss}.xlsx" };
+        if (dialog.ShowDialog() != true) return;
         try
         {
-            using var workbook=new XLWorkbook(); var ws=workbook.Worksheets.Add("MES Report");
-            var columns=GridReport.Columns.Where(c=>c.Visibility==Visibility.Visible).OrderBy(c=>c.DisplayIndex).ToList();
-            for(var c=0;c<columns.Count;c++) ws.Cell(1,c+1).Value=Convert.ToString(columns[c].Header)??string.Empty;
-            for(var r=0;r<rows.Count;r++)
+            using var workbook = new XLWorkbook(); var ws = workbook.Worksheets.Add("MES Report");
+            var columns = GridReport.Columns.Where(c => c.Visibility == Visibility.Visible).OrderBy(c => c.DisplayIndex).ToList();
+            for (var c = 0; c < columns.Count; c++) ws.Cell(1, c + 1).Value = Convert.ToString(columns[c].Header) ?? string.Empty;
+            for (var r = 0; r < rows.Count; r++)
             {
-                for(var c=0;c<columns.Count;c++)
+                for (var c = 0; c < columns.Count; c++)
                 {
-                    var property=columns[c].SortMemberPath;
-                    if(string.IsNullOrWhiteSpace(property) && columns[c] is DataGridBoundColumn bound && bound.Binding is Binding binding) property=binding.Path?.Path??string.Empty;
-                    SetExcelCellValue(ws.Cell(r+2,c+1),ReadProperty(rows[r],property));
+                    var property = columns[c].SortMemberPath;
+                    if (string.IsNullOrWhiteSpace(property) && columns[c] is DataGridBoundColumn bound && bound.Binding is Binding binding) property = binding.Path?.Path ?? string.Empty;
+                    SetExcelCellValue(ws.Cell(r + 2, c + 1), ReadProperty(rows[r], property));
                 }
             }
             ws.ColumnsUsed().AdjustToContents(); workbook.SaveAs(dialog.FileName);
-            _logger.AdminAction("MES06","ExportMesReportExcel",_user,$"Report={definition.Code}; Rows={rows.Count}; File={dialog.FileName}");
+            _logger.AdminAction("MES06", "ExportMesReportExcel", _user, $"Report={definition.Code}; Rows={rows.Count}; File={dialog.FileName}");
             OfferOpenExportedFile(dialog.FileName);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            _logger.Error("MES06 final report Excel export failed.",ex);
-            DmsMessage.Show(ex.Message,"MES06",MessageBoxButton.OK,MessageBoxImage.Error);
+            _logger.Error("MES06 final report Excel export failed.", ex);
+            DmsMessage.Show(ex.Message, "MES06", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

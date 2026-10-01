@@ -10,11 +10,11 @@ public partial class QualityMenuView : UserControl
 
     private static readonly MenuRow[] Rows =
     {
-        new(new MenuItem("QA00", "Import z PowerApps"), new MenuItem("QASET", "Nastavení modulu")),
         new(new MenuItem("QA01", "Založení artiklu"), new MenuItem("QA02", "Úprava artiklu"), new MenuItem("QA03", "Náhled artiklu")),
         new(new MenuItem("QA05", "Přehled artiklů"), new MenuItem("QATASK", "Přehled úkolů")),
         new(new MenuItem("QO01", "Založení zakázky"), new MenuItem("QO02", "Změna zakázky"), new MenuItem("QO03", "Náhled zakázky")),
-        new(new MenuItem("QO05", "Přehled zakázek"), new MenuItem("QO06", "Uvolnění / blokace zakázek"))
+        new(new MenuItem("QO05", "Přehled zakázek"), new MenuItem("QO06", "Uvolnění / blokace zakázek")),
+        new(new MenuItem("QA00", "Import z PowerApps"), new MenuItem("QASET", "Nastavení modulu"))
     };
 
     public QualityMenuView(

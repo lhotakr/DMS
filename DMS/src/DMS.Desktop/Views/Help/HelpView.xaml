@@ -3,216 +3,140 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="{DynamicResource DmsBackgroundBrush}">
 
-    <UserControl.Resources>
-        <Style x:Key="HelpGridTextBlockStyle"
-               TargetType="{x:Type TextBlock}">
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="8,0,8,0"/>
-            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
-        </Style>
-
-        <Style x:Key="HelpGridRowStyle"
-               TargetType="{x:Type DataGridRow}">
-            <Setter Property="MinHeight" Value="30"/>
-            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
-            <Setter Property="Background" Value="{DynamicResource DmsPanelBrush}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
-                    <Setter Property="Background" Value="#3E3A18"/>
-                </Trigger>
-
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
-                    <Setter Property="Background" Value="#243A5C"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="HelpGridCellStyle"
-               TargetType="{x:Type DataGridCell}">
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource DmsForegroundBrush}"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-
-            <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="HelpGridHeaderStyle"
-               TargetType="{x:Type DataGridColumnHeader}">
-            <Setter Property="Height" Value="34"/>
-            <Setter Property="Padding" Value="8,0,8,0"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Background" Value="{DynamicResource DmsBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource DmsAccentBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource DmsBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="0,0,1,1"/>
-        </Style>
-    </UserControl.Resources>
-
-    <Grid Margin="0"
-          Background="{DynamicResource DmsBackgroundBrush}">
+    <Grid Background="{DynamicResource DmsBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0"
-                    Margin="0,0,0,14">
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
             <TextBlock x:Name="TxtTitle"
-                       Text="HELP - Transaction help"
+                       Text="HELP - Dokumentace DMS"
                        FontSize="24"
                        FontWeight="Bold"
                        Foreground="{DynamicResource DmsForegroundBrush}"
-                       Margin="0,0,0,8"/>
-
+                       Margin="0,0,0,6"/>
             <TextBlock x:Name="TxtSubtitle"
-                       Text="List of available DMS transactions for the current user."
+                       Text="Uživatelská příručka a dokumentace transakcí přímo v DMS."
                        TextWrapping="Wrap"
                        Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
         </StackPanel>
 
-        <Border Grid.Row="1"
-                Padding="12"
-                Margin="0,0,0,12"
-                CornerRadius="6"
-                BorderThickness="1"
-                Background="{DynamicResource DmsPanelBrush}"
-                BorderBrush="{DynamicResource DmsBorderBrush}">
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="310"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-            <WrapPanel VerticalAlignment="Center">
-                <TextBlock x:Name="TxtSearchLabel"
-                           Text="Search:"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource DmsForegroundBrush}"
-                           Margin="0,0,6,8"/>
+            <Border Grid.Column="0"
+                    Padding="12"
+                    CornerRadius="6"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    Background="{DynamicResource DmsPanelBrush}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <TextBox x:Name="TxtSearch"
-                         Width="260"
-                         Height="30"
-                         Margin="0,0,14,8"
-                         TextChanged="TxtSearch_TextChanged"/>
+                    <TextBox x:Name="TxtSearch"
+                             Grid.Row="0"
+                             Height="32"
+                             Margin="0,0,0,10"
+                             ToolTip="Hledat v dokumentaci"
+                             TextChanged="TxtSearch_TextChanged"/>
 
-                <TextBlock x:Name="TxtModuleLabel"
-                           Text="Module:"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource DmsForegroundBrush}"
-                           Margin="0,0,6,8"/>
+                    <TreeView x:Name="TreeTopics"
+                              Grid.Row="1"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              Foreground="{DynamicResource DmsForegroundBrush}"
+                              SelectedItemChanged="TreeTopics_SelectedItemChanged"/>
 
-                <ComboBox x:Name="CmbModule"
-                          Width="220"
-                          Height="30"
-                          Margin="0,0,14,8"
-                          SelectionChanged="CmbModule_SelectionChanged"/>
+                    <TextBlock x:Name="TxtCount"
+                               Grid.Row="2"
+                               Margin="0,10,0,0"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"/>
+                </Grid>
+            </Border>
 
-                <Button x:Name="BtnClear"
-                        Content="Clear"
-                        Width="90"
-                        Height="30"
-                        Margin="0,0,14,8"
-                        Style="{StaticResource DmsFormButtonStyle}"
-                        Click="BtnClear_Click"/>
+            <GridSplitter Grid.Column="1"
+                          Width="8"
+                          HorizontalAlignment="Stretch"
+                          Background="Transparent"/>
 
-                <TextBlock x:Name="TxtVisibleCount"
-                           Text="Visible transactions: 0"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource DmsMutedForegroundBrush}"
-                           Margin="0,0,0,8"/>
-            </WrapPanel>
-        </Border>
+            <Border Grid.Column="2"
+                    Padding="16"
+                    CornerRadius="6"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource DmsBorderBrush}"
+                    Background="{DynamicResource DmsPanelBrush}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-        <DataGrid x:Name="GridTransactions"
-                  Grid.Row="2"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="True"
-                  CanUserAddRows="False"
-                  CanUserDeleteRows="False"
-                  HeadersVisibility="Column"
-                  GridLinesVisibility="Horizontal"
-                  SelectionMode="Single"
-                  SelectionUnit="FullRow"
-                  RowHeaderWidth="0"
-                  MinRowHeight="30"
-                  FontSize="13"
-                  EnableRowVirtualization="True"
-                  EnableColumnVirtualization="True"
-                  Background="{DynamicResource DmsPanelBrush}"
-                  Foreground="{DynamicResource DmsForegroundBrush}"
-                  BorderBrush="{DynamicResource DmsBorderBrush}"
-                  RowStyle="{StaticResource HelpGridRowStyle}"
-                  CellStyle="{StaticResource HelpGridCellStyle}"
-                  ColumnHeaderStyle="{StaticResource HelpGridHeaderStyle}">
+                    <Grid Grid.Row="0" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-            <DataGrid.Columns>
-                <DataGridTextColumn x:Name="ColCode"
-                                    Binding="{Binding Code}"
-                                    Width="90"
-                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
+                        <TextBlock x:Name="TxtDocumentTitle"
+                                   Grid.Column="0"
+                                   FontSize="20"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource DmsForegroundBrush}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center"/>
 
-                <DataGridTextColumn x:Name="ColName"
-                                    Binding="{Binding Name}"
-                                    Width="210"
-                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
+                        <Button x:Name="BtnRunTransaction"
+                                Grid.Column="1"
+                                Content="Spustit transakci"
+                                MinWidth="140"
+                                Height="32"
+                                Margin="12,0,0,0"
+                                Style="{StaticResource DmsFormButtonStyle}"
+                                Click="BtnRunTransaction_Click"
+                                Visibility="Collapsed"/>
+                    </Grid>
 
-                <DataGridTextColumn x:Name="ColModule"
-                                    Binding="{Binding Module}"
-                                    Width="150"
-                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
+                    <FlowDocumentScrollViewer x:Name="DocViewer"
+                                              Grid.Row="1"
+                                              IsToolBarVisible="False"
+                                              VerticalScrollBarVisibility="Auto"
+                                              Background="Transparent"/>
 
-                <DataGridTextColumn x:Name="ColDescription"
-                                    Binding="{Binding Description}"
-                                    Width="*"
-                                    MinWidth="300"
-                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
+                    <Border x:Name="TechnicalInfoBorder"
+                            Grid.Row="2"
+                            Margin="0,12,0,0"
+                            Padding="10"
+                            CornerRadius="5"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource DmsBorderBrush}"
+                            Background="{DynamicResource DmsBackgroundBrush}"
+                            Visibility="Collapsed">
+                        <TextBlock x:Name="TxtTechnicalInfo"
+                                   FontFamily="Consolas"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                                   TextWrapping="Wrap"/>
+                    </Border>
 
-                <DataGridTextColumn x:Name="ColParameter"
-                                    Binding="{Binding ParameterDisplay}"
-                                    Width="150"
-                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
-
-                <DataGridTextColumn x:Name="ColRoles"
-                                    Binding="{Binding RolesDisplay}"
-                                    Width="220"
-                                    ElementStyle="{StaticResource HelpGridTextBlockStyle}"/>
-
-                <DataGridTemplateColumn x:Name="ColAction"
-                                        Width="105">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Button Content="{Binding RunText}"
-                                    Tag="{Binding Code}"
-                                    Height="24"
-                                    MinWidth="74"
-                                    Padding="8,0,8,0"
-                                    Style="{StaticResource DmsPrimaryButtonStyle}"
-                                    Click="BtnRun_Click"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
-
-        <TextBlock x:Name="TxtHint"
-                   Grid.Row="3"
-                   Margin="0,10,0,0"
-                   TextWrapping="Wrap"
-                   Foreground="{DynamicResource DmsMutedForegroundBrush}"
-                   Text="Tip: transactions requiring an article number can be started without a parameter; DMS will ask for it."/>
+                    <TextBlock x:Name="TxtHint"
+                               Grid.Row="3"
+                               Margin="0,12,0,0"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                               TextWrapping="Wrap"
+                               Text="Tip: F1 otevře kontextovou nápovědu k právě používané transakci v samostatném okně."/>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

@@ -2,7 +2,6 @@ using DMS.Desktop.Configuration.Modules;
 using DMS.Desktop.Configuration.Roles;
 using DMS.Desktop.Configuration.Transactions;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;

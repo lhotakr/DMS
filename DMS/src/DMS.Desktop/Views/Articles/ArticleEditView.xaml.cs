@@ -1,10 +1,10 @@
-﻿using System.Collections.ObjectModel;
+﻿using DMS.Core.Articles;
+using DMS.Desktop.Models;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using DMS.Core.Articles;
-using DMS.Desktop.Models;
 
 namespace DMS.Desktop.Views.Articles;
 

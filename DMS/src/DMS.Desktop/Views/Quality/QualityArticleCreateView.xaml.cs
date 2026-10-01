@@ -2,16 +2,15 @@
 using DMS.Core.Quality;
 using DMS.Core.Sap;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
+using DMS.Desktop.UI.FunctionKeys;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 
 namespace DMS.Desktop.Views.Quality;
 
-public partial class QualityArticleCreateView : UserControl
+public partial class QualityArticleCreateView : UserControl, IDmsFunctionKeyHost
 {
     private readonly QualityArticleCreateService _service;
     private readonly JsonQualityRepository _repository;
@@ -691,6 +690,25 @@ public partial class QualityArticleCreateView : UserControl
         ClearWarning();
     }
 
+    public IReadOnlyList<DmsFunctionKeyAction> GetFunctionKeyActions()
+    {
+        return new[]
+        {
+            new DmsFunctionKeyAction(
+                Key.F4,
+                TOr("FunctionKey.ValueHelp", "Načíst SAP"),
+                LoadSap),
+            new DmsFunctionKeyAction(
+                Key.F8,
+                TOr("QA01.Button.Create", "Založit"),
+                () => BtnCreate_Click(this, new RoutedEventArgs())),
+            new DmsFunctionKeyAction(
+                Key.F12,
+                TOr("FunctionKey.Cancel", "Vyčistit"),
+                ClearAll)
+        };
+    }
+
     private void ShowWarning(string message)
     {
         DuplicateWarningBorder.Visibility =
@@ -707,6 +725,16 @@ public partial class QualityArticleCreateView : UserControl
 
         TxtDuplicateWarning.Text =
             string.Empty;
+    }
+
+    private string TOr(string key, string fallback)
+    {
+        var value = T(key);
+        return string.IsNullOrWhiteSpace(value) ||
+               string.Equals(value, key, StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
     }
 
     private string T(string key)

@@ -1,5 +1,5 @@
-﻿using DMS.Desktop.Configuration;
-using DMS.Core.Sap.Diagnostics;
+﻿using DMS.Core.Sap.Diagnostics;
+using DMS.Desktop.Configuration;
 using System.Windows;
 using System.Windows.Controls;
 

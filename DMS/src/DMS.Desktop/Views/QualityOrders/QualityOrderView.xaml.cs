@@ -1,20 +1,23 @@
-using DMS.Core.Quality;
+﻿using DMS.Core.Quality;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
+using DMS.Desktop.UI.FunctionKeys;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Input;
 
 namespace DMS.Desktop.Views.QualityOrders;
 
-public partial class QualityOrderView : UserControl
+public partial class QualityOrderView : UserControl, IDmsFunctionKeyHost
 {
     private readonly QualityOrderMaintenanceService _service;
     private readonly DmsLogger? _logger;
     private readonly string _currentUserName;
     private readonly Func<string, string>? _translate;
     private readonly Func<string, object[], string>? _translateFormat;
+    private string _currentQuery = string.Empty;
+    private string _currentOrderNumber = string.Empty;
 
     public event Action<string>? TransactionRequested;
 
@@ -48,6 +51,8 @@ public partial class QualityOrderView : UserControl
 
     private void Render(string query)
     {
+        _currentQuery = query?.Trim() ?? string.Empty;
+        _currentOrderNumber = string.Empty;
         RootPanel.Children.Clear();
 
         var model = _service.PrepareEdit(query);
@@ -76,12 +81,14 @@ public partial class QualityOrderView : UserControl
         }
 
         var order = model.OriginalOrder;
+        _currentOrderNumber = order.OrderNumber;
 
         RootPanel.Children.Add(CreateActionBar(order, model));
         RootPanel.Children.Add(CreateStatusBanner(order));
         RootPanel.Children.Add(CreateMasterSection(model));
         RootPanel.Children.Add(CreateArticleDataSection(model));
         RootPanel.Children.Add(CreateOpenTasksSection(model));
+        RootPanel.Children.Add(CreateOrderTasksSection(order));
         RootPanel.Children.Add(CreateOrderSection(order));
         RootPanel.Children.Add(CreateReleaseChecklistSection(order));
         RootPanel.Children.Add(CreateNotesSection(model, order));
@@ -208,6 +215,39 @@ public partial class QualityOrderView : UserControl
         return section;
     }
 
+    private UIElement CreateOrderTasksSection(QualityOrder order)
+    {
+        var section = DmsDisplayFactory.CreateSection(TOr("QO.Section.OrderTasks", "Úkoly zakázky"));
+        var tasks = order.Tasks
+            .Where(task => !string.IsNullOrWhiteSpace(task.Text))
+            .OrderBy(task => task.Number)
+            .ToList();
+
+        if (tasks.Count == 0)
+        {
+            section.Children.Add(
+                DmsUiFactory.CreateInfoCard(
+                    TOr("QO.Section.OrderTasks", "Úkoly zakázky"),
+                    TOr("QO.Text.NoOrderTasks", "Zakázka nemá žádné vlastní úkoly.")));
+            return section;
+        }
+
+        var text = string.Join(
+            Environment.NewLine,
+            tasks.Select(task =>
+                $"{(task.CompletedAt.HasValue ? "✓" : "○")} {task.Number}. {task.Text}" +
+                (task.CompletedAt.HasValue && !string.IsNullOrWhiteSpace(task.CompletedBy)
+                    ? $" — {task.CompletedBy}"
+                    : string.Empty)));
+
+        section.Children.Add(
+            DmsUiFactory.CreateInfoCard(
+                TOr("QO.Section.OrderTasks", "Úkoly zakázky"),
+                text));
+
+        return section;
+    }
+
     private UIElement CreateOrderSection(QualityOrder order)
     {
         var section = DmsDisplayFactory.CreateSection(T("QO.Section.OrderData"));
@@ -304,6 +344,22 @@ public partial class QualityOrderView : UserControl
         return button;
     }
 
+    public IReadOnlyList<DmsFunctionKeyAction> GetFunctionKeyActions()
+    {
+        return new[]
+        {
+            new DmsFunctionKeyAction(
+                Key.F2,
+                TOr("FunctionKey.Edit", "Změnit"),
+                () => TransactionRequested?.Invoke($"QO02 {_currentOrderNumber}"),
+                () => !string.IsNullOrWhiteSpace(_currentOrderNumber)),
+            new DmsFunctionKeyAction(
+                Key.F5,
+                TOr("FunctionKey.Refresh", "Obnovit"),
+                () => Render(_currentQuery))
+        };
+    }
+
     private static string TargetForTec03(QualityOrderFormModel model)
     {
         return !string.IsNullOrWhiteSpace(model.SapMaterialNumber)
@@ -347,6 +403,12 @@ public partial class QualityOrderView : UserControl
     {
         var value = _translate?.Invoke(key) ?? key;
         return IsMissing(value, key) ? key : value;
+    }
+
+    private string TOr(string key, string fallback)
+    {
+        var value = T(key);
+        return IsMissing(value, key) ? fallback : value;
     }
 
     private string TF(string key, params object[] args)

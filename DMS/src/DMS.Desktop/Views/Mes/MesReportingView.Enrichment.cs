@@ -1,8 +1,5 @@
 using DMS.Integration.Mes.Reporting;
 using DMS.Integration.Mes.Reporting.Definitions;
-using DMS.Integration.Mes.Reporting.Models;
-using System.Collections.Generic;
-using ReportingEnrichmentService = DMS.Integration.Mes.Reporting.MesReportingEnrichmentService;
 
 namespace DMS.Desktop.Views.Mes;
 

@@ -39,21 +39,21 @@ public static class DmsWorkflowCatalog
         string code,
         bool editable = false,
         bool terminal = false) => new()
-    {
-        Code = code,
-        IsEditable = editable,
-        IsTerminal = terminal
-    };
+        {
+            Code = code,
+            IsEditable = editable,
+            IsTerminal = terminal
+        };
 
     private static DmsWorkflowTransitionDefinition Transition(
         string code,
         string from,
         string to,
         bool differentUser = false) => new()
-    {
-        Code = code,
-        FromState = from,
-        ToState = to,
-        RequiresDifferentUser = differentUser
-    };
+        {
+            Code = code,
+            FromState = from,
+            ToState = to,
+            RequiresDifferentUser = differentUser
+        };
 }

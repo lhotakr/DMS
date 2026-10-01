@@ -1,21 +1,15 @@
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
 using DMS.Integration.Mes.Database;
 using DMS.Integration.Mes.Reporting;
 using DMS.Integration.Mes.Workcenters;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using System.IO;
 
 namespace DMS.Desktop.Views.Mes;
 
@@ -832,7 +826,7 @@ public partial class MesWorkcenterDashboardView : UserControl
             var bucketEnd = bucket + step;
             if (bucketEnd > to) bucketEnd = to;
             var seconds = (bucketEnd - bucket).TotalSeconds;
-            if (seconds <= 0d) 
+            if (seconds <= 0d)
                 ;
 
             double weighted = 0d;

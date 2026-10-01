@@ -1,4 +1,4 @@
-namespace DMS.Core.Quality;
+﻿namespace DMS.Core.Quality;
 
 public sealed class QualityOrderMaintenanceService
 {
@@ -18,6 +18,8 @@ public sealed class QualityOrderMaintenanceService
             Released = false,
             ReleaseStatusCode = "Blocked"
         };
+
+        model.OrderTasks = BuildDefaultOrderTasks();
 
         if (string.IsNullOrWhiteSpace(model.Query))
         {
@@ -74,7 +76,8 @@ public sealed class QualityOrderMaintenanceService
             StaysInHd = order.StaysInHd,
             Released = order.Released,
             Finished = IsFinished(order),
-            Notes = order.Notes
+            Notes = order.Notes,
+            OrderTasks = CloneTasks(order.Tasks)
         };
 
         var printVersion = FindPrintVersion(order.PrintVersionNumber)
@@ -155,29 +158,58 @@ public sealed class QualityOrderMaintenanceService
                     StringComparison.OrdinalIgnoreCase));
     }
 
-    public IReadOnlyList<QualityOrderListRow> BuildOrderListRows()
+    public IReadOnlyList<QualityOrderListRow> BuildOrderListRows(
+        string? scheduleStatusFilter = null)
     {
+        var normalizedFilter = Normalize(scheduleStatusFilter);
+
+        // Important performance rule: select the order set first and only then
+        // build the expensive print-version/article dictionaries. QO05 opens
+        // with Unplanned, so finished history is not enriched at startup.
+        var orders = _repository.LoadOrders()
+            .Where(order =>
+                string.IsNullOrWhiteSpace(normalizedFilter) ||
+                string.Equals(
+                    GetScheduleStatusCode(order),
+                    normalizedFilter,
+                    StringComparison.OrdinalIgnoreCase))
+            .OrderBy(order => order.Released)
+            .ThenBy(order => IsFinished(order))
+            .ThenByDescending(order => GetCreatedAt(order) ?? order.ProductionStart ?? order.ImportedAt)
+            .ThenBy(order => order.OrderNumber)
+            .ToList();
+
+        var printVersionKeys = orders
+            .Select(order => order.PrintVersionNumber)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var printVersions = _repository.LoadPrintVersions()
-            .Where(item => !string.IsNullOrWhiteSpace(item.FullPrintVersionNumber))
+            .Where(item =>
+                !string.IsNullOrWhiteSpace(item.FullPrintVersionNumber) &&
+                printVersionKeys.Contains(item.FullPrintVersionNumber))
             .GroupBy(item => item.FullPrintVersionNumber, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(
                 group => group.Key,
                 group => group.First(),
                 StringComparer.OrdinalIgnoreCase);
 
+        var articleKeys = printVersions.Values
+            .Select(item => item.LegacyArticleNumber)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var qualityArticles = _repository.LoadArticles()
-            .Where(item => !string.IsNullOrWhiteSpace(item.LegacyArticleNumber))
+            .Where(item =>
+                !string.IsNullOrWhiteSpace(item.LegacyArticleNumber) &&
+                articleKeys.Contains(item.LegacyArticleNumber))
             .GroupBy(item => item.LegacyArticleNumber, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(
                 group => group.Key,
                 group => group.First(),
                 StringComparer.OrdinalIgnoreCase);
 
-        return _repository.LoadOrders()
-            .OrderBy(order => order.Released)
-            .ThenBy(order => IsFinished(order))
-            .ThenByDescending(order => GetCreatedAt(order) ?? order.ProductionStart ?? order.ImportedAt)
-            .ThenBy(order => order.OrderNumber)
+        return orders
             .Select(order => ToListRow(order, printVersions, qualityArticles))
             .ToList();
     }
@@ -276,6 +308,7 @@ public sealed class QualityOrderMaintenanceService
             ReleasedAt = original?.ReleasedAt,
             BlockedBy = original?.BlockedBy ?? string.Empty,
             BlockedAt = original?.BlockedAt,
+            Tasks = NormalizeTasks(model.OrderTasks, currentUserName, now),
             Finished = model.ProductionStart.HasValue && model.ProductionEnd.HasValue,
             ImportedAt = original?.ImportedAt ?? now,
             CreatedAt = createdAt,
@@ -388,6 +421,7 @@ public sealed class QualityOrderMaintenanceService
             BlockedAt = released
                 ? original.BlockedAt
                 : now,
+            Tasks = CloneTasks(original.Tasks),
             Finished = IsFinished(original),
             ImportedAt = original.ImportedAt,
             CreatedAt = original.CreatedAt,
@@ -643,6 +677,102 @@ public sealed class QualityOrderMaintenanceService
         }
 
         return line;
+    }
+
+    private List<QualityTask> BuildDefaultOrderTasks()
+    {
+        var now = DateTime.Now;
+        var definitions = _repository.LoadOrderTaskDefaults().ToList();
+
+        // QO01 must work even before QASET is opened for the first time.
+        if (definitions.Count == 0)
+        {
+            definitions.Add(new QualityLookupItem
+            {
+                Code = "LABORKA",
+                Name = "Laborka",
+                IsActive = true,
+                SortOrder = 10,
+                Notes = "Default quality-order task."
+            });
+
+            _repository.SaveOrderTaskDefaults(definitions);
+        }
+
+        return definitions
+            .Where(item => item.IsActive && !string.IsNullOrWhiteSpace(item.Name))
+            .OrderBy(item => item.SortOrder)
+            .ThenBy(item => item.Name)
+            .Select((item, index) => new QualityTask
+            {
+                Number = index + 1,
+                Text = item.Name.Trim(),
+                DueDate = null,
+                CreatedAt = now,
+                CreatedBy = string.Empty,
+                CompletedAt = null,
+                CompletedBy = string.Empty
+            })
+            .ToList();
+    }
+
+    private static List<QualityTask> CloneTasks(IEnumerable<QualityTask>? tasks)
+    {
+        return tasks?
+            .Where(task => !string.IsNullOrWhiteSpace(task.Text))
+            .OrderBy(task => task.Number)
+            .Select(task => new QualityTask
+            {
+                Number = task.Number,
+                Text = task.Text,
+                DueDate = task.DueDate,
+                CreatedAt = task.CreatedAt,
+                CreatedBy = task.CreatedBy,
+                CompletedAt = task.CompletedAt,
+                CompletedBy = task.CompletedBy
+            })
+            .ToList()
+            ?? new List<QualityTask>();
+    }
+
+    private static IReadOnlyList<QualityTask> NormalizeTasks(
+        IEnumerable<QualityTask>? tasks,
+        string currentUserName,
+        DateTime now)
+    {
+        var result = new List<QualityTask>();
+        var number = 1;
+
+        foreach (var task in tasks ?? Array.Empty<QualityTask>())
+        {
+            var text = Normalize(task.Text);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                continue;
+            }
+
+            var createdAt = task.CreatedAt ?? now;
+            var createdBy = string.IsNullOrWhiteSpace(task.CreatedBy)
+                ? currentUserName
+                : task.CreatedBy.Trim();
+
+            result.Add(new QualityTask
+            {
+                Number = number++,
+                Text = text,
+                DueDate = task.DueDate,
+                CreatedAt = createdAt,
+                CreatedBy = createdBy,
+                CompletedAt = task.CompletedAt,
+                CompletedBy = task.CompletedAt.HasValue
+                    ? (string.IsNullOrWhiteSpace(task.CompletedBy)
+                        ? currentUserName
+                        : task.CompletedBy.Trim())
+                    : string.Empty
+            });
+        }
+
+        return result;
     }
 
     private static bool LooksLikeOrderNumber(string value)

@@ -1,5 +1,4 @@
-﻿using DMS.Core.Sap;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace DMS.Core.Sap;
 

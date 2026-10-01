@@ -276,6 +276,13 @@
                                         Padding="10,0"
                                         Click="BtnSavePreset_Click"/>
 
+                                <Button x:Name="BtnPublishAutomation"
+                                        Height="30"
+                                        Margin="0,0,0,6"
+                                        HorizontalContentAlignment="Left"
+                                        Padding="10,0"
+                                        Click="BtnPublishAutomation_Click"/>
+
                                 <Button x:Name="BtnDeletePreset"
                                         Height="30"
                                         HorizontalContentAlignment="Left"

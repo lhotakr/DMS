@@ -1,27 +1,25 @@
-using DMS.Core.Sap;
+﻿using DMS.Core.Sap;
 using DMS.Core.Security;
 using DMS.Core.Transactions;
 using DMS.Core.Transactions.Handlers;
+using DMS.Core.WorkLog;
 using DMS.Desktop.Configuration;
 using DMS.Desktop.Configuration.Modules;
 using DMS.Desktop.Configuration.SystemSettings;
 using DMS.Desktop.Localization;
 using DMS.Desktop.Logging;
 using DMS.Desktop.Models;
+using DMS.Desktop.Performance;
 using DMS.Desktop.Repositories;
 using DMS.Desktop.Services;
 using DMS.Desktop.Settings;
-using DMS.Desktop.Performance;
-using DMS.Core.WorkLog;
-using System.Diagnostics;
-using DMS.Desktop.Views.Admin;
 using DMS.Desktop.Views.Articles;
 using DMS.Desktop.Views.Dialogs;
-using DMS.Desktop.Views.Documents;
-using DMS.Desktop.Views.Help;
-using DMS.Desktop.Views.Settings;
 using DMS.Desktop.Views.Mes;
+using DMS.Desktop.Views.Screens;
+using DMS.Desktop.Views.Settings;
 using DMS.Desktop.Views.SystemModules;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Principal;
 using System.Windows;
@@ -101,6 +99,7 @@ public partial class MainWindow : Window
         InitializeCurrentUser();
         InitializeTransactions();
         LoadUserSettings();
+        InitializeFunctionKeys();
         ApplyTheme();
         ApplyHeaderBranding();
         InitializeMesDatabaseHealthMonitoring();
@@ -147,10 +146,10 @@ public partial class MainWindow : Window
             mutedForegroundBrush = CreateBrushFromHex("#B4B4B9", "#B4B4B9");
             borderBrush = CreateBrushFromHex("#4B4B50", "#4B4B50");
 
-            // Dark má mít vlastní tmavě modrý DMS akcent,
-            // ne poslední uloženou barvu z HG/Custom.
-            accentBrush = CreateBrushFromHex("#0B2A4A", "#0B2A4A");
-            onAccentBrush = CreateBrushFromHex("#FFFFFF", "#FFFFFF");
+            // Dark používá světlejší DMS modrou: na tmavém pozadí musí být
+            // dobře čitelná i jako text/odkaz (HELP, nadpisy, aktivní prvky).
+            accentBrush = CreateBrushFromHex("#4A90E2", "#4A90E2");
+            onAccentBrush = CreateBrushFromHex("#111111", "#111111");
         }
         else if (string.Equals(themeMode, "HG", StringComparison.OrdinalIgnoreCase))
         {
@@ -571,6 +570,7 @@ public partial class MainWindow : Window
         definitions = DMS.Core.Administration.DmsThemeDesignerTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Recipes.RecipeImportTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Mes.MesReportingTransactionDefinitions.AddMissing(definitions);
+        definitions = DMS.Core.Scheduling.ScheduledJobsTransactionDefinitions.AddMissing(definitions);
         definitions = WorkLogTransactionDefinitions.AddMissing(definitions);
 
         if (definitions.Count == 0)
@@ -604,6 +604,7 @@ public partial class MainWindow : Window
     new SimpleMessageTransactionHandler("LogViewer", "Log aplikace"),
     new SimpleMessageTransactionHandler("FrameworkHub", "DMS Framework"),
     new SimpleMessageTransactionHandler("FrameworkDiagnostics", "DMS Framework diagnostics"),
+    new SimpleMessageTransactionHandler("JobScheduler", "Automatické úlohy"),
 
     // Artikly / dokumenty
     new ArticleCreateTransactionHandler(),
@@ -1397,6 +1398,7 @@ public partial class MainWindow : Window
 
             panel.Children.Add(CreateBodyText(result.Message));
             ResetWorkspaceScroll();
+            RefreshFunctionKeyBar();
 
             return;
         }
@@ -1434,8 +1436,9 @@ public partial class MainWindow : Window
                 break;
 
             case "SCR10":
-                RenderSimplePage("Fronta přípravy sí­t", result.Message);
+                RenderScr10();
                 break;
+
 
             case "ORD10":
                 RenderOrderOverview();
@@ -1446,7 +1449,7 @@ public partial class MainWindow : Window
                 break;
 
             case "HELP":
-                RenderHelp();
+                RenderHelp(result.Parameter ?? string.Empty);
                 break;
 
             case "SET01":
@@ -1619,7 +1622,6 @@ public partial class MainWindow : Window
                 RenderMesWorkcenter(result.Parameter ?? string.Empty);
                 break;
 
-
             case "MES06":
                 RenderMesReporting();
                 break;
@@ -1643,6 +1645,10 @@ public partial class MainWindow : Window
             case "CHL05":
             case "CHL06":
                 RenderChecklistWorkspace(result.TransactionCode, result.Arguments);
+                break;
+
+            case "JOB10":
+                RenderJobScheduler();
                 break;
 
             case "WORKLOG":
@@ -1671,6 +1677,7 @@ public partial class MainWindow : Window
         }
         ApplyUiPropertyOverrides(result.TransactionCode);
         ResetWorkspaceScroll();
+        RefreshFunctionKeyBar();
     }
     private void RenderTypedSapMaterialDisplay(
     string materialNumber,
@@ -2023,7 +2030,11 @@ public partial class MainWindow : Window
 
         var view = new ClientSettingsView(
             _userSettings,
-            ApplyTheme,
+            () =>
+            {
+                ApplyTheme();
+                RefreshFunctionKeyBar();
+            },
             ReloadLocalizationFromUserSettings,
             SaveUserSettings,
             key => T(key),
@@ -2048,7 +2059,22 @@ public partial class MainWindow : Window
         RefreshTransactionHistoryList();
         RefreshFavoritesList();
         RefreshModuleTransactionsList(GetSelectedModuleName());
+        RefreshFunctionKeyBar();
     }
+
+    private void RenderScr10()
+    {
+        WorkspacePanel.Children.Clear();
+
+        WorkspacePanel.Children.Add(
+            new Scr10PreparationQueueView(
+                _appSettings.ConfigurationRootPath,
+                _logger,
+                _currentUser.DisplayName,
+                _userSettings,
+                _settingsService));
+    }
+
 
     private static TextBlock CreateLine(string text)
     {
@@ -2776,8 +2802,8 @@ public partial class MainWindow : Window
         StatusSap.Content = T("Status.SapTestDisconnected");
         ApplyMesDatabaseStatusText();
         StatusSso.Content = T("Status.SsoWindowsLogin");
-        StatusVersion.Content = T("Status.Version", "1.1.0");
-        StatusDate.Content = T("Status.Date", "01.09.2026");
+        StatusVersion.Content = T("Status.Version", "1.2.0");
+        StatusDate.Content = T("Status.Date", "23.09.2026");
 
         TxtWelcomeTitle.Text = T("Welcome.Title");
         TxtWelcomeSubtitle.Text = T("Welcome.Subtitle");
@@ -2829,4 +2855,14 @@ public partial class MainWindow : Window
         UpdateCurrentTransactionText(_currentTransactionCommand);
     }
 
+    // Přidejte tuto metodu do třídy MainWindow pro opravu chyby CS0103
+    private void RenderJobOverview()
+    {
+        WorkspacePanel.Children.Clear();
+
+        // Pokud existuje nějaký JobOverviewView, použijte jej zde.
+        // Pokud ne, zobrazte jednoduchou stránku s informací.
+        RenderSimplePage("Přehled úloh", "Zobrazení přehledu úloh není implementováno.");
+        ResetWorkspaceScroll();
+    }
 }

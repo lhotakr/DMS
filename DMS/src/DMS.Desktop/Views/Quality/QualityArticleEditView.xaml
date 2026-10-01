@@ -20,26 +20,6 @@
                        Style="{StaticResource DmsTitleTextStyle}"
                        Margin="0,0,0,14"/>
 
-            <StackPanel Orientation="Horizontal"
-                        Margin="0,0,0,14">
-
-                <Button x:Name="BtnSave"
-                        Content="Save"
-                        Margin="0,0,8,0"
-                        Style="{StaticResource DmsPrimaryButtonStyle}"
-                        Click="BtnSave_Click"/>
-
-                <Button x:Name="BtnBackToQa03"
-                        Content="Back to QA03"
-                        Margin="0,0,8,0"
-                        Style="{StaticResource DmsFormButtonStyle}"
-                        Click="BtnBackToQa03_Click"/>
-
-                <Button x:Name="BtnReload"
-                        Content="Reload"
-                        Style="{StaticResource DmsFormButtonStyle}"
-                        Click="BtnReload_Click"/>
-            </StackPanel>
 
             <TextBlock x:Name="LblSelectedPrintVersion"
                        Text="Selected print version"
@@ -522,7 +502,6 @@
                       Height="300"
                       MinWidth="900"
                       SelectionUnit="FullRow"
-                      PreviewMouseWheel="GridTasks_PreviewMouseWheel"
                       CellEditEnding="GridTasks_CellEditEnding">
 
                 <DataGrid.Columns>
@@ -572,6 +551,33 @@
 
                 </DataGrid.Columns>
             </DataGrid>
+
+            <Grid Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button x:Name="BtnBackToQa03"
+                            Content="Back to QA03"
+                            Margin="0,0,8,0"
+                            Style="{StaticResource DmsFormButtonStyle}"
+                            Click="BtnBackToQa03_Click"/>
+                    <Button x:Name="BtnReload"
+                            Content="Reload"
+                            Style="{StaticResource DmsFormButtonStyle}"
+                            Click="BtnReload_Click"/>
+                </StackPanel>
+
+                <Button x:Name="BtnSave"
+                        Grid.Column="2"
+                        Content="Save"
+                        MinWidth="120"
+                        Style="{StaticResource DmsPrimaryButtonStyle}"
+                        Click="BtnSave_Click"/>
+            </Grid>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

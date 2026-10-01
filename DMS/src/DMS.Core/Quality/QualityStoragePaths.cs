@@ -42,6 +42,10 @@ public sealed class QualityStoragePaths
         QualityClassesFilePath = Path.Combine(
             QualityPath,
             "quality-classes.json");
+
+        QualityOrderTaskDefaultsFilePath = Path.Combine(
+            QualityPath,
+            "quality-order-task-defaults.json");
     }
 
     public string BasePath { get; }
@@ -62,6 +66,8 @@ public sealed class QualityStoragePaths
     public string QualityGlassTreatmentsFilePath { get; }
 
     public string QualityClassesFilePath { get; }
+
+    public string QualityOrderTaskDefaultsFilePath { get; }
 
     public void EnsureDirectories()
     {

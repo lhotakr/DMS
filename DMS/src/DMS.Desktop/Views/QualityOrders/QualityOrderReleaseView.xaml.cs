@@ -1,6 +1,5 @@
 using DMS.Core.Quality;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;

@@ -1,13 +1,9 @@
 using DMS.Desktop.Configuration.Roles;
 using DMS.Desktop.Localization;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;

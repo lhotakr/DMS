@@ -1,18 +1,16 @@
 ﻿using DMS.Core.Common.Editing;
 using DMS.Core.Quality;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
-using System;
-using System.Collections.Generic;
+using DMS.Desktop.UI.FunctionKeys;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace DMS.Desktop.Views.Quality;
 
-public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
+public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard, IDmsFunctionKeyHost
 {
     private readonly QualityStoragePaths _paths;
     private readonly JsonQualityRepository _repository;
@@ -25,17 +23,20 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
     private ObservableCollection<EditableRow<QualityLookupItem>> _colorTypes = new();
     private ObservableCollection<EditableRow<QualityLookupItem>> _glassTreatments = new();
     private ObservableCollection<EditableRow<QualityLookupItem>> _qualityClasses = new();
+    private ObservableCollection<EditableRow<QualityLookupItem>> _orderTaskDefaults = new();
 
     private List<QualityCustomer> _originalCustomers = new();
     private List<QualityLookupItem> _originalColorTypes = new();
     private List<QualityLookupItem> _originalGlassTreatments = new();
     private List<QualityLookupItem> _originalQualityClasses = new();
+    private List<QualityLookupItem> _originalOrderTaskDefaults = new();
 
     public bool HasUnsavedChanges =>
         _customers.Any(IsChanged) ||
         _colorTypes.Any(IsChanged) ||
         _glassTreatments.Any(IsChanged) ||
-        _qualityClasses.Any(IsChanged);
+        _qualityClasses.Any(IsChanged) ||
+        _orderTaskDefaults.Any(IsChanged);
 
     public QualitySettingsView()
         : this(
@@ -105,6 +106,7 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
         TabColorTypes.Header = T("QASET.Tab.ColorTypes");
         TabGlassTreatments.Header = T("QASET.Tab.GlassTreatments");
         TabQualityClasses.Header = T("QASET.Tab.QualityClasses");
+        TabOrderTaskDefaults.Header = T("QASET.Tab.OrderTaskDefaults");
         TabPaths.Header = T("QASET.Tab.Paths");
 
         SetButtonText(BtnAddCustomer, "QASET.Button.Add");
@@ -127,6 +129,11 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
         SetButtonText(BtnSaveQualityClasses, "QASET.Button.Save");
         SetButtonText(BtnReloadQualityClasses, "QASET.Button.Reload");
 
+        SetButtonText(BtnAddOrderTaskDefault, "QASET.Button.Add");
+        SetButtonText(BtnDeleteOrderTaskDefault, "QASET.Button.Delete");
+        SetButtonText(BtnSaveOrderTaskDefaults, "QASET.Button.Save");
+        SetButtonText(BtnReloadOrderTaskDefaults, "QASET.Button.Reload");
+
         ColCustomerName.Header = T("QASET.Column.Name");
         ColCustomerActive.Header = T("QASET.Column.Active");
         ColCustomerLoreal.Header = T("QASET.Column.Loreal");
@@ -136,6 +143,8 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
         ApplyLookupColumnHeaders(ColColorCode, ColColorName, ColColorActive, ColColorSortOrder, ColColorNotes);
         ApplyLookupColumnHeaders(ColGlassCode, ColGlassName, ColGlassActive, ColGlassSortOrder, ColGlassNotes);
         ApplyLookupColumnHeaders(ColClassCode, ColClassName, ColClassActive, ColClassSortOrder, ColClassNotes);
+        ApplyLookupColumnHeaders(ColOrderTaskCode, ColOrderTaskName, ColOrderTaskActive, ColOrderTaskSortOrder, ColOrderTaskNotes);
+        ColOrderTaskName.Header = T("QASET.Column.Task");
     }
 
     private void ApplyLookupColumnHeaders(
@@ -168,6 +177,7 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
         _colorTypes = LoadLookupRows(_repository.LoadColorTypes());
         _glassTreatments = LoadLookupRows(_repository.LoadGlassTreatments());
         _qualityClasses = LoadLookupRows(_repository.LoadQualityClasses());
+        _orderTaskDefaults = LoadLookupRows(_repository.LoadOrderTaskDefaults());
 
         _originalCustomers = _customers
             .Select(row => CloneCustomer(row.Item))
@@ -185,10 +195,15 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
             .Select(row => CloneLookup(row.Item))
             .ToList();
 
+        _originalOrderTaskDefaults = _orderTaskDefaults
+            .Select(row => CloneLookup(row.Item))
+            .ToList();
+
         GridCustomers.ItemsSource = _customers;
         GridColorTypes.ItemsSource = _colorTypes;
         GridGlassTreatments.ItemsSource = _glassTreatments;
         GridQualityClasses.ItemsSource = _qualityClasses;
+        GridOrderTaskDefaults.ItemsSource = _orderTaskDefaults;
 
         TxtPaths.Text =
             $"{T("QASET.Paths.BasePath")}: {_paths.BasePath}\n" +
@@ -196,7 +211,8 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
             $"{T("QASET.Paths.Customers")}: {_paths.QualityCustomersFilePath}\n" +
             $"{T("QASET.Paths.ColorTypes")}: {_paths.QualityColorTypesFilePath}\n" +
             $"{T("QASET.Paths.GlassTreatments")}: {_paths.QualityGlassTreatmentsFilePath}\n" +
-            $"{T("QASET.Paths.QualityClasses")}: {_paths.QualityClassesFilePath}";
+            $"{T("QASET.Paths.QualityClasses")}: {_paths.QualityClassesFilePath}\n" +
+            $"{T("QASET.Paths.OrderTaskDefaults")}: {_paths.QualityOrderTaskDefaultsFilePath}";
 
         TxtStatus.Text = TF("QASET.Status.Ready",
             _customers.Count,
@@ -208,7 +224,7 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
             "QASET",
             "LoadQualitySettings",
             _currentUserName,
-            $"Customers={_customers.Count}; ColorTypes={_colorTypes.Count}; GlassTreatments={_glassTreatments.Count}; QualityClasses={_qualityClasses.Count}");
+            $"Customers={_customers.Count}; ColorTypes={_colorTypes.Count}; GlassTreatments={_glassTreatments.Count}; QualityClasses={_qualityClasses.Count}; OrderTaskDefaults={_orderTaskDefaults.Count}");
     }
 
     private static ObservableCollection<EditableRow<QualityLookupItem>> LoadLookupRows(
@@ -264,6 +280,13 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
         LogAction("AddQualityClass", "");
     }
 
+    private void BtnAddOrderTaskDefault_Click(object sender, RoutedEventArgs e)
+    {
+        AddLookupRow(_orderTaskDefaults, GridOrderTaskDefaults, "NEW_TASK", T("QASET.Default.NewOrderTask"));
+        TxtStatus.Text = T("QASET.Status.OrderTaskAdded");
+        LogAction("AddOrderTaskDefault", "");
+    }
+
     private static void AddLookupRow(
         ObservableCollection<EditableRow<QualityLookupItem>> collection,
         DataGrid grid,
@@ -316,6 +339,13 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
         var count = DeleteSelectedRows(GridQualityClasses, _qualityClasses);
         TxtStatus.Text = TF("QASET.Status.QualityClassesMarkedDeleted", count);
         LogAction("MarkQualityClassesDeleted", $"Count={count}");
+    }
+
+    private void BtnDeleteOrderTaskDefault_Click(object sender, RoutedEventArgs e)
+    {
+        var count = DeleteSelectedRows(GridOrderTaskDefaults, _orderTaskDefaults);
+        TxtStatus.Text = TF("QASET.Status.OrderTasksMarkedDeleted", count);
+        LogAction("MarkOrderTaskDefaultsDeleted", $"Count={count}");
     }
 
     private static int DeleteSelectedRows<T>(
@@ -378,6 +408,18 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
         SaveLookupRows(GridQualityClasses, _qualityClasses, _originalQualityClasses, _repository.SaveQualityClasses, T("QASET.Tab.QualityClasses"), "QualityClass", "SaveQualityClasses");
     }
 
+    private void BtnSaveOrderTaskDefaults_Click(object sender, RoutedEventArgs e)
+    {
+        SaveLookupRows(
+            GridOrderTaskDefaults,
+            _orderTaskDefaults,
+            _originalOrderTaskDefaults,
+            _repository.SaveOrderTaskDefaults,
+            T("QASET.Tab.OrderTaskDefaults"),
+            "QualityOrderTaskDefault",
+            "SaveOrderTaskDefaults");
+    }
+
     private void SaveLookupRows(
         DataGrid grid,
         ObservableCollection<EditableRow<QualityLookupItem>> collection,
@@ -407,6 +449,53 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
         LogAction(logAction, $"Count={items.Count}");
 
         LoadData();
+    }
+
+    public IReadOnlyList<DmsFunctionKeyAction> GetFunctionKeyActions()
+    {
+        return new[]
+        {
+            new DmsFunctionKeyAction(
+                Key.F5,
+                T("QASET.Button.Reload"),
+                () => BtnReload_Click(this, new RoutedEventArgs())),
+            new DmsFunctionKeyAction(
+                Key.F6,
+                "Nový",
+                AddCurrentSettingRow),
+            new DmsFunctionKeyAction(
+                Key.F8,
+                T("QASET.Button.Save"),
+                SaveCurrentSettingTab)
+        };
+    }
+
+    private void AddCurrentSettingRow()
+    {
+        if (TabsSettings.SelectedItem == TabCustomers)
+            BtnAddCustomer_Click(this, new RoutedEventArgs());
+        else if (TabsSettings.SelectedItem == TabColorTypes)
+            BtnAddColorType_Click(this, new RoutedEventArgs());
+        else if (TabsSettings.SelectedItem == TabGlassTreatments)
+            BtnAddGlassTreatment_Click(this, new RoutedEventArgs());
+        else if (TabsSettings.SelectedItem == TabQualityClasses)
+            BtnAddQualityClass_Click(this, new RoutedEventArgs());
+        else if (TabsSettings.SelectedItem == TabOrderTaskDefaults)
+            BtnAddOrderTaskDefault_Click(this, new RoutedEventArgs());
+    }
+
+    private void SaveCurrentSettingTab()
+    {
+        if (TabsSettings.SelectedItem == TabCustomers)
+            BtnSaveCustomers_Click(this, new RoutedEventArgs());
+        else if (TabsSettings.SelectedItem == TabColorTypes)
+            BtnSaveColorTypes_Click(this, new RoutedEventArgs());
+        else if (TabsSettings.SelectedItem == TabGlassTreatments)
+            BtnSaveGlassTreatments_Click(this, new RoutedEventArgs());
+        else if (TabsSettings.SelectedItem == TabQualityClasses)
+            BtnSaveQualityClasses_Click(this, new RoutedEventArgs());
+        else if (TabsSettings.SelectedItem == TabOrderTaskDefaults)
+            BtnSaveOrderTaskDefaults_Click(this, new RoutedEventArgs());
     }
 
     private void GridCustomers_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
@@ -490,6 +579,23 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
             });
 
             LogAction("CreateDefaultQualityClasses", "");
+        }
+
+        if (!_repository.LoadOrderTaskDefaults().Any())
+        {
+            _repository.SaveOrderTaskDefaults(new[]
+            {
+                new QualityLookupItem
+                {
+                    Code = "LABORKA",
+                    Name = "Laborka",
+                    IsActive = true,
+                    SortOrder = 10,
+                    Notes = "Výchozí úkol založený automaticky s quality zakázkou."
+                }
+            });
+
+            LogAction("CreateDefaultOrderTaskDefaults", "Task=Laborka");
         }
     }
 
@@ -781,6 +887,12 @@ public partial class QualitySettingsView : UserControl, IUnsavedChangesGuard
         ["QASET.Tab.ColorTypes"] = "Color types",
         ["QASET.Tab.GlassTreatments"] = "Glass treatments",
         ["QASET.Tab.QualityClasses"] = "Quality classes",
+        ["QASET.Tab.OrderTaskDefaults"] = "Default order tasks",
+        ["QASET.Column.Task"] = "Task",
+        ["QASET.Paths.OrderTaskDefaults"] = "Default order tasks",
+        ["QASET.Default.NewOrderTask"] = "New order task",
+        ["QASET.Status.OrderTaskAdded"] = "New default order task added.",
+        ["QASET.Status.OrderTasksMarkedDeleted"] = "Default order tasks marked for deletion: {0:N0}",
         ["QASET.Tab.Paths"] = "Paths",
         ["QASET.Button.Add"] = "Add",
         ["QASET.Button.Delete"] = "Delete",

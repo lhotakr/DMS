@@ -1,11 +1,10 @@
 using DMS.Desktop.Logging;
-using DMS.Desktop.Views.Dialogs;
 using DMS.Desktop.WorkLog;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.ComponentModel;
 
 namespace DMS.Desktop.Views.WorkLog;
 

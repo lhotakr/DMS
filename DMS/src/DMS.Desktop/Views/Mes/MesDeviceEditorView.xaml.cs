@@ -1,6 +1,5 @@
 using DMS.Desktop.Logging;
 using DMS.Desktop.Models;
-using DMS.Integration.Mes.Models;
 using DMS.Integration.Mes.Services;
 using System.Collections.ObjectModel;
 using System.IO;

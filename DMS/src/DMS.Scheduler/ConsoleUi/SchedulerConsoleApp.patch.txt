@@ -1,0 +1,121 @@
+Update the Spectre.Console menu.
+
+Add menu items:
+
+```text
+Install service
+Start service
+Stop service
+Restart service
+Uninstall service
+Run scheduler here
+Jobs view
+Run job
+Settings
+View log
+Exit
+```
+
+Add install handler:
+
+```csharp
+private static async Task InstallServiceAsync(
+    SchedulerSettings settings)
+{
+    var installer =
+        new SchedulerServiceInstaller(
+            settings);
+
+    if (!installer.IsAdministrator())
+    {
+        if (!AnsiConsole.Confirm(
+                "Windows needs administrator rights. Open UAC installer now?",
+                true))
+        {
+            return;
+        }
+
+        if (!SchedulerServiceInstaller.RelaunchElevated(
+                "service",
+                "install-elevated"))
+        {
+            AnsiConsole.MarkupLine(
+                "[yellow]Installation cancelled.[/]");
+            Pause();
+            return;
+        }
+
+        AnsiConsole.MarkupLine(
+            "[green]Administrator installer started.[/]");
+
+        Pause();
+        return;
+    }
+
+    installer.Install(
+        SchedulerServiceInstaller.GetCurrentSchedulerExecutable());
+
+    var controller =
+        new SchedulerServiceController(
+            settings);
+
+    await controller.StartAsync();
+
+    AnsiConsole.MarkupLine(
+        "[green]Service installed and started.[/]");
+
+    Pause();
+}
+```
+
+Add uninstall handler using the same pattern.
+
+Add foreground scheduler handler:
+
+```csharp
+private static async Task RunSchedulerHereAsync(
+    SchedulerSettings settings)
+{
+    var runtime =
+        SchedulerRuntimeFactory.Create(
+            settings);
+
+    using var cts =
+        new CancellationTokenSource();
+
+    ConsoleCancelEventHandler handler =
+        (_, e) =>
+        {
+            e.Cancel = true;
+            cts.Cancel();
+        };
+
+    Console.CancelKeyPress += handler;
+
+    AnsiConsole.MarkupLine(
+        "[yellow]Scheduler running. Press Ctrl+C to stop.[/]");
+
+    try
+    {
+        await runtime.Engine.RunLoopAsync(
+            TimeSpan.FromSeconds(
+                settings.PollingSeconds),
+            cts.Token);
+    }
+    catch (OperationCanceledException)
+        when (cts.IsCancellationRequested)
+    {
+    }
+    finally
+    {
+        Console.CancelKeyPress -= handler;
+    }
+}
+```
+
+Add:
+```csharp
+using System.Threading;
+using DMS.Scheduler.Service;
+using DMS.Scheduler.Runtime;
+```

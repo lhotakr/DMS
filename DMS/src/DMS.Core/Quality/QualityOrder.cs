@@ -1,4 +1,4 @@
-namespace DMS.Core.Quality;
+﻿namespace DMS.Core.Quality;
 
 public sealed class QualityOrder
 {
@@ -60,6 +60,12 @@ public sealed class QualityOrder
     public string BlockedBy { get; init; } = string.Empty;
 
     public DateTime? BlockedAt { get; init; }
+
+    /// <summary>
+    /// Tasks that belong to this concrete quality order.
+    /// They are intentionally separate from print-version tasks.
+    /// </summary>
+    public IReadOnlyList<QualityTask> Tasks { get; init; } = Array.Empty<QualityTask>();
 
     public bool Finished { get; init; }
 

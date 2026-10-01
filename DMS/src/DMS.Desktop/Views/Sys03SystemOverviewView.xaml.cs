@@ -3,7 +3,6 @@ using DMS.Core.Transactions;
 using DMS.Desktop.Configuration;
 using DMS.Desktop.Configuration.SystemSettings;
 using System.IO;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 

@@ -1,4 +1,4 @@
-using DMS.Core.Transactions;
+﻿using DMS.Core.Transactions;
 
 namespace DMS.Core.Quality;
 
@@ -19,7 +19,7 @@ public static class QualityMenuTransactionDefinitions
         {
             Code = "QAMENU",
             Name = "Hlavní menu kvality",
-            Module = "QUALITY",
+            Module = "Quality",
             Description = "Spouštěcí nabídka transakcí modulu kvality.",
             HandlerKey = "SimpleMessage",
             IsActive = true,

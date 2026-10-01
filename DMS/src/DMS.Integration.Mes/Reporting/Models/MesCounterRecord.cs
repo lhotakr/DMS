@@ -6,6 +6,8 @@ public sealed class MesCounterRecord
 
     public string OrderCode { get; init; } = string.Empty;
 
+    public string OperationCode { get; init; } = string.Empty;
+
     public string ProductCode { get; init; } = string.Empty;
 
     public string CounterName { get; init; } = string.Empty;

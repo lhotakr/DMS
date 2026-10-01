@@ -1,13 +1,13 @@
-﻿using System.IO;
-using System.Text;
-using System.Text.Json;
-using System.Windows;
-using System.Windows.Controls;
-using DMS.Core.Domain.Organization;
+﻿using DMS.Core.Domain.Organization;
 using DMS.Core.Domain.People;
 using DMS.Core.Domain.Units;
 using DMS.Core.Framework.MasterData;
 using DMS.Desktop.Services.MasterData;
+using System.IO;
+using System.Text;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace DMS.Desktop.Views.Framework;
 

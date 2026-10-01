@@ -1,6 +1,4 @@
-﻿using DMS.Desktop.UI;
-using DMS.Desktop.Views.Quality;
-using System.Linq;
+﻿using DMS.Desktop.Views.Quality;
 
 namespace DMS.Desktop.Views;
 

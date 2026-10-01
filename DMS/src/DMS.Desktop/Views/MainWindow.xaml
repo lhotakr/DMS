@@ -461,10 +461,17 @@
           Background="{DynamicResource DmsBackgroundBrush}"
           Margin="20">
 
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
                 <ScrollViewer x:Name="WorkspaceScrollViewer"
+                      Grid.Row="0"
                       VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Auto"
-                      CanContentScroll="False">
+                      HorizontalScrollBarVisibility="Disabled"
+                      CanContentScroll="False"
+                      PreviewMouseWheel="WorkspaceScrollViewer_PreviewMouseWheel">
 
                     <Border x:Name="WorkspaceHost"
                     Background="{DynamicResource DmsPanelBrush}"
@@ -491,6 +498,18 @@
                         </Grid>
                     </Border>
                 </ScrollViewer>
+
+                <Border x:Name="FunctionKeyBar"
+                        Grid.Row="1"
+                        Visibility="Collapsed"
+                        Margin="0,10,0,0"
+                        Padding="8"
+                        CornerRadius="4"
+                        BorderThickness="1"
+                        Background="{DynamicResource DmsPanelBrush}"
+                        BorderBrush="{DynamicResource DmsBorderBrush}">
+                    <WrapPanel x:Name="FunctionKeyPanel"/>
+                </Border>
             </Grid>
         </Grid>
     </DockPanel>

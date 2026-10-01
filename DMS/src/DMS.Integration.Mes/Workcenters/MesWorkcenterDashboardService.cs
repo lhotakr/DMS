@@ -1,16 +1,11 @@
 using DMS.Integration.Mes.Database;
 using DMS.Integration.Mes.Live;
 using DMS.Integration.Mes.Reporting;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 
 namespace DMS.Integration.Mes.Workcenters;

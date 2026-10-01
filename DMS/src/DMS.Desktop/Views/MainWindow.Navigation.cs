@@ -230,6 +230,7 @@ public partial class MainWindow
         BtnBack.IsEnabled = _navigationBackStack.Count > 0;
         BtnForward.IsEnabled = _navigationForwardStack.Count > 0;
         BtnRefreshTransaction.IsEnabled = !string.IsNullOrWhiteSpace(_currentTransactionCommand);
+        RefreshFunctionKeyBar();
     }
 
     private void BtnAddFavorite_Click(object sender, RoutedEventArgs e)

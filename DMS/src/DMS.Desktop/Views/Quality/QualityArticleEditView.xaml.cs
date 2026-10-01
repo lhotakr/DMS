@@ -1,6 +1,6 @@
 ﻿using DMS.Core.Quality;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
+using DMS.Desktop.UI.FunctionKeys;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,7 +11,8 @@ namespace DMS.Desktop.Views.Quality;
 
 public partial class QualityArticleEditView :
     UserControl,
-    IUnsavedChangesGuard
+    IUnsavedChangesGuard,
+    IDmsFunctionKeyHost
 {
     private IReadOnlyList<QualityCustomer> _customers = Array.Empty<QualityCustomer>();
     private IReadOnlyList<QualityLookupItem> _colorTypes = Array.Empty<QualityLookupItem>();
@@ -445,6 +446,8 @@ public partial class QualityArticleEditView :
             return false;
         }
 
+        GridTasks.CommitEdit(DataGridEditingUnit.Cell, true);
+        GridTasks.CommitEdit(DataGridEditingUnit.Row, true);
         WriteFormToSelectedPrintVersion();
 
         var result = _service.Save(
@@ -680,6 +683,29 @@ public partial class QualityArticleEditView :
 
         GridTasks.ClearValue(Control.BorderBrushProperty);
         GridTasks.ClearValue(Control.BorderThicknessProperty);
+    }
+
+    public IReadOnlyList<DmsFunctionKeyAction> GetFunctionKeyActions()
+    {
+        return new[]
+        {
+            new DmsFunctionKeyAction(
+                Key.F4,
+                TOr("FunctionKey.ValueHelp", "Výběr tiskové verze"),
+                () => BtnOpenPrintVersionSelector_Click(this, new RoutedEventArgs())),
+            new DmsFunctionKeyAction(
+                Key.F5,
+                TOr("FunctionKey.Refresh", "Obnovit"),
+                () => BtnReload_Click(this, new RoutedEventArgs())),
+            new DmsFunctionKeyAction(
+                Key.F8,
+                TOr("QA02.Button.Save", "Uložit"),
+                () => TrySave()),
+            new DmsFunctionKeyAction(
+                Key.F12,
+                TOr("FunctionKey.Cancel", "Zrušit"),
+                () => BtnBackToQa03_Click(this, new RoutedEventArgs()))
+        };
     }
 
     private void GridTasks_PreviewMouseWheel(
@@ -1098,6 +1124,16 @@ public partial class QualityArticleEditView :
             oldValue,
             newValue,
             _currentUserName);
+    }
+
+    private string TOr(string key, string fallback)
+    {
+        var value = T(key);
+        return string.IsNullOrWhiteSpace(value) ||
+               string.Equals(value, key, StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
     }
 
     private string T(string key)

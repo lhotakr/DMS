@@ -314,6 +314,7 @@ public sealed class MesReportingDataService
             SELECT TOP (@maxRows)
                 wc.Code,
                 op.OrderCode,
+                op.OperationCode,
                 op.ProductCode,
                 counterDim.Name,
                 counterDim.Description,
@@ -360,16 +361,18 @@ public sealed class MesReportingDataService
                 {
                     WorkcenterCode = GetString(reader, 0),
                     OrderCode = GetString(reader, 1),
-                    ProductCode = GetString(reader, 2),
-                    CounterName = GetString(reader, 3),
-                    CounterDescription = GetString(reader, 4),
-                    Timestamp = reader.GetDateTime(5),
+                    OperationCode = GetString(reader, 2),
+                    ProductCode = GetString(reader, 3),
+                    CounterName = GetString(reader, 4),
+                    CounterDescription = GetString(reader, 5),
+                    Timestamp = reader.GetDateTime(6),
                     Value =
-                        reader.IsDBNull(6)
+                        reader.IsDBNull(7)
                             ? 0m
                             : Convert.ToDecimal(
-                                reader.GetValue(6)),
-                    CustomText = GetString(reader, 7)
+                                reader.GetValue(7)),
+                    CustomText = GetString(reader, 8)
+
                 });
         }
 
@@ -416,30 +419,25 @@ public sealed class MesReportingDataService
         int ordinal) =>
         reader.IsDBNull(ordinal)
             ? string.Empty
-            : Convert.ToString(
-                  reader.GetValue(ordinal))
-              ?? string.Empty;
+            : reader.GetString(ordinal);
 
     private static DateTime? GetNullableDateTime(
         SqlDataReader reader,
         int ordinal) =>
         reader.IsDBNull(ordinal)
             ? null
-            : Convert.ToDateTime(
-                reader.GetValue(ordinal));
+            : reader.GetDateTime(ordinal);
 
     private static decimal? GetNullableDecimal(
         SqlDataReader reader,
         int ordinal) =>
         reader.IsDBNull(ordinal)
             ? null
-            : Convert.ToDecimal(
-                reader.GetValue(ordinal));
+            : reader.GetDecimal(ordinal);
 
     private static bool GetBool(
         SqlDataReader reader,
         int ordinal) =>
         !reader.IsDBNull(ordinal)
-        && Convert.ToBoolean(
-            reader.GetValue(ordinal));
+        && reader.GetBoolean(ordinal);
 }

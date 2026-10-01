@@ -1,5 +1,4 @@
 using DMS.Desktop.Logging;
-using DMS.Desktop.Views.Dialogs;
 using DMS.Desktop.WorkLog;
 using System.Collections.ObjectModel;
 using System.ComponentModel;

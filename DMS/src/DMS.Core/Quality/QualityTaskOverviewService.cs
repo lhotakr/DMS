@@ -9,15 +9,39 @@ public sealed class QualityTaskOverviewService
 
     private const string DefaultImportUser = "import";
 
-    private readonly IReadOnlyList<SapMaterial> _sapMaterials;
     private readonly IReadOnlyList<QualityPrintVersion> _printVersions;
+    private readonly Dictionary<string, SapMaterial> _sapMaterialsByNumber;
+    private readonly Dictionary<string, SapMaterial> _sapMaterialsByLegacyNumber;
 
     public QualityTaskOverviewService(
         IReadOnlyList<SapMaterial> sapMaterials,
         IReadOnlyList<QualityPrintVersion> printVersions)
     {
-        _sapMaterials = sapMaterials;
         _printVersions = printVersions;
+
+        _sapMaterialsByNumber = new Dictionary<string, SapMaterial>(
+            StringComparer.OrdinalIgnoreCase);
+
+        _sapMaterialsByLegacyNumber = new Dictionary<string, SapMaterial>(
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var material in sapMaterials)
+        {
+            var materialNumber = NormalizeSapNumber(material.MaterialNumber);
+
+            if (!string.IsNullOrWhiteSpace(materialNumber))
+            {
+                _sapMaterialsByNumber.TryAdd(materialNumber, material);
+            }
+
+            var legacyNumber = NormalizeLegacyArticleNumberForSapLookup(
+                material.OldMaterialNumber);
+
+            if (!string.IsNullOrWhiteSpace(legacyNumber))
+            {
+                _sapMaterialsByLegacyNumber.TryAdd(legacyNumber, material);
+            }
+        }
     }
 
     public IReadOnlyList<QualityTaskCockpitRow> BuildRows()
@@ -110,13 +134,9 @@ public sealed class QualityTaskOverviewService
 
         if (!string.IsNullOrWhiteSpace(sapNumber))
         {
-            var bySapNumber = _sapMaterials.FirstOrDefault(item =>
-                string.Equals(
-                    NormalizeSapNumber(item.MaterialNumber),
+            if (_sapMaterialsByNumber.TryGetValue(
                     sapNumber,
-                    StringComparison.OrdinalIgnoreCase));
-
-            if (bySapNumber is not null)
+                    out var bySapNumber))
             {
                 return bySapNumber;
             }
@@ -129,11 +149,11 @@ public sealed class QualityTaskOverviewService
 
         var legacyLookup = NormalizeLegacyArticleNumberForSapLookup(legacyArticleNumber);
 
-        return _sapMaterials.FirstOrDefault(item =>
-            string.Equals(
-                NormalizeLegacyArticleNumberForSapLookup(item.OldMaterialNumber),
-                legacyLookup,
-                StringComparison.OrdinalIgnoreCase));
+        return _sapMaterialsByLegacyNumber.TryGetValue(
+            legacyLookup,
+            out var byLegacyNumber)
+            ? byLegacyNumber
+            : null;
     }
 
     private static string ResolveLegacyArticleNumber(

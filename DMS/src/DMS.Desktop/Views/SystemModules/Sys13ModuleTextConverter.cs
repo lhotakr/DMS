@@ -1,5 +1,4 @@
 using DMS.Desktop.Configuration.Modules;
-using System;
 using System.Globalization;
 using System.Windows.Data;
 

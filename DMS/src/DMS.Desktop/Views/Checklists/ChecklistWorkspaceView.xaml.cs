@@ -1,18 +1,16 @@
 ﻿using DMS.Core.Checklists;
-using DMS.Core.Domain.Organization;
-using DMS.Core.Domain.People;
 using DMS.Core.Domain.Units;
 using DMS.Core.Sap;
-using DMS.Desktop.Services.Checklists;
 using DMS.Desktop.Configuration.Roles;
+using DMS.Desktop.Services.Checklists;
 using DMS.Desktop.Services.MasterData;
 using DMS.Desktop.Views.Dialogs;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.IO;
 
 namespace DMS.Desktop.Views.Checklists;
 
@@ -1457,22 +1455,22 @@ public partial class ChecklistWorkspaceView : UserControl
         public static DefinitionFieldRow From(
             ChecklistSectionDefinition section,
             ChecklistFieldDefinition field) => new()
-        {
-            SectionCode = section.Code,
-            SectionTitle = section.Title,
-            SectionSortOrder = section.SortOrder,
-            FieldCode = field.Code,
-            Label = field.Label,
-            FieldType = field.FieldType,
-            FieldSortOrder = field.SortOrder,
-            IsRequired = field.IsRequired,
-            IsReadOnly = field.IsReadOnly,
-            UnitDimensionCode = field.UnitDimensionCode,
-            DefaultUnitCode = field.DefaultUnitCode,
-            SourceBinding = field.SourceBinding,
+            {
+                SectionCode = section.Code,
+                SectionTitle = section.Title,
+                SectionSortOrder = section.SortOrder,
+                FieldCode = field.Code,
+                Label = field.Label,
+                FieldType = field.FieldType,
+                FieldSortOrder = field.SortOrder,
+                IsRequired = field.IsRequired,
+                IsReadOnly = field.IsReadOnly,
+                UnitDimensionCode = field.UnitDimensionCode,
+                DefaultUnitCode = field.DefaultUnitCode,
+                SourceBinding = field.SourceBinding,
                 CatalogCode = field.CatalogCode,
                 AllowMultipleValues = field.AllowMultipleValues
-        };
+            };
     }
 
     private sealed class GridRow

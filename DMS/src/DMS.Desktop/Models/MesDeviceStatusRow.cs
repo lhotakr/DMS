@@ -1,7 +1,6 @@
+using DMS.Integration.Mes.Models;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-
-using DMS.Integration.Mes.Models;
 
 namespace DMS.Desktop.Models;
 

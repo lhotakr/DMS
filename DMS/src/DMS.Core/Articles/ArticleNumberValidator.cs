@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace DMS.Core.Articles;
+﻿namespace DMS.Core.Articles;
 
 /// <summary>
 /// Centrální validace SAP čísla artiklu.

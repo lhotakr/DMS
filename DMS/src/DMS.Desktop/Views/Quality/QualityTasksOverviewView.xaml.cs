@@ -1,29 +1,32 @@
 ﻿using DMS.Core.Quality;
 using DMS.Core.Sap;
 using DMS.Desktop.Logging;
+using DMS.Desktop.UI.FunctionKeys;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace DMS.Desktop.Views.Quality;
 
-public partial class QualityTasksOverviewView : UserControl
+public partial class QualityTasksOverviewView : UserControl, IDmsFunctionKeyHost
 {
-    private readonly QualityTaskOverviewService _service;
+    private readonly string _rootPath;
+    private readonly JsonQualityRepository _repository;
     private readonly DmsLogger? _logger;
     private readonly string _currentUserName;
     private readonly Func<string, string>? _translate;
     private readonly Func<string, object[], string>? _translateFormat;
 
-    private IReadOnlyList<QualityTaskCockpitRow> _allRows =
+    private IReadOnlyList<QualityTaskCockpitRow> _allPrintVersionRows =
         Array.Empty<QualityTaskCockpitRow>();
+    private IReadOnlyList<QualityOrderTaskCockpitRow> _allOrderRows =
+        Array.Empty<QualityOrderTaskCockpitRow>();
 
     public event Action<string>? TransactionRequested;
 
-    // Designer / backward compatibility constructor.
     public QualityTasksOverviewView()
-        : this(
-            System.IO.Path.GetFullPath(
-                System.IO.Path.Combine(AppContext.BaseDirectory, "..")))
+        : this(System.IO.Path.GetFullPath(
+            System.IO.Path.Combine(AppContext.BaseDirectory, "..")))
     {
     }
 
@@ -43,190 +46,161 @@ public partial class QualityTasksOverviewView : UserControl
         _translate = translate;
         _translateFormat = translateFormat;
 
-        ApplyLocalization();
-
-        CmbCompletionFilter.SelectedIndex = 0;
-
-        var rootPath = string.IsNullOrWhiteSpace(dmsRootPath)
+        _rootPath = string.IsNullOrWhiteSpace(dmsRootPath)
             ? System.IO.Path.GetFullPath(
                 System.IO.Path.Combine(AppContext.BaseDirectory, ".."))
             : dmsRootPath;
 
-        var sapStoragePaths = new SapStoragePaths(rootPath);
-        sapStoragePaths.EnsureDirectories();
-
-        var sapMaterials =
-            new JsonSapMaterialRepository(
-                    sapStoragePaths.SapMaterialsFilePath)
-                .LoadAll();
-
-        var qualityPaths = new QualityStoragePaths(rootPath);
+        var qualityPaths = new QualityStoragePaths(_rootPath);
         qualityPaths.EnsureDirectories();
+        _repository = new JsonQualityRepository(qualityPaths);
 
-        var qualityRepository =
-            new JsonQualityRepository(qualityPaths);
-
-        _service = new QualityTaskOverviewService(
-            sapMaterials,
-            qualityRepository.LoadPrintVersions());
+        ApplyLocalization();
+        CmbCompletionFilter.SelectedIndex = 0;
 
         _logger?.AdminAction(
             "QATASK",
             "OpenQualityTaskOverview",
             _currentUserName,
-            $"Root={rootPath}; SapMaterials={sapMaterials.Count}");
+            $"Root={_rootPath}");
 
         LoadData();
     }
 
     private void ApplyLocalization()
     {
-        TxtTitle.Text = T("QATASK.Title");
-        TxtSubtitle.Text = T("QATASK.Subtitle");
-        TxtCompletionFilterLabel.Text = T("QATASK.Filter.Completion");
-        TxtSapFilterLabel.Text = T("QATASK.Filter.SapId");
-        CbiOpen.Content = T("QATASK.Filter.Open");
-        CbiDone.Content = T("QATASK.Filter.Done");
-        CbiAll.Content = T("QATASK.Filter.All");
-        BtnClearFilter.Content = T("QATASK.Button.Clear");
-        BtnReload.Content = T("QATASK.Button.Refresh");
-        TxtHint.Text = T("QATASK.Hint.DoubleClick");
+        TxtTitle.Text = TOr("QATASK.Title", "QATASK - Quality úkoly");
+        TxtSubtitle.Text = TOr(
+            "QATASK.Subtitle",
+            "Přehled úkolů tiskových verzí a úkolů konkrétních zakázek.");
+        TxtCompletionFilterLabel.Text = TOr("QATASK.Filter.Completion", "Stav");
+        TxtSapFilterLabel.Text = TOr("QATASK.Filter.SapId", "Hledat");
+        CbiOpen.Content = TOr("QATASK.Filter.Open", "Otevřené");
+        CbiDone.Content = TOr("QATASK.Filter.Done", "Dokončené");
+        CbiAll.Content = TOr("QATASK.Filter.All", "Vše");
+        BtnClearFilter.Content = TOr("QATASK.Button.Clear", "Vymazat");
+        BtnReload.Content = TOr("QATASK.Button.Refresh", "Obnovit");
+        TxtHint.Text = TOr(
+            "QATASK.Hint.DoubleClick",
+            "Dvojklik vlevo otevře QA03, dvojklik vpravo otevře QO02.");
 
-        ColSapId.Header = T("QATASK.Column.SapId");
-        ColMaterialStatus.Header = T("QATASK.Column.MaterialStatus");
-        ColOldNumber.Header = T("QATASK.Column.OldNumber");
-        ColTaskNumber.Header = T("QATASK.Column.TaskNumber");
-        ColTaskText.Header = T("QATASK.Column.TaskText");
-        ColCreatedAt.Header = T("QATASK.Column.CreatedAt");
-        ColCreatedBy.Header = T("QATASK.Column.CreatedBy");
-        ColDueDate.Header = T("QATASK.Column.DueDate");
-        ColDelay.Header = T("QATASK.Column.Delay");
-        ColCompletedAt.Header = T("QATASK.Column.CompletedAt");
-        ColCompletedBy.Header = T("QATASK.Column.CompletedBy");
+        TxtPrintVersionTasksTitle.Text = TOr(
+            "QATASK.Panel.PrintVersionTasks",
+            "Úkoly tiskových verzí");
+        TxtOrderTasksTitle.Text = TOr(
+            "QATASK.Panel.OrderTasks",
+            "Úkoly zakázek");
+
+        // Keep the original print-version task columns; this panel is the existing QATASK moved left.
+        ColSapId.Header = TOr("QATASK.Column.SapId", "SAP ID");
+        ColMaterialStatus.Header = TOr("QATASK.Column.MaterialStatus", "Status");
+        ColOldNumber.Header = TOr("QATASK.Column.OldNumber", "Staré číslo");
+        ColTaskNumber.Header = TOr("QATASK.Column.TaskNumber", "Číslo úkolu");
+        ColTaskText.Header = TOr("QATASK.Column.TaskText", "Úkol");
+        ColCreatedAt.Header = TOr("QATASK.Column.CreatedAt", "Vytvořeno");
+        ColCreatedBy.Header = TOr("QATASK.Column.CreatedBy", "Vytvořil");
+        ColDueDate.Header = TOr("QATASK.Column.DueDate", "Termín");
+        ColDelay.Header = TOr("QATASK.Column.Delay", "Prodlení");
+        ColCompletedAt.Header = TOr("QATASK.Column.CompletedAt", "Hotovo");
+        ColCompletedBy.Header = TOr("QATASK.Column.CompletedBy", "Dokončil");
+
+        ColOrderNumber.Header = TOr("QATASK.Column.OrderNumber", "Zakázka");
+        ColOrderSapId.Header = TOr("QATASK.Column.SapId", "SAP ID");
+        ColOrderPrintVersion.Header = TOr("QATASK.Column.PrintVersion", "Tisková verze");
+        ColOrderTaskNumber.Header = TOr("QATASK.Column.TaskNumber", "#");
+        ColOrderTaskText.Header = TOr("QATASK.Column.TaskText", "Úkol");
+        ColOrderCreatedAt.Header = TOr("QATASK.Column.CreatedAt", "Vytvořeno");
+        ColOrderCreatedBy.Header = TOr("QATASK.Column.CreatedBy", "Vytvořil");
+        ColOrderDueDate.Header = TOr("QATASK.Column.DueDate", "Termín");
+        ColOrderDelay.Header = TOr("QATASK.Column.Delay", "Prodlení");
+        ColOrderCompletedAt.Header = TOr("QATASK.Column.CompletedAt", "Hotovo");
+        ColOrderCompletedBy.Header = TOr("QATASK.Column.CompletedBy", "Dokončil");
     }
 
     private void LoadData()
     {
-        _allRows = _service.BuildRows();
+        var sapStoragePaths = new SapStoragePaths(_rootPath);
+        sapStoragePaths.EnsureDirectories();
+        var sapMaterials = new JsonSapMaterialRepository(
+                sapStoragePaths.SapMaterialsFilePath)
+            .LoadAll();
+
+        _allPrintVersionRows = new QualityTaskOverviewService(
+                sapMaterials,
+                _repository.LoadPrintVersions())
+            .BuildRows();
+        _allOrderRows = new QualityOrderTaskOverviewService(
+                _repository.LoadOrders())
+            .BuildRows();
 
         _logger?.AdminAction(
             "QATASK",
             "LoadQualityTasks",
             _currentUserName,
-            $"Total={_allRows.Count}");
+            $"PrintVersionTasks={_allPrintVersionRows.Count}; OrderTasks={_allOrderRows.Count}");
 
         ApplyFilter();
     }
 
     private void ApplyFilter()
     {
-        var rows = _allRows.AsEnumerable();
-
         var selectedTag =
-            (CmbCompletionFilter.SelectedItem as ComboBoxItem)
-            ?.Tag
-            ?.ToString()
+            (CmbCompletionFilter.SelectedItem as ComboBoxItem)?.Tag?.ToString()
             ?? "open";
+        var filter = TxtSapFilter.Text?.Trim() ?? string.Empty;
 
-        rows = selectedTag switch
+        IEnumerable<QualityTaskCockpitRow> printRows = _allPrintVersionRows;
+        IEnumerable<QualityOrderTaskCockpitRow> orderRows = _allOrderRows;
+
+        printRows = selectedTag switch
         {
-            "done" => rows.Where(item => item.IsCompleted),
-            "all" => rows,
-            _ => rows.Where(item => !item.IsCompleted)
+            "done" => printRows.Where(item => item.IsCompleted),
+            "all" => printRows,
+            _ => printRows.Where(item => !item.IsCompleted)
         };
 
-        var sapFilter =
-            TxtSapFilter.Text?.Trim() ?? string.Empty;
-
-        if (!string.IsNullOrWhiteSpace(sapFilter))
+        orderRows = selectedTag switch
         {
-            rows = rows.Where(item =>
-                Contains(item.SapMaterialNumber, sapFilter) ||
-                Contains(item.OldMaterialNumber, sapFilter) ||
-                Contains(item.FullPrintVersionNumber, sapFilter) ||
-                Contains(item.TaskText, sapFilter));
+            "done" => orderRows.Where(item => item.IsCompleted),
+            "all" => orderRows,
+            _ => orderRows.Where(item => !item.IsCompleted)
+        };
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            printRows = printRows.Where(item =>
+                Contains(item.SapMaterialNumber, filter) ||
+                Contains(item.OldMaterialNumber, filter) ||
+                Contains(item.FullPrintVersionNumber, filter) ||
+                Contains(item.TaskText, filter));
+
+            orderRows = orderRows.Where(item =>
+                Contains(item.OrderNumber, filter) ||
+                Contains(item.SapMaterialNumber, filter) ||
+                Contains(item.PrintVersionNumber, filter) ||
+                Contains(item.TaskText, filter));
         }
 
-        var finalRows = rows.ToList();
+        var finalPrintRows = printRows.ToList();
+        var finalOrderRows = orderRows.ToList();
 
-        GridTasks.ItemsSource = finalRows;
-
-        TxtStatus.Text = TF(
-            "QATASK.Status.Filtered",
-            finalRows.Count,
-            _allRows.Count);
-
-        ResizeTaskColumn();
+        GridTasks.ItemsSource = finalPrintRows;
+        GridOrderTasks.ItemsSource = finalOrderRows;
+        TxtStatus.Text = $"Tiskové verze: {finalPrintRows.Count}/{_allPrintVersionRows.Count}   |   Zakázky: {finalOrderRows.Count}/{_allOrderRows.Count}";
     }
 
-    private void GridTasks_Loaded(
-        object sender,
-        RoutedEventArgs e)
+    private void Filter_Changed(object sender, RoutedEventArgs e)
     {
-        ResizeTaskColumn();
-    }
-
-    private void GridTasks_SizeChanged(
-        object sender,
-        SizeChangedEventArgs e)
-    {
-        ResizeTaskColumn();
-    }
-
-    private void ResizeTaskColumn()
-    {
-        if (GridTasks.ActualWidth <= 0)
+        if (IsLoaded)
         {
-            return;
+            ApplyFilter();
         }
-
-        const double safetyMargin = 36;
-
-        var fixedWidth = GridTasks.Columns
-            .Where(column => column != ColTaskText)
-            .Sum(column => column.ActualWidth > 0
-                ? column.ActualWidth
-                : column.MinWidth);
-
-        var availableWidth =
-            GridTasks.ActualWidth - fixedWidth - safetyMargin;
-
-        ColTaskText.Width =
-            new DataGridLength(
-                Math.Max(420, availableWidth),
-                DataGridLengthUnitType.Pixel);
     }
 
-    private void Filter_Changed(
-        object sender,
-        RoutedEventArgs e)
-    {
-        if (!IsLoaded)
-        {
-            return;
-        }
-
-        ApplyFilter();
-    }
-
-    private void BtnClearFilter_Click(
-        object sender,
-        RoutedEventArgs e)
+    private void BtnClearFilter_Click(object sender, RoutedEventArgs e)
     {
         TxtSapFilter.Clear();
-
-        foreach (var item in CmbCompletionFilter.Items
-                     .OfType<ComboBoxItem>())
-        {
-            if (string.Equals(
-                    item.Tag?.ToString(),
-                    "open",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                CmbCompletionFilter.SelectedItem = item;
-                break;
-            }
-        }
+        CmbCompletionFilter.SelectedIndex = 0;
 
         _logger?.AdminAction(
             "QATASK",
@@ -237,16 +211,13 @@ public partial class QualityTasksOverviewView : UserControl
         ApplyFilter();
     }
 
-    private void BtnReload_Click(
-        object sender,
-        RoutedEventArgs e)
+    private void BtnReload_Click(object sender, RoutedEventArgs e)
     {
         _logger?.AdminAction(
             "QATASK",
             "RefreshQualityTasks",
             _currentUserName,
             string.Empty);
-
         LoadData();
     }
 
@@ -254,24 +225,43 @@ public partial class QualityTasksOverviewView : UserControl
         object sender,
         System.Windows.Input.MouseButtonEventArgs e)
     {
-        if (GridTasks.SelectedItem is not QualityTaskCockpitRow row)
+        if (GridTasks.SelectedItem is not QualityTaskCockpitRow row ||
+            string.IsNullOrWhiteSpace(row.FullPrintVersionNumber))
         {
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(row.FullPrintVersionNumber))
+        TransactionRequested?.Invoke($"QA03 {row.FullPrintVersionNumber}");
+    }
+
+    private void GridOrderTasks_MouseDoubleClick(
+        object sender,
+        System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (GridOrderTasks.SelectedItem is not QualityOrderTaskCockpitRow row ||
+            string.IsNullOrWhiteSpace(row.OrderNumber))
         {
             return;
         }
 
         _logger?.AdminAction(
             "QATASK",
-            "OpenQualityArticleFromTaskOverview",
+            "OpenQualityOrderFromTaskOverview",
             _currentUserName,
-            $"PrintVersion={row.FullPrintVersionNumber}; SapMaterial={row.SapMaterialNumber}; Task={row.TaskNumber}");
+            $"Order={row.OrderNumber}; Task={row.TaskNumber}");
 
-        TransactionRequested?.Invoke(
-            $"QA03 {row.FullPrintVersionNumber}");
+        TransactionRequested?.Invoke($"QO02 {row.OrderNumber}");
+    }
+
+    public IReadOnlyList<DmsFunctionKeyAction> GetFunctionKeyActions()
+    {
+        return new[]
+        {
+            new DmsFunctionKeyAction(
+                Key.F5,
+                TOr("FunctionKey.Refresh", "Obnovit"),
+                LoadData)
+        };
     }
 
     private static bool Contains(string? value, string filter)
@@ -282,29 +272,13 @@ public partial class QualityTasksOverviewView : UserControl
     private string T(string key)
     {
         var value = _translate?.Invoke(key) ?? key;
-
-        return IsMissing(value, key)
-            ? key
-            : value;
+        return IsMissing(value, key) ? key : value;
     }
 
-    private string TF(string key, params object[] args)
+    private string TOr(string key, string fallback)
     {
-        if (_translateFormat is not null)
-        {
-            return _translateFormat(key, args);
-        }
-
-        var pattern = T(key);
-
-        try
-        {
-            return string.Format(pattern, args);
-        }
-        catch
-        {
-            return pattern;
-        }
+        var value = T(key);
+        return IsMissing(value, key) ? fallback : value;
     }
 
     private static bool IsMissing(string? value, string key)

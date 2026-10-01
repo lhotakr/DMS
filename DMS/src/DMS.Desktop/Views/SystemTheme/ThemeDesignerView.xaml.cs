@@ -3,7 +3,6 @@ using DMS.Core.Transactions;
 using DMS.Desktop.Configuration.Modules;
 using DMS.Desktop.Logging;
 using DMS.Desktop.Theming;
-using DMS.Desktop.UI;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Security.Cryptography;

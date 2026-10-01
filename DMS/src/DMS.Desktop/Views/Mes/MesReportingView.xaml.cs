@@ -1,20 +1,16 @@
 using ClosedXML.Excel;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
 using DMS.Integration.Mes.Database;
 using DMS.Integration.Mes.Reporting;
 using DMS.Integration.Mes.Reporting.Definitions;
-using DMS.Integration.Mes.Reporting.Models;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.WPF;
 using Microsoft.Win32;
-using System.Collections;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using ReportingEnrichmentService = DMS.Integration.Mes.Reporting.MesReportingEnrichmentService;
 
 namespace DMS.Desktop.Views.Mes;
 
@@ -45,7 +41,8 @@ public partial class MesReportingView
         string definitionsPath,
         DmsLogger logger,
         string user,
-        Func<string, string>? translate = null)
+        Func<string, string>? translate = null,
+        string? automationTemplatesPath = null)
     {
         InitializeComponent();
 
@@ -67,13 +64,19 @@ public partial class MesReportingView
         _translate =
             translate ?? (key => key);
 
-        ApplyLocalization();  
+        _automationTemplatesPath =
+            automationTemplatesPath
+            ?? string.Empty;
+
+
+        ApplyLocalization();
         InitializeDates();
         InitializeLeftFilterPanel();
         InitializeReportToolbar();
-        
+        InitializeAutomationTemplateUi();
+
         LoadDefinitions();
-        
+
         Loaded += MesReportingView_Loaded;
     }
 
@@ -278,61 +281,6 @@ public partial class MesReportingView
 
         return true;
     }
-    /*
-    private void LoadDefinitions()
-    {
-        var selectedCode =
-            (CmbReport.SelectedItem
-                as MesReportDefinition)
-            ?.Code;
-
-        var loadedDefinitions =
-            _definitionService.Load(
-                _definitionsPath);
-
-        var visibleDefinitions =
-       loadedDefinitions
-           .Where(definition =>
-               !string.Equals(
-                   definition.DataSource,
-                   "Counters",
-                   StringComparison.OrdinalIgnoreCase))
-           .ToList();
-
-        _definitions =
-    EnsureFinalReportingDefinitions(
-        EnsureProductionGraphDefinition(
-            EnsureMachineTimelineDefinition(
-                visibleDefinitions)));
-
-        // DEBUG: vypsat kódy definic
-        _logger.AdminAction(
-    "MES06",
-    "LoadDefinitionsVisible",
-    _user,
-    $"Codes={string.Join(',', _definitions.Select(d => d.Code))}");
-
-        LocalizeDefinitions(
-            _definitions);
-
-        CmbReport.ItemsSource =
-            _definitions;
-
-        var selected =
-            _definitions.FirstOrDefault(definition =>
-                string.Equals(
-                    definition.Code,
-                    selectedCode,
-                    StringComparison.OrdinalIgnoreCase))
-            ?? _definitions.FirstOrDefault();
-
-        CmbReport.SelectedItem =
-            selected;
-
-        ApplySelectedDefinition();
-    }
-    */
-
     private void LoadDefinitions()
     {
         var selectedCode =
@@ -354,11 +302,12 @@ public partial class MesReportingView
                 .ToList();
 
         _definitions =
-            EnsureBonusReportDefinition(
-                EnsureFinalReportingDefinitions(
-                    EnsureProductionGraphDefinition(
-                        EnsureMachineTimelineDefinition(
-                            visibleDefinitions))));
+            EnsurePlachtaReportDefinition(
+                EnsureBonusReportDefinition(
+                    EnsureFinalReportingDefinitions(
+                        EnsureProductionGraphDefinition(
+                            EnsureMachineTimelineDefinition(
+                                visibleDefinitions)))));
 
         LocalizeDefinitions(
             _definitions);
@@ -434,6 +383,10 @@ public partial class MesReportingView
             if (IsProductionReport(
                     definition)
                 && !IsLoggedOperatorsReport(
+                    definition)
+                && !IsBonusReport(
+                    definition)
+                && !IsPlachtaReport(
                     definition))
             {
                 definition.Name =
@@ -730,6 +683,10 @@ public partial class MesReportingView
                 IsProductionReport(
                     definition)
                 && !IsLoggedOperatorsReport(
+                    definition)
+                && !IsBonusReport(
+                    definition)
+                && !IsPlachtaReport(
                     definition);
 
             IReadOnlyList<object> loadedRows;
@@ -757,6 +714,24 @@ public partial class MesReportingView
                 var enrichmentService =
                     new MesReportingEnrichmentService(
                         _settings);
+
+                try
+                {
+                    _mes06ShiftEvents =
+                        await enrichmentService
+                            .GetShiftEventsAsync(
+                                filter.From,
+                                filter.To);
+                }
+                catch (Exception ex)
+                {
+                    _mes06ShiftEvents =
+                        Array.Empty<MesReportingShiftEvent>();
+
+                    _logger.Error(
+                        "MES06 bonus-report shift load failed.",
+                        ex);
+                }
 
                 var rows =
                     await enrichmentService
@@ -850,6 +825,45 @@ public partial class MesReportingView
                         .Cast<object>()
                         .ToList();
             }
+            else if (IsPlachtaReport(
+                         definition))
+            {
+                // Plachta contains its own shift/SAP projection. Clear any
+                // enrichment cached by a previously displayed report so
+                // shift choices are rebuilt from the current Plachta rows.
+                _mes06ShiftEvents =
+                    Array.Empty<MesReportingShiftEvent>();
+
+                _mes06SapNumbersByOrder =
+                    new Dictionary<string, string>(
+                        StringComparer.OrdinalIgnoreCase);
+
+                _mes06StateColors =
+                    Array.Empty<MesReportingStateColor>();
+
+                var plachtaService =
+                    new MesPlachtaReportService(
+                        _settings);
+
+                var rows =
+                    await plachtaService
+                        .GetReportAsync(
+                            filter.From,
+                            filter.To,
+                            GetSelectedWorkcenterCodes(),
+                            (CmbShift.SelectedItem as Mes06FilterChoice)?.Code
+                                ?? string.Empty,
+                            filter.OrderCode,
+                            TxtOperation.Text?.Trim()
+                                ?? string.Empty,
+                            filter.ProductCode,
+                            filter.MaxRows);
+
+                loadedRows =
+                    rows
+                        .Cast<object>()
+                        .ToList();
+            }
             else if (_mes06CounterReportMode)
             {
                 var counterService =
@@ -889,7 +903,8 @@ public partial class MesReportingView
             if (!IsLoggedOperatorsReport(definition)
                 && !IsBonusReport(definition)
                 && !IsOeeReport(definition)
-                && !IsProcessValuesReport(definition))
+                && !IsProcessValuesReport(definition)
+                && !IsPlachtaReport(definition))
             {
                 await LoadProductionEnrichmentAsync(
                     definition,
@@ -1690,6 +1705,36 @@ public partial class MesReportingView
             });
 
         return list;
+    }
+
+    private void ReplaceReportGrid<T>(
+    IReadOnlyList<T> rows,
+    Action buildColumns)
+    {
+        ArgumentNullException.ThrowIfNull(rows);
+        ArgumentNullException.ThrowIfNull(buildColumns);
+
+        GridReport.ItemsSource = null;
+        GridReport.Columns.Clear();
+
+        buildColumns();
+
+        _currentRows =
+            rows
+                .Cast<object>()
+                .ToList();
+
+        GridReport.ItemsSource =
+            _currentRows;
+    }
+
+    private void ClearReportGrid()
+    {
+        GridReport.ItemsSource = null;
+        GridReport.Columns.Clear();
+
+        _currentRows =
+            new List<object>();
     }
 
 }

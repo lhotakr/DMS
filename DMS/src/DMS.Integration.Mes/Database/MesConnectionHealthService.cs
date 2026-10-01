@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace DMS.Integration.Mes.Database;

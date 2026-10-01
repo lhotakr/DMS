@@ -183,15 +183,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:DMS"
-        "ProductCode" = "8:{DAA2B4C6-D929-4842-8B0A-6DE045F541ED}"
-        "PackageCode" = "8:{37D63678-880E-4047-8D85-CC342C798FF3}"
+        "ProductCode" = "8:{C1DD6049-C5A3-47EB-95D1-CDFDF4003ACE}"
+        "PackageCode" = "8:{F9A1019A-940D-4BBE-8143-996E0DD4BD68}"
         "UpgradeCode" = "8:{B4CFD36C-7CA5-4DA5-BF1C-B0ECE0099D45}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:1.1.0"
+        "ProductVersion" = "8:1.2.0"
         "Manufacturer" = "8:HEINZ-GLAS Decor"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -733,7 +733,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_0A11FCF04080474DB32054A13D1EDC02"
             {
-            "SourcePath" = "8:..\\DMS.Desktop\\obj\\Release\\net9.0-windows\\apphost.exe"
+            "SourcePath" = "8:..\\DMS.Desktop\\obj\\Release\\net9.0-windows\\win-x64\\apphost.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_4FE07178417A44FE9EF5080E11D0E2C2"

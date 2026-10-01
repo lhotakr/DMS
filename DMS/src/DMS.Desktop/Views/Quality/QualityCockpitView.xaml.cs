@@ -2,13 +2,10 @@
 using DMS.Core.Quality.Import;
 using DMS.Core.Sap;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
 using Microsoft.Win32;
 using System.Collections;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;

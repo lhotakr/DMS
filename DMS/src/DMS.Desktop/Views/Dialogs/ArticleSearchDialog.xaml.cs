@@ -1,8 +1,8 @@
-﻿using System.IO;
+﻿using DMS.Desktop.Models;
+using DMS.Desktop.Repositories;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
-using DMS.Desktop.Models;
-using DMS.Desktop.Repositories;
 
 namespace DMS.Desktop.Views.Dialogs;
 

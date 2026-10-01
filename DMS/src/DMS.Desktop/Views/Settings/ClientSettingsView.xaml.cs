@@ -1,14 +1,12 @@
 ﻿using DMS.Desktop.Settings;
-using DMS.Desktop.UI;
-using System;
-using System.Linq;
+using DMS.Desktop.UI.FunctionKeys;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace DMS.Desktop.Views.Settings;
 
-public partial class ClientSettingsView : UserControl
+public partial class ClientSettingsView : UserControl, IDmsFunctionKeyHost
 {
     private readonly DmsUserSettings _settings;
     private readonly Action _applyTheme;
@@ -56,7 +54,11 @@ public partial class ClientSettingsView : UserControl
             $"MutedForegroundColor={_settings.MutedForegroundColor}; " +
             $"BorderColor={_settings.BorderColor}; " +
             $"AccentColor={_settings.AccentColor}; " +
-            $"OnAccentColor={_settings.OnAccentColor}";
+            $"OnAccentColor={_settings.OnAccentColor}; " +
+            $"FunctionKeysEnabled={_settings.FunctionKeysEnabled}; " +
+            $"ShowFunctionKeyBar={_settings.ShowFunctionKeyBar}; " +
+            $"DocumentationHelpEnabled={_settings.DocumentationHelpEnabled}; " +
+            $"DocumentationTechnicalInfoEnabled={_settings.DocumentationTechnicalInfoEnabled}";
 
         _logClientSettingsAction(action, details);
     }
@@ -94,6 +96,22 @@ public partial class ClientSettingsView : UserControl
         TxtMaxHistory.Text = _settings.MaxTransactionHistoryItems.ToString();
         TxtStartupTransaction.Text = _settings.StartupTransaction ?? string.Empty;
 
+        ChkFunctionKeysEnabled.IsChecked = _settings.FunctionKeysEnabled;
+        ChkShowFunctionKeyBar.IsChecked = _settings.ShowFunctionKeyBar;
+        ChkFunctionKeyF1.IsChecked = _settings.FunctionKeyF1Enabled;
+        ChkFunctionKeyF2.IsChecked = _settings.FunctionKeyF2Enabled;
+        ChkFunctionKeyF3.IsChecked = _settings.FunctionKeyF3Enabled;
+        ChkFunctionKeyF4.IsChecked = _settings.FunctionKeyF4Enabled;
+        ChkFunctionKeyF5.IsChecked = _settings.FunctionKeyF5Enabled;
+        ChkFunctionKeyF6.IsChecked = _settings.FunctionKeyF6Enabled;
+        ChkFunctionKeyF7.IsChecked = _settings.FunctionKeyF7Enabled;
+        ChkFunctionKeyF8.IsChecked = _settings.FunctionKeyF8Enabled;
+        ChkFunctionKeyF9.IsChecked = _settings.FunctionKeyF9Enabled;
+        ChkFunctionKeyF12.IsChecked = _settings.FunctionKeyF12Enabled;
+
+        ChkDocumentationHelpEnabled.IsChecked = _settings.DocumentationHelpEnabled;
+        ChkDocumentationTechnicalInfo.IsChecked = _settings.DocumentationTechnicalInfoEnabled;
+
         LoadLanguageValues();
     }
 
@@ -123,6 +141,27 @@ public partial class ClientSettingsView : UserControl
 
         TxtStartupTransactionTitle.Text = TranslateOr("CLSET.StartupTransaction", "Počáteční transakce");
         TxtStartupTransactionHelp.Text = TranslateOr("CLSET.StartupTransactionHelp", "Transakce se automaticky otevře při spuštění DMS.");
+
+        TxtFunctionKeysTitle.Text = TranslateOr("CLSET.FunctionKeys.Title", "Funkční klávesy");
+        TxtFunctionKeysHelp.Text = TranslateOr("CLSET.FunctionKeys.Help", "SAP-like ovládání DMS. Význam kláves je jednotný, zde lze jednotlivé klávesy pouze zapnout nebo vypnout.");
+        ChkFunctionKeysEnabled.Content = TranslateOr("CLSET.FunctionKeys.Enabled", "Používat funkční klávesy");
+        ChkShowFunctionKeyBar.Content = TranslateOr("CLSET.FunctionKeys.ShowBar", "Zobrazovat spodní lištu funkčních kláves");
+        ChkFunctionKeyF1.Content = "F1  " + TranslateOr("FunctionKey.Help", "Nápověda");
+        ChkFunctionKeyF2.Content = "F2  " + TranslateOr("FunctionKey.Edit", "Změnit");
+        ChkFunctionKeyF3.Content = "F3  " + TranslateOr("FunctionKey.Back", "Zpět");
+        ChkFunctionKeyF4.Content = "F4  " + TranslateOr("FunctionKey.ValueHelp", "Výběr");
+        ChkFunctionKeyF5.Content = "F5  " + TranslateOr("FunctionKey.Refresh", "Obnovit");
+        ChkFunctionKeyF6.Content = "F6  " + TranslateOr("FunctionKey.New", "Nový");
+        ChkFunctionKeyF7.Content = "F7  " + TranslateOr("FunctionKey.Previous", "Předchozí");
+        ChkFunctionKeyF8.Content = "F8  " + TranslateOr("FunctionKey.Execute", "Provést / uložit");
+        ChkFunctionKeyF9.Content = "F9  " + TranslateOr("FunctionKey.Next", "Následující");
+        ChkFunctionKeyF12.Content = "F12  " + TranslateOr("FunctionKey.Cancel", "Zrušit");
+
+        TxtDocumentationTitle.Text = TranslateOr("CLSET.Documentation.Title", "Dokumentace");
+        TxtDocumentationHelp.Text = TranslateOr("CLSET.Documentation.Help", "F1 otevře kontextovou nápovědu v samostatném okně. HELP otevře plnou dokumentaci DMS.");
+        ChkDocumentationHelpEnabled.Content = TranslateOr("CLSET.Documentation.Enabled", "Zobrazovat uživatelskou nápovědu");
+        ChkDocumentationTechnicalInfo.Content = TranslateOr("CLSET.Documentation.Technical", "Zobrazovat technické informace");
+
         TxtHistoryTitle.Text = T("CLSET.TransactionHistory");
 
         BtnApply.Content = T("Common.Apply");
@@ -278,6 +317,22 @@ public partial class ClientSettingsView : UserControl
         _settings.MaxTransactionHistoryItems = maxHistory;
         _settings.StartupTransaction = TxtStartupTransaction.Text.Trim();
 
+        _settings.FunctionKeysEnabled = ChkFunctionKeysEnabled.IsChecked == true;
+        _settings.ShowFunctionKeyBar = ChkShowFunctionKeyBar.IsChecked == true;
+        _settings.FunctionKeyF1Enabled = ChkFunctionKeyF1.IsChecked == true;
+        _settings.FunctionKeyF2Enabled = ChkFunctionKeyF2.IsChecked == true;
+        _settings.FunctionKeyF3Enabled = ChkFunctionKeyF3.IsChecked == true;
+        _settings.FunctionKeyF4Enabled = ChkFunctionKeyF4.IsChecked == true;
+        _settings.FunctionKeyF5Enabled = ChkFunctionKeyF5.IsChecked == true;
+        _settings.FunctionKeyF6Enabled = ChkFunctionKeyF6.IsChecked == true;
+        _settings.FunctionKeyF7Enabled = ChkFunctionKeyF7.IsChecked == true;
+        _settings.FunctionKeyF8Enabled = ChkFunctionKeyF8.IsChecked == true;
+        _settings.FunctionKeyF9Enabled = ChkFunctionKeyF9.IsChecked == true;
+        _settings.FunctionKeyF12Enabled = ChkFunctionKeyF12.IsChecked == true;
+
+        _settings.DocumentationHelpEnabled = ChkDocumentationHelpEnabled.IsChecked == true;
+        _settings.DocumentationTechnicalInfoEnabled = ChkDocumentationTechnicalInfo.IsChecked == true;
+
         SaveLanguageValuesToSettings();
 
         return true;
@@ -415,6 +470,17 @@ public partial class ClientSettingsView : UserControl
         LogClientSettingsAction("SaveClientSettings");
 
         ShowInfo("CLSET.SavedTitle", "CLSET.SavedMessage");
+    }
+
+    public IReadOnlyList<DmsFunctionKeyAction> GetFunctionKeyActions()
+    {
+        return new[]
+        {
+            new DmsFunctionKeyAction(
+                Key.F8,
+                TranslateOr("Common.Save", "Uložit"),
+                () => BtnSave_Click(this, new RoutedEventArgs()))
+        };
     }
 
     private void ShowInfo(string titleKey, string messageKey)

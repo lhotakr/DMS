@@ -85,7 +85,7 @@ public sealed class QualityExcelImportService
                     Notes = NormalizeSharePointValue(Get(row, "Poznámky")),
                     ImportedAt = DateTime.Now,
                     SourceFilePath = filePath,
-                    
+
                     Metadata = new QualityRecordMetadata
                     {
                         CreatedBy = "IMPORT",

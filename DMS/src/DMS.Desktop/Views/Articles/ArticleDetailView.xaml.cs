@@ -1,5 +1,5 @@
-﻿using System.Windows.Controls;
-using DMS.Desktop.Models;
+﻿using DMS.Desktop.Models;
+using System.Windows.Controls;
 
 namespace DMS.Desktop.Views.Articles;
 

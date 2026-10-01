@@ -1,5 +1,4 @@
 using DMS.Desktop.Configuration.Modules;
-using System;
 
 namespace DMS.Desktop.Views.SystemModules;
 

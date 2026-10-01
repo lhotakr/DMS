@@ -1,5 +1,4 @@
 ﻿using ClosedXML.Excel;
-using DMS.Desktop.UI;
 using DMS.Integration.Mes.Reporting;
 using Microsoft.Win32;
 using System.Windows;
@@ -87,20 +86,46 @@ public partial class MesReportingView
             "dd.MM.yyyy HH:mm");
 
         AddBonusColumn(
+    T(
+        "MES06.BonusBase.Column.NetShiftDurationHours",
+        "Čistý čas na stroji [h]"),
+    "NetShiftDurationHours",
+    150,
+    "N2");
+
+        AddBonusColumn(
+    T(
+        "MES06.BonusBase.Column.PlannedShiftNorm",
+        "Plánovaná norma / směna"),
+    "PlannedShiftNorm",
+    160,
+    "N0");
+
+        AddBonusColumn(
             T(
-                "MES06.BonusBase.Column.NetShiftDurationMinutes",
-                "Čistý čas na stroji [min]"),
-            "NetShiftDurationMinutes",
-            160,
-            "N1");
+                "MES06.BonusBase.Column.AdjustedShiftNorm",
+                "Přepočtená norma"),
+            "AdjustedShiftNorm",
+            150,
+            "N0");
+
 
         AddBonusColumn(
             T(
                 "MES06.BonusBase.Column.GrossProduction",
-                "StrojS hrubé"),
+                "Hrubá produkce"),
             "GrossProduction",
             120,
             "N0");
+
+        AddBonusColumn(
+    T(
+        "MES06.BonusBase.Column.TotalScrap",
+        "Celkový odpad"),
+    "TotalScrap",
+    120,
+    "N0");
+
 
         AddBonusColumn(
             T(
@@ -193,9 +218,13 @@ public partial class MesReportingView
                     T("MES06.BonusBase.Column.HumanCode", "Osobní číslo"),
                     T("MES06.BonusBase.Column.From", "Čas od"),
                     T("MES06.BonusBase.Column.To", "Čas do"),
-                    T("MES06.BonusBase.Column.NetShiftDurationMinutes", "Čistý čas na stroji [min]"),
-                    T("MES06.BonusBase.Column.GrossProduction", "StrojS hrubé"),
+                    T("MES06.BonusBase.Column.NetShiftDurationHours", "Čistý čas na stroji [h]"),
+                    T("MES06.BonusBase.Column.PlannedShiftNorm", "Plánovaná norma / směna"),
+                    T("MES06.BonusBase.Column.AdjustedShiftNorm", "Přepočtená norma"),
+                    T("MES06.BonusBase.Column.GrossProduction", "Hrubá produkce"),
+                    T("MES06.BonusBase.Column.TotalScrap", "Celkový odpad"),
                     T("MES06.BonusBase.Column.PrintedNet", "Natisknuto")
+
                 };
 
             for (var column = 0;
@@ -227,9 +256,32 @@ public partial class MesReportingView
                 worksheet.Cell(excelRow, 9).Value = row.LoginFrom;
                 worksheet.Cell(excelRow, 10).Value = row.LoginTo;
 
-                worksheet.Cell(excelRow, 11).Value = row.NetShiftDurationMinutes;
-                worksheet.Cell(excelRow, 12).Value = row.GrossProduction;
-                worksheet.Cell(excelRow, 13).Value = row.PrintedNet;
+                worksheet.Cell(excelRow, 11).Value = row.NetShiftDurationHours;
+
+                if (row.PlannedShiftNorm.HasValue)
+                {
+                    worksheet.Cell(excelRow, 12).Value =
+                        row.PlannedShiftNorm.Value;
+                }
+
+                if (row.AdjustedShiftNorm.HasValue)
+                {
+                    worksheet.Cell(excelRow, 13).Value =
+                        row.AdjustedShiftNorm.Value;
+                }
+
+                worksheet.Cell(excelRow, 14).Value =
+                    row.GrossProduction;
+
+                worksheet.Cell(excelRow, 15).Value =
+                    row.TotalScrap;
+
+                worksheet.Cell(excelRow, 16).Value =
+                    row.PrintedNet;
+
+                worksheet.Column(11).Style.NumberFormat.Format = "0.00"; for (var column = 12; column <= 16; column++) { worksheet.Column(column).Style.NumberFormat.Format = "0"; }
+
+
             }
 
             worksheet.Column(9).Style.DateFormat.Format =
@@ -237,6 +289,7 @@ public partial class MesReportingView
 
             worksheet.Column(10).Style.DateFormat.Format =
                 "dd.MM.yyyy HH:mm";
+
 
             worksheet
                 .ColumnsUsed()

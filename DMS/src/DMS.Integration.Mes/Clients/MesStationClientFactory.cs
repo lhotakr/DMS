@@ -1,5 +1,3 @@
-using DMS.Integration.Mes.Models;
-
 namespace DMS.Integration.Mes.Clients;
 
 public sealed class MesStationClientFactory

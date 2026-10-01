@@ -1,6 +1,4 @@
 using DMS.Core.Quality;
-using DMS.Desktop.UI;
-using System.IO;
 using System.Windows;
 
 namespace DMS.Desktop.Views;

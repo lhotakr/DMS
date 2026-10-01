@@ -285,6 +285,59 @@
                                Foreground="{DynamicResource DmsMutedForegroundBrush}"
                                Margin="0,0,0,14"/>
 
+                    <TextBlock x:Name="TxtFunctionKeysTitle"
+                               Text="Funkční klávesy"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,4,0,6"/>
+
+                    <TextBlock x:Name="TxtFunctionKeysHelp"
+                               Text="SAP-like ovládání DMS. Význam kláves je jednotný, zde lze jednotlivé klávesy pouze zapnout nebo vypnout."
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                               Margin="0,0,0,8"/>
+
+                    <CheckBox x:Name="ChkFunctionKeysEnabled"
+                              Content="Používat funkční klávesy"
+                              Margin="0,0,0,6"/>
+
+                    <CheckBox x:Name="ChkShowFunctionKeyBar"
+                              Content="Zobrazovat spodní lištu funkčních kláves"
+                              Margin="0,0,0,10"/>
+
+                    <WrapPanel Margin="0,0,0,14">
+                        <CheckBox x:Name="ChkFunctionKeyF1" Content="F1 Nápověda" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="ChkFunctionKeyF2" Content="F2 Změnit" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="ChkFunctionKeyF3" Content="F3 Zpět" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="ChkFunctionKeyF4" Content="F4 Výběr" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="ChkFunctionKeyF5" Content="F5 Obnovit" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="ChkFunctionKeyF6" Content="F6 Nový" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="ChkFunctionKeyF7" Content="F7 Předchozí" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="ChkFunctionKeyF8" Content="F8 Provést / uložit" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="ChkFunctionKeyF9" Content="F9 Následující" Margin="0,0,16,6"/>
+                        <CheckBox x:Name="ChkFunctionKeyF12" Content="F12 Zrušit" Margin="0,0,16,6"/>
+                    </WrapPanel>
+
+                    <TextBlock x:Name="TxtDocumentationTitle"
+                               Text="Dokumentace"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource DmsForegroundBrush}"
+                               Margin="0,2,0,6"/>
+
+                    <TextBlock x:Name="TxtDocumentationHelp"
+                               Text="F1 otevře kontextovou nápovědu v samostatném okně. HELP otevře plnou dokumentaci DMS."
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource DmsMutedForegroundBrush}"
+                               Margin="0,0,0,8"/>
+
+                    <CheckBox x:Name="ChkDocumentationHelpEnabled"
+                              Content="Zobrazovat uživatelskou nápovědu"
+                              Margin="0,0,0,6"/>
+
+                    <CheckBox x:Name="ChkDocumentationTechnicalInfo"
+                              Content="Zobrazovat technické informace"
+                              Margin="0,0,0,14"/>
+
                     <TextBlock x:Name="TxtHistoryTitle"
                                Text="Historie transakcí"
                                FontWeight="Bold"

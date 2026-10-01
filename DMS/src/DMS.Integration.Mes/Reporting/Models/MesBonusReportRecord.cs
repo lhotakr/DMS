@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace DMS.Integration.Mes.Reporting;
+﻿namespace DMS.Integration.Mes.Reporting;
 
 public sealed class MesBonusReportRecord
 {
@@ -17,4 +15,9 @@ public sealed class MesBonusReportRecord
     public double NetShiftDurationMinutes { get; set; }
     public double GrossProduction { get; set; }
     public double PrintedNet { get; set; }
+    public double? PlannedShiftNorm { get; set; }
+    public double? AdjustedShiftNorm { get; set; }
+    public double NetShiftDurationHours => NetShiftDurationMinutes / 60d;
+    public double TotalScrap { get; set; }
+
 }

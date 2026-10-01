@@ -1,8 +1,4 @@
-using DMS.Core.Transactions;
-using DMS.Desktop.Localization;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using DMS.Desktop.Help;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -10,247 +6,182 @@ namespace DMS.Desktop.Views.Help;
 
 public partial class HelpView : UserControl
 {
-    private readonly IReadOnlyList<TransactionDefinition> _definitions;
-    private readonly Func<string, string> _translate;
-    private readonly Func<string, object[], string> _translateFormat;
+    private readonly DmsHelpCatalog _catalog;
     private readonly Action<string> _executeTransaction;
     private readonly Action<string, string>? _logHelpAction;
-
-    private List<HelpTransactionRow> _allRows = new();
+    private readonly bool _showTechnicalInfo;
+    private DmsHelpDocument? _currentDocument;
+    private string _initialTopic;
 
     public HelpView(
-        IEnumerable<TransactionDefinition> definitions,
-        Func<string, string> translate,
-        Func<string, object[], string> translateFormat,
+        DmsHelpCatalog catalog,
         Action<string> executeTransaction,
+        string initialTopic = "",
+        bool showTechnicalInfo = false,
         Action<string, string>? logHelpAction = null)
     {
-        InitializeComponent();
-
-        _definitions = definitions
-            .OrderBy(item => item.Module)
-            .ThenBy(item => item.Code)
-            .ToList();
-
-        _translate = translate ?? throw new ArgumentNullException(nameof(translate));
-        _translateFormat = translateFormat ?? throw new ArgumentNullException(nameof(translateFormat));
+        _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         _executeTransaction = executeTransaction ?? throw new ArgumentNullException(nameof(executeTransaction));
+        _initialTopic = initialTopic ?? string.Empty;
+        _showTechnicalInfo = showTechnicalInfo;
         _logHelpAction = logHelpAction;
 
-        BuildRows();
-        ApplyLocalization();
-        LoadModules();
-        ApplyFilter();
+        InitializeComponent();
+
+        ApplyStaticText();
+        RebuildTree();
     }
 
-    private string T(string key, string fallback)
+    private void ApplyStaticText()
     {
-        var value = _translate(key);
+        var czech = _catalog.ActiveCulture.StartsWith("cs", StringComparison.OrdinalIgnoreCase);
+        TxtTitle.Text = czech ? "HELP - Dokumentace DMS" : "HELP - DMS Documentation";
+        TxtSubtitle.Text = czech
+            ? "Uživatelská příručka a dokumentace transakcí přímo v systému DMS."
+            : "User guide and transaction documentation directly inside DMS.";
+        TxtSearch.ToolTip = czech ? "Hledat v dokumentaci" : "Search documentation";
+        BtnRunTransaction.Content = czech ? "Spustit transakci" : "Run transaction";
+        TxtHint.Text = czech
+            ? "Tip: F1 otevře kontextovou nápovědu k právě používané transakci v samostatném okně. Odkazy v textu mohou rovnou spouštět související transakce."
+            : "Tip: F1 opens contextual help for the current transaction in a separate window. Links in the text can start related transactions directly.";
+    }
 
-        if (string.IsNullOrWhiteSpace(value) ||
-            string.Equals(value, key, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase))
+    private void RebuildTree()
+    {
+        var query = TxtSearch.Text?.Trim();
+        var documents = _catalog.Search(query);
+
+        TreeTopics.Items.Clear();
+
+        foreach (var categoryGroup in documents
+                     .GroupBy(item => item.Category, StringComparer.CurrentCultureIgnoreCase)
+                     .OrderBy(group => group.First().IsTransaction ? 1 : 0)
+                     .ThenBy(group => group.Key, StringComparer.CurrentCultureIgnoreCase))
         {
-            return fallback;
-        }
-
-        return value;
-    }
-
-    private string T(string key, string fallback, params object[] args)
-    {
-        var value = _translateFormat(key, args);
-
-        if (string.IsNullOrWhiteSpace(value) ||
-            string.Equals(value, key, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase))
-        {
-            return string.Format(fallback, args);
-        }
-
-        return value;
-    }
-
-    private void BuildRows()
-    {
-        _allRows = _definitions
-            .Select(definition => new HelpTransactionRow
+            var categoryItem = new TreeViewItem
             {
-                Code = definition.Code,
-                Name = DmsTransactionText.Name(definition, _translate),
-                Module = DmsTransactionText.Module(definition, _translate),
-                OriginalModule = definition.Module,
-                Description = DmsTransactionText.Description(definition, _translate),
-                ParameterDisplay = definition.RequiresArticleNumber
-                    ? T("HELP.RequiresArticleNumber", "SAP article number")
-                    : T("HELP.NoParameter", "No parameter"),
-                RolesDisplay = definition.Roles.Count == 0
-                    ? T("HELP.AvailableToAll", "All users")
-                    : string.Join(", ", definition.Roles),
-                RunText = T("HELP.Run", "Run")
-            })
-            .ToList();
-    }
+                Header = categoryGroup.Key,
+                IsExpanded = !string.IsNullOrWhiteSpace(query)
+            };
 
-    private void ApplyLocalization()
-    {
-        TxtTitle.Text = T("HELP.Title", "HELP - Transaction help");
-        TxtSubtitle.Text = T("HELP.Subtitle", "List of available DMS transactions for the current user.");
-
-        TxtSearchLabel.Text = T("HELP.Search", "Search:");
-        TxtModuleLabel.Text = T("HELP.Module", "Module:");
-        BtnClear.Content = T("HELP.Clear", "Clear");
-
-        ColCode.Header = T("HELP.Column.Code", "Code");
-        ColName.Header = T("HELP.Column.Name", "Name");
-        ColModule.Header = T("HELP.Column.Module", "Module");
-        ColDescription.Header = T("HELP.Column.Description", "Description");
-        ColParameter.Header = T("HELP.Column.Parameter", "Parameter");
-        ColRoles.Header = T("HELP.Column.Roles", "Roles");
-        ColAction.Header = T("HELP.Column.Action", "Action");
-
-        TxtHint.Text = T(
-            "HELP.Hint",
-            "Tip: transactions requiring an article number can be started without a parameter; DMS will ask for it.");
-
-        foreach (var row in _allRows)
-        {
-            row.RunText = T("HELP.Run", "Run");
-            row.ParameterDisplay = _definitions.Any(d => string.Equals(d.Code, row.Code, StringComparison.OrdinalIgnoreCase) && d.RequiresArticleNumber)
-                ? T("HELP.RequiresArticleNumber", "SAP article number")
-                : T("HELP.NoParameter", "No parameter");
-        }
-    }
-
-    private void LoadModules()
-    {
-        CmbModule.Items.Clear();
-
-        CmbModule.Items.Add(new ComboBoxItem
-        {
-            Content = T("HELP.AllModules", "All modules"),
-            Tag = string.Empty
-        });
-
-        var modules = _allRows
-            .Select(item => item.OriginalModule)
-            .Where(item => !string.IsNullOrWhiteSpace(item))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(item => item)
-            .ToList();
-
-        foreach (var module in modules)
-        {
-            CmbModule.Items.Add(new ComboBoxItem
+            foreach (var document in categoryGroup
+                         .OrderBy(item => item.SortOrder)
+                         .ThenBy(item => item.Title, StringComparer.CurrentCultureIgnoreCase))
             {
-                Content = TranslateModuleName(module),
-                Tag = module
-            });
+                categoryItem.Items.Add(new TreeViewItem
+                {
+                    Header = document.Title,
+                    Tag = document.TopicId
+                });
+            }
+
+            TreeTopics.Items.Add(categoryItem);
         }
 
-        CmbModule.SelectedIndex = 0;
-    }
+        TxtCount.Text = _catalog.ActiveCulture.StartsWith("cs", StringComparison.OrdinalIgnoreCase)
+            ? $"Dokumentů: {documents.Count}"
+            : $"Documents: {documents.Count}";
 
-    private string TranslateModuleName(string moduleName)
-    {
-        return DmsTransactionText.Module(moduleName, _translate);
-    }
+        var topicToSelect = !string.IsNullOrWhiteSpace(_initialTopic)
+            ? _initialTopic
+            : _currentDocument?.TopicId ?? "GUIDE-START";
 
-    private void ApplyFilter()
-    {
-        var search = TxtSearch.Text.Trim();
-        var selectedModule = (CmbModule.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? string.Empty;
-
-        var rows = _allRows.AsEnumerable();
-
-        if (!string.IsNullOrWhiteSpace(selectedModule))
+        if (!TrySelectTopic(topicToSelect) && documents.Count > 0)
         {
-            rows = rows.Where(item =>
-                string.Equals(item.OriginalModule, selectedModule, StringComparison.OrdinalIgnoreCase));
+            ShowDocument(documents[0].TopicId);
         }
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            rows = rows.Where(item =>
-                Contains(item.Code, search) ||
-                Contains(item.Name, search) ||
-                Contains(item.Module, search) ||
-                Contains(item.Description, search) ||
-                Contains(item.ParameterDisplay, search) ||
-                Contains(item.RolesDisplay, search));
-        }
-
-        var list = rows
-            .OrderBy(item => item.Module)
-            .ThenBy(item => item.Code)
-            .ToList();
-
-        GridTransactions.ItemsSource = list;
-
-        TxtVisibleCount.Text = T("HELP.VisibleCount", "Visible transactions: {0}", list.Count);
+        _initialTopic = string.Empty;
     }
 
-    private static bool Contains(string? value, string filter)
+    private bool TrySelectTopic(string? topicId)
     {
-        return value?.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0;
+        if (string.IsNullOrWhiteSpace(topicId))
+        {
+            return false;
+        }
+
+        foreach (var root in TreeTopics.Items.OfType<TreeViewItem>())
+        {
+            foreach (var child in root.Items.OfType<TreeViewItem>())
+            {
+                if (!string.Equals(child.Tag?.ToString(), topicId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                root.IsExpanded = true;
+                child.IsSelected = true;
+                child.BringIntoView();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void ShowDocument(string? topicId)
+    {
+        var document = _catalog.GetDocument(topicId);
+        if (document is null)
+        {
+            return;
+        }
+
+        _currentDocument = document;
+        TxtDocumentTitle.Text = document.Title;
+        DocViewer.Document = DmsMarkdownFlowDocumentRenderer.Render(document.Markdown, ExecuteFromDocumentation);
+
+        BtnRunTransaction.Visibility = document.IsTransaction && !string.IsNullOrWhiteSpace(document.TransactionCode)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        BtnRunTransaction.Tag = document.TransactionCode;
+
+        if (_showTechnicalInfo)
+        {
+            TechnicalInfoBorder.Visibility = Visibility.Visible;
+            TxtTechnicalInfo.Text =
+                $"Topic: {document.TopicId}\n" +
+                $"Culture: {document.Culture}\n" +
+                $"Generated: {document.IsGenerated}\n" +
+                $"Transaction: {document.TransactionCode}\n" +
+                $"Source: {(string.IsNullOrWhiteSpace(document.SourcePath) ? "runtime/generated" : document.SourcePath)}";
+        }
+        else
+        {
+            TechnicalInfoBorder.Visibility = Visibility.Collapsed;
+        }
+
+        _logHelpAction?.Invoke(
+            "OpenDocumentationTopic",
+            $"Topic={document.TopicId}; Generated={document.IsGenerated}; Culture={document.Culture}");
+    }
+
+    private void ExecuteFromDocumentation(string command)
+    {
+        _logHelpAction?.Invoke("RunTransactionFromDocumentation", $"Command={command}");
+        _executeTransaction(command);
     }
 
     private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e)
     {
-        ApplyFilter();
+        RebuildTree();
     }
 
-    private void CmbModule_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void TreeTopics_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
-        ApplyFilter();
-    }
-
-    private void BtnClear_Click(object sender, RoutedEventArgs e)
-    {
-        TxtSearch.Text = string.Empty;
-
-        if (CmbModule.Items.Count > 0)
+        if (e.NewValue is TreeViewItem item && item.Tag is string topic)
         {
-            CmbModule.SelectedIndex = 0;
+            ShowDocument(topic);
         }
-
-        ApplyFilter();
-
-        _logHelpAction?.Invoke(
-            "ClearHelpFilter",
-            $"VisibleTransactions={GridTransactions.Items.Count}");
     }
 
-    private void BtnRun_Click(object sender, RoutedEventArgs e)
+    private void BtnRunTransaction_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button button)
+        var command = BtnRunTransaction.Tag?.ToString();
+        if (!string.IsNullOrWhiteSpace(command))
         {
-            return;
+            ExecuteFromDocumentation(command);
         }
-
-        var transactionCode = button.Tag?.ToString();
-
-        if (string.IsNullOrWhiteSpace(transactionCode))
-        {
-            return;
-        }
-
-        _logHelpAction?.Invoke(
-            "RunTransactionFromHelp",
-            $"TransactionCode={transactionCode}");
-
-        _executeTransaction(transactionCode);
-    }
-
-    private sealed class HelpTransactionRow
-    {
-        public string Code { get; init; } = string.Empty;
-        public string Name { get; init; } = string.Empty;
-        public string Module { get; init; } = string.Empty;
-        public string OriginalModule { get; init; } = string.Empty;
-        public string Description { get; init; } = string.Empty;
-        public string ParameterDisplay { get; set; } = string.Empty;
-        public string RolesDisplay { get; init; } = string.Empty;
-        public string RunText { get; set; } = string.Empty;
     }
 }

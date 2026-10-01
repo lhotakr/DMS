@@ -235,6 +235,39 @@
                 </DockPanel>
             </TabItem>
 
+            <TabItem x:Name="TabOrderTaskDefaults"
+                     Header="Default order tasks">
+                <DockPanel Margin="12">
+
+                    <StackPanel DockPanel.Dock="Top"
+                                Orientation="Horizontal"
+                                Margin="0,0,0,10">
+
+                        <Button x:Name="BtnAddOrderTaskDefault" Content="Add" Width="90" Margin="0,0,8,0" Style="{StaticResource DmsFormButtonStyle}" Click="BtnAddOrderTaskDefault_Click"/>
+                        <Button x:Name="BtnDeleteOrderTaskDefault" Content="Delete" Width="90" Margin="0,0,8,0" Style="{StaticResource DmsFormButtonStyle}" Click="BtnDeleteOrderTaskDefault_Click"/>
+                        <Button x:Name="BtnSaveOrderTaskDefaults" Content="Save" Width="90" Margin="0,0,8,0" Style="{StaticResource DmsPrimaryButtonStyle}" Click="BtnSaveOrderTaskDefaults_Click"/>
+                        <Button x:Name="BtnReloadOrderTaskDefaults" Content="Reload" Width="90" Style="{StaticResource DmsFormButtonStyle}" Click="BtnReload_Click"/>
+
+                    </StackPanel>
+
+                    <DataGrid x:Name="GridOrderTaskDefaults"
+                              Style="{StaticResource DmsEditableGridStyle}"
+                              RowStyle="{StaticResource DmsEditableGridRowStyle}"
+                              AutoGenerateColumns="False"
+                              CellEditEnding="GridLookup_CellEditEnding">
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn x:Name="ColOrderTaskCode" Header="Code" Binding="{Binding Item.Code, UpdateSourceTrigger=PropertyChanged}" Width="130" MinWidth="100"/>
+                            <DataGridTextColumn x:Name="ColOrderTaskName" Header="Task" Binding="{Binding Item.Name, UpdateSourceTrigger=PropertyChanged}" Width="320" MinWidth="220"/>
+                            <DataGridCheckBoxColumn x:Name="ColOrderTaskActive" Header="Active" Binding="{Binding Item.IsActive, UpdateSourceTrigger=PropertyChanged}" ElementStyle="{StaticResource DmsCenteredCheckBoxStyle}" EditingElementStyle="{StaticResource DmsCenteredCheckBoxStyle}" Width="90" MinWidth="80"/>
+                            <DataGridTextColumn x:Name="ColOrderTaskSortOrder" Header="Sort order" Binding="{Binding Item.SortOrder, UpdateSourceTrigger=PropertyChanged}" Width="90" MinWidth="80"/>
+                            <DataGridTextColumn x:Name="ColOrderTaskNotes" Header="Notes" Binding="{Binding Item.Notes, UpdateSourceTrigger=PropertyChanged}" Width="*" MinWidth="260"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                </DockPanel>
+            </TabItem>
+
             <TabItem x:Name="TabPaths"
                      Header="Paths">
                 <Border Style="{StaticResource DmsCardBorderStyle}"

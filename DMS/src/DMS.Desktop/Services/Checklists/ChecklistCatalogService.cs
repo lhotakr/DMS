@@ -1,6 +1,6 @@
 ﻿using DMS.Core.Checklists;
-using System.Text.Json;
 using System.IO;
+using System.Text.Json;
 
 namespace DMS.Desktop.Services.Checklists;
 
@@ -170,11 +170,11 @@ public sealed class ChecklistCatalogService
         string code,
         string name,
         params ChecklistCatalogItem[] items) => new()
-    {
-        Code = code,
-        Name = name,
-        Items = items.ToList()
-    };
+        {
+            Code = code,
+            Name = name,
+            Items = items.ToList()
+        };
 
     private static ChecklistCatalogItem Item(string code, string text, int order) => new()
     {

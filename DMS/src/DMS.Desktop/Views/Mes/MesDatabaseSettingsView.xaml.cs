@@ -1,5 +1,4 @@
 ﻿using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
 using DMS.Integration.Mes.Database;
 using System.Windows;
 using System.Windows.Controls;

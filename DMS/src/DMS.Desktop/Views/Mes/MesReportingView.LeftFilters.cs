@@ -1,5 +1,4 @@
 using DMS.Integration.Mes.Reporting.Definitions;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Windows;
 
@@ -115,6 +114,8 @@ public partial class MesReportingView
                             "MES06.Quick.Custom",
                             "Custom"))
                 };
+
+            InitializeFastecQuickPeriods();
 
             CmbQuickPeriod.SelectedIndex = 0;
 
@@ -353,7 +354,8 @@ public partial class MesReportingView
             rows.AsEnumerable();
 
         if (isProduction
-            && !_mes06CounterReportMode)
+            && !_mes06CounterReportMode
+            && !IsPlachtaReport(definition))
         {
             query =
                 query.Where(

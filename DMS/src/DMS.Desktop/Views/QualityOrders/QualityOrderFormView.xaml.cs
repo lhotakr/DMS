@@ -1,15 +1,17 @@
-using DMS.Core.Quality;
+﻿using DMS.Core.Quality;
 using DMS.Core.Sap;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
+using DMS.Desktop.UI.FunctionKeys;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Input;
 
 namespace DMS.Desktop.Views.QualityOrders;
 
-public partial class QualityOrderFormView : UserControl
+public partial class QualityOrderFormView : UserControl, IDmsFunctionKeyHost
 {
     private readonly string _dmsRootPath;
     private readonly bool _createMode;
@@ -23,6 +25,7 @@ public partial class QualityOrderFormView : UserControl
     private readonly List<SelectableOption> _machineOptions = new();
     private readonly List<SelectableOption> _colorTypeOptions = new();
     private readonly List<string> _qualityClassOptions = new();
+    private readonly ObservableCollection<OrderTaskEditRow> _orderTaskRows = new();
 
     private QualityOrderFormModel _model = new();
     private QualityOrder? _snapshot;
@@ -55,6 +58,7 @@ public partial class QualityOrderFormView : UserControl
         paths.EnsureDirectories();
         _repository = new JsonQualityRepository(paths);
         _service = new QualityOrderMaintenanceService(_repository);
+        GridOrderTasks.ItemsSource = _orderTaskRows;
 
         LoadReferenceData();
         ApplyLocalization();
@@ -190,6 +194,14 @@ public partial class QualityOrderFormView : UserControl
         LblReleaseState.Text = T("QO.Field.ReleaseState");
         LblScheduleStatus.Text = T("QO.Field.ScheduleStatus");
         LblOrderNotes.Text = T("QO.Field.OrderNotesImportant");
+
+        TxtOrderTasksSection.Text = TOr("QO.Section.OrderTasks", "Úkoly zakázky");
+        BtnAddOrderTask.Content = TOr("QO.Action.AddOrderTask", "Přidat úkol");
+        BtnDeleteOrderTask.Content = TOr("QO.Action.DeleteOrderTask", "Smazat úkol");
+        ColOrderTaskText.Header = TOr("QO.Column.OrderTask", "Úkol");
+        ColOrderTaskCompleted.Header = TOr("QO.Column.Completed", "Hotovo");
+        ColOrderTaskCreatedBy.Header = TOr("QO.Column.CreatedBy", "Vytvořil");
+        ColOrderTaskCompletedBy.Header = TOr("QO.Column.CompletedBy", "Dokončil");
     }
 
     private void LoadInitial(string query)
@@ -297,6 +309,8 @@ public partial class QualityOrderFormView : UserControl
         ChkStaysInHd.IsChecked = _model.StaysInHd;
         TxtOrderNotes.Text = _model.Notes;
 
+        LoadOrderTaskRows(_model.OrderTasks);
+
         DateEnd.IsEnabled = !_createMode;
         TxtProducedQuantity.IsReadOnly = _createMode;
         TxtProducedQuantity.IsEnabled = !_createMode;
@@ -339,11 +353,13 @@ public partial class QualityOrderFormView : UserControl
         var currentStays = ChkStaysInHd.IsChecked == true;
         var currentReleased = _model.Released;
         var originalOrder = _model.OriginalOrder;
+        var currentOrderTasks = BuildOrderTasksFromRows();
 
         _model = _service.PrepareCreate(printVersion.FullPrintVersionNumber);
         _model.IsCreateMode = _createMode;
         _model.Released = currentReleased;
         _model.OriginalOrder = originalOrder;
+        _model.OrderTasks = currentOrderTasks;
         _model.OrderNumber = currentOrderNumber;
         _model.Notes = currentNotes;
         _model.ProductionStart = currentStart;
@@ -404,6 +420,8 @@ public partial class QualityOrderFormView : UserControl
     {
         ClearWarning();
 
+        GridOrderTasks.CommitEdit(DataGridEditingUnit.Cell, true);
+        GridOrderTasks.CommitEdit(DataGridEditingUnit.Row, true);
         WriteFormToModel();
 
         if (_createMode &&
@@ -478,6 +496,110 @@ public partial class QualityOrderFormView : UserControl
                 : "Scheduled";
         _model.ReleaseStatusCode = _model.Released ? "Released" : "Blocked";
         _model.Notes = TxtOrderNotes.Text;
+        _model.OrderTasks = BuildOrderTasksFromRows();
+    }
+
+    private void BtnAddOrderTask_Click(object sender, RoutedEventArgs e)
+    {
+        var row = new OrderTaskEditRow
+        {
+            Number = _orderTaskRows.Count + 1,
+            Text = TOr("QO.Default.NewOrderTask", "Nový úkol"),
+            CreatedAt = DateTime.Now,
+            CreatedBy = _currentUserName
+        };
+
+        _orderTaskRows.Add(row);
+        GridOrderTasks.SelectedItem = row;
+        GridOrderTasks.ScrollIntoView(row);
+    }
+
+    private void BtnDeleteOrderTask_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = GridOrderTasks.SelectedItems
+            .OfType<OrderTaskEditRow>()
+            .ToList();
+
+        foreach (var row in selected)
+        {
+            _orderTaskRows.Remove(row);
+        }
+
+        RenumberOrderTasks();
+    }
+
+    private void LoadOrderTaskRows(IEnumerable<QualityTask>? tasks)
+    {
+        _orderTaskRows.Clear();
+
+        foreach (var task in tasks ?? Array.Empty<QualityTask>())
+        {
+            _orderTaskRows.Add(new OrderTaskEditRow
+            {
+                Number = task.Number,
+                Text = task.Text,
+                IsCompleted = task.CompletedAt.HasValue,
+                CreatedAt = task.CreatedAt,
+                CreatedBy = task.CreatedBy,
+                CompletedAt = task.CompletedAt,
+                CompletedBy = task.CompletedBy
+            });
+        }
+
+        RenumberOrderTasks();
+    }
+
+    private List<QualityTask> BuildOrderTasksFromRows()
+    {
+        var result = new List<QualityTask>();
+        var number = 1;
+
+        foreach (var row in _orderTaskRows)
+        {
+            var text = row.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                continue;
+            }
+
+            DateTime? completedAt = row.CompletedAt;
+            var completedBy = row.CompletedBy ?? string.Empty;
+
+            if (row.IsCompleted && !completedAt.HasValue)
+            {
+                completedAt = DateTime.Now;
+                completedBy = _currentUserName;
+            }
+            else if (!row.IsCompleted)
+            {
+                completedAt = null;
+                completedBy = string.Empty;
+            }
+
+            result.Add(new QualityTask
+            {
+                Number = number++,
+                Text = text,
+                CreatedAt = row.CreatedAt ?? DateTime.Now,
+                CreatedBy = string.IsNullOrWhiteSpace(row.CreatedBy)
+                    ? _currentUserName
+                    : row.CreatedBy,
+                CompletedAt = completedAt,
+                CompletedBy = completedBy
+            });
+        }
+
+        return result;
+    }
+
+    private void RenumberOrderTasks()
+    {
+        for (var i = 0; i < _orderTaskRows.Count; i++)
+        {
+            _orderTaskRows[i].Number = i + 1;
+        }
+
+        GridOrderTasks.Items.Refresh();
     }
 
     private void BtnOpenQO03_Click(object sender, RoutedEventArgs e)
@@ -623,6 +745,16 @@ public partial class QualityOrderFormView : UserControl
                 saved.OrderNumber,
                 _currentUserName,
                 BuildOrderAuditDetail(saved));
+
+            foreach (var task in saved.Tasks)
+            {
+                _logger?.AuditCreated(
+                    "QUALITY",
+                    "QualityOrderTask",
+                    $"{saved.OrderNumber}:{task.Number}",
+                    _currentUserName,
+                    $"Task={task.Text}; Completed={task.CompletedAt.HasValue}");
+            }
             return;
         }
 
@@ -642,6 +774,67 @@ public partial class QualityOrderFormView : UserControl
         AuditChange(saved, "StaysInHd", _snapshot.StaysInHd.ToString(), saved.StaysInHd.ToString());
         AuditChange(saved, "Finished", _snapshot.Finished.ToString(), saved.Finished.ToString());
         AuditChange(saved, "Notes", _snapshot.Notes, saved.Notes);
+        LogOrderTaskAudit(_snapshot.Tasks, saved.Tasks, saved.OrderNumber);
+    }
+
+    private void LogOrderTaskAudit(
+        IEnumerable<QualityTask>? oldTasks,
+        IEnumerable<QualityTask>? newTasks,
+        string orderNumber)
+    {
+        var oldList = (oldTasks ?? Array.Empty<QualityTask>()).ToList();
+        var newList = (newTasks ?? Array.Empty<QualityTask>()).ToList();
+        var max = Math.Max(oldList.Count, newList.Count);
+
+        for (var i = 0; i < max; i++)
+        {
+            var oldTask = i < oldList.Count ? oldList[i] : null;
+            var newTask = i < newList.Count ? newList[i] : null;
+            var entityId = $"{orderNumber}:{i + 1}";
+
+            if (oldTask is null && newTask is not null)
+            {
+                _logger?.AuditCreated(
+                    "QUALITY",
+                    "QualityOrderTask",
+                    entityId,
+                    _currentUserName,
+                    $"Task={newTask.Text}; Completed={newTask.CompletedAt.HasValue}");
+                continue;
+            }
+
+            if (oldTask is not null && newTask is null)
+            {
+                _logger?.AuditDeleted(
+                    "QUALITY",
+                    "QualityOrderTask",
+                    entityId,
+                    _currentUserName,
+                    $"Task={oldTask.Text}; Completed={oldTask.CompletedAt.HasValue}");
+                continue;
+            }
+
+            if (oldTask is null || newTask is null)
+            {
+                continue;
+            }
+
+            if (!string.Equals(oldTask.Text, newTask.Text, StringComparison.Ordinal))
+            {
+                _logger?.AuditChange(
+                    "QUALITY", "QualityOrderTask", entityId, "Text",
+                    oldTask.Text, newTask.Text, _currentUserName);
+            }
+
+            if (oldTask.CompletedAt.HasValue != newTask.CompletedAt.HasValue)
+            {
+                _logger?.AuditChange(
+                    "QUALITY", "QualityOrderTask", entityId, "Completed",
+                    oldTask.CompletedAt.HasValue.ToString(),
+                    newTask.CompletedAt.HasValue.ToString(),
+                    _currentUserName);
+            }
+        }
     }
 
     private void AuditChange(QualityOrder saved, string field, string? oldValue, string? newValue)
@@ -663,7 +856,7 @@ public partial class QualityOrderFormView : UserControl
 
     private static string BuildOrderAuditDetail(QualityOrder order)
     {
-        return $"Order={order.OrderNumber}; PrintVersion={order.PrintVersionNumber}; SapMaterial={order.SapMaterialNumber}; Machine={order.Machine}; Quantity={order.OrderedQuantity}; Released={order.Released}; Status={QualityOrderMaintenanceService.GetScheduleStatusCode(order)}; Loreal={order.Loreal}; Notes={order.Notes}";
+        return $"Order={order.OrderNumber}; PrintVersion={order.PrintVersionNumber}; SapMaterial={order.SapMaterialNumber}; Machine={order.Machine}; Quantity={order.OrderedQuantity}; Released={order.Released}; Status={QualityOrderMaintenanceService.GetScheduleStatusCode(order)}; Loreal={order.Loreal}; OrderTasks={order.Tasks.Count}; Notes={order.Notes}";
     }
 
     private void ShowWarning(string text)
@@ -682,6 +875,12 @@ public partial class QualityOrderFormView : UserControl
     {
         var value = _translate?.Invoke(key) ?? key;
         return IsMissing(value, key) ? key : value;
+    }
+
+    private string TOr(string key, string fallback)
+    {
+        var value = T(key);
+        return IsMissing(value, key) ? fallback : value;
     }
 
     private string TF(string key, params object[] args)
@@ -767,6 +966,31 @@ public partial class QualityOrderFormView : UserControl
             : model.GaugeLocation;
     }
 
+    public IReadOnlyList<DmsFunctionKeyAction> GetFunctionKeyActions()
+    {
+        return new[]
+        {
+            new DmsFunctionKeyAction(
+                Key.F4,
+                TOr("FunctionKey.ValueHelp", "Načíst tiskovou verzi"),
+                LoadPrintVersionFromInput),
+            new DmsFunctionKeyAction(
+                Key.F5,
+                TOr("FunctionKey.Refresh", "Obnovit"),
+                () => LoadInitial(_createMode ? TxtPrintVersionInput.Text : TxtOrderNumber.Text)),
+            new DmsFunctionKeyAction(
+                Key.F8,
+                _createMode
+                    ? TOr("QO01.Action.Create", "Založit")
+                    : TOr("QO02.Action.Save", "Uložit"),
+                () => TrySave()),
+            new DmsFunctionKeyAction(
+                Key.F12,
+                TOr("FunctionKey.Cancel", "Zrušit"),
+                () => TransactionRequested?.Invoke("QO05"))
+        };
+    }
+
     private static int? TryParseInt(string? value)
     {
         return int.TryParse(value?.Trim(), out var result)
@@ -791,6 +1015,17 @@ public partial class QualityOrderFormView : UserControl
             .Where(item => !string.IsNullOrWhiteSpace(item))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private sealed class OrderTaskEditRow
+    {
+        public int Number { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public bool IsCompleted { get; set; }
+        public DateTime? CreatedAt { get; set; }
+        public string CreatedBy { get; set; } = string.Empty;
+        public DateTime? CompletedAt { get; set; }
+        public string CompletedBy { get; set; } = string.Empty;
     }
 
     private sealed class SelectableOption

@@ -1,4 +1,4 @@
-using DMS.Desktop.Views.QualityOrders;
+﻿using DMS.Desktop.Views.QualityOrders;
 
 namespace DMS.Desktop.Views;
 
@@ -31,6 +31,14 @@ public partial class MainWindow
 
     private void RenderQualityOrderEdit(string query)
     {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            // SAP-like value help: QO02 without an order number opens QO05.
+            // Double-clicking a row in QO05 already navigates back to QO02.
+            RenderQualityOrderList();
+            return;
+        }
+
         WorkspacePanel.Children.Clear();
 
         var view = new QualityOrderFormView(

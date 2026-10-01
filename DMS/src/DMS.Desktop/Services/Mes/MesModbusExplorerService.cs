@@ -275,56 +275,56 @@ public sealed class MesModbusExplorerService
         switch (area)
         {
             case MesModbusArea.Coil:
-            {
-                var values = await client.ReadCoilsAsync(
-                    modbusAddress,
-                    1,
-                    cancellationToken).ConfigureAwait(false);
-                return MesModbusExplorerValue.ReadableBit(
-                    area,
-                    address,
-                    values[0],
-                    readAt);
-            }
+                {
+                    var values = await client.ReadCoilsAsync(
+                        modbusAddress,
+                        1,
+                        cancellationToken).ConfigureAwait(false);
+                    return MesModbusExplorerValue.ReadableBit(
+                        area,
+                        address,
+                        values[0],
+                        readAt);
+                }
 
             case MesModbusArea.DiscreteInput:
-            {
-                var values = await client.ReadDiscreteInputsAsync(
-                    modbusAddress,
-                    1,
-                    cancellationToken).ConfigureAwait(false);
-                return MesModbusExplorerValue.ReadableBit(
-                    area,
-                    address,
-                    values[0],
-                    readAt);
-            }
+                {
+                    var values = await client.ReadDiscreteInputsAsync(
+                        modbusAddress,
+                        1,
+                        cancellationToken).ConfigureAwait(false);
+                    return MesModbusExplorerValue.ReadableBit(
+                        area,
+                        address,
+                        values[0],
+                        readAt);
+                }
 
             case MesModbusArea.HoldingRegister:
-            {
-                var values = await client.ReadHoldingRegistersAsync(
-                    modbusAddress,
-                    1,
-                    cancellationToken).ConfigureAwait(false);
-                return MesModbusExplorerValue.ReadableRegister(
-                    area,
-                    address,
-                    values[0],
-                    readAt);
-            }
+                {
+                    var values = await client.ReadHoldingRegistersAsync(
+                        modbusAddress,
+                        1,
+                        cancellationToken).ConfigureAwait(false);
+                    return MesModbusExplorerValue.ReadableRegister(
+                        area,
+                        address,
+                        values[0],
+                        readAt);
+                }
 
             case MesModbusArea.InputRegister:
-            {
-                var values = await client.ReadInputRegistersAsync(
-                    modbusAddress,
-                    1,
-                    cancellationToken).ConfigureAwait(false);
-                return MesModbusExplorerValue.ReadableRegister(
-                    area,
-                    address,
-                    values[0],
-                    readAt);
-            }
+                {
+                    var values = await client.ReadInputRegistersAsync(
+                        modbusAddress,
+                        1,
+                        cancellationToken).ConfigureAwait(false);
+                    return MesModbusExplorerValue.ReadableRegister(
+                        area,
+                        address,
+                        values[0],
+                        readAt);
+                }
 
             default:
                 throw new ArgumentOutOfRangeException(

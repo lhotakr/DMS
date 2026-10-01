@@ -1,5 +1,3 @@
-using System;
-
 namespace DMS.Core.Documents;
 
 public sealed class DmsArticleDocumentRecord

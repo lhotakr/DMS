@@ -1,7 +1,6 @@
 ﻿using DMS.Core.Quality;
 using DMS.Core.Sap;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -462,7 +461,7 @@ public partial class QualityArticleView : UserControl
             return section;
         }
 
-        var grid = DmsUiFactory.CreateDataGrid(ForwardMouseWheelToOuterScroll);
+        var grid = DmsUiFactory.CreateDataGrid();
 
         grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Number", "Number"), "Number", 70));
         grid.Columns.Add(DmsUiFactory.CreateTextColumn(T("QA03.Col.Task", "Task"), "Text", 520));
@@ -494,7 +493,7 @@ public partial class QualityArticleView : UserControl
             .Select(CreateOrderDisplayRow)
             .ToList();
 
-        var grid = DmsUiFactory.CreateDataGrid(ForwardMouseWheelToOuterScroll);
+        var grid = DmsUiFactory.CreateDataGrid();
 
         grid.MouseDoubleClick += (_, _) =>
         {

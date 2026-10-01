@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-
 namespace DMS.Desktop.Theming;
 
 public sealed class DmsUiProfile

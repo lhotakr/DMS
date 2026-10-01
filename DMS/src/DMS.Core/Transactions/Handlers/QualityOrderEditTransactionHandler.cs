@@ -8,11 +8,14 @@ public sealed class QualityOrderEditTransactionHandler : ITransactionHandler
         TransactionCommand command,
         TransactionDefinition definition)
     {
+        // QO02 without an order number intentionally opens QO05 as a picker.
+        // MainWindow.RenderQualityOrderEdit handles the empty parameter.
         if (string.IsNullOrWhiteSpace(command.Parameter))
         {
-            return TransactionResult.Fail(
+            return TransactionResult.Ok(
                 definition.Code,
-                "QO02 expects an order number.");
+                string.Empty,
+                "Select a quality order in QO05.");
         }
 
         return TransactionResult.Ok(

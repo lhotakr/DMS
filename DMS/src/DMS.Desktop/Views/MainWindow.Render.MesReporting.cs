@@ -1,4 +1,5 @@
 ﻿using DMS.Desktop.Views.Mes;
+using System.IO;
 
 namespace DMS.Desktop.Views;
 
@@ -43,6 +44,12 @@ public partial class MainWindow
         var definitionsPath =
             GetMesReportDefinitionsFilePath();
 
+        var automationTemplatesPath =
+            Path.Combine(
+                GetDmsDataRootPath(),
+                "Scheduler",
+                "report-templates.json");
+
         _logger.AdminAction(
             "MES06",
             "OpenMesReporting",
@@ -50,12 +57,15 @@ public partial class MainWindow
             $"SettingsFile={settingsPath}; DefinitionsFile={definitionsPath}");
 
         WorkspacePanel.Children.Add(
-            new MesReportingView(
-                settingsPath,
-                definitionsPath,
-                _logger,
-                _currentUser.DisplayName,
-                translate: key => T(key)));
+
+        new MesReportingView(
+            settingsPath,
+            definitionsPath,
+            _logger,
+            _currentUser.DisplayName,
+            translate: key => T(key),
+            automationTemplatesPath: automationTemplatesPath)
+        );
 
         ResetWorkspaceScroll();
     }

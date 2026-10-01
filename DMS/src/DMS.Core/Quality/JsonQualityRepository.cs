@@ -129,6 +129,22 @@ public sealed class JsonQualityRepository
             items);
     }
 
+    public IReadOnlyList<QualityLookupItem> LoadOrderTaskDefaults()
+    {
+        return LoadList<QualityLookupItem>(
+            _paths.QualityOrderTaskDefaultsFilePath);
+    }
+
+    public void SaveOrderTaskDefaults(
+        IEnumerable<QualityLookupItem> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+
+        SaveList(
+            _paths.QualityOrderTaskDefaultsFilePath,
+            items);
+    }
+
     public void SaveCustomers(
         IEnumerable<QualityCustomer> customers)
     {

@@ -1,4 +1,4 @@
-namespace DMS.Core.Quality;
+﻿namespace DMS.Core.Quality;
 
 public sealed class QualityOrderFormModel
 {
@@ -77,6 +77,11 @@ public sealed class QualityOrderFormModel
     public List<QualityTask> OpenTasks { get; set; } = new();
 
     public string OpenTasksText { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Editable snapshot of tasks assigned directly to the quality order.
+    /// </summary>
+    public List<QualityTask> OrderTasks { get; set; } = new();
 
     public string ScheduleStatusCode { get; set; } = string.Empty;
 

@@ -1,13 +1,8 @@
 using DMS.Integration.Mes.Database;
-using DMS.Integration.Mes.Reporting.Models;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace DMS.Integration.Mes.Reporting;
 
@@ -21,6 +16,10 @@ public sealed class MesLoggedOperatorRecord
     public string WorkcenterDescription { get; init; } = string.Empty;
 
     public string Shift { get; init; } = string.Empty;
+
+    public DateTime? ShiftStart { get; init; }
+    public DateTime? ShiftEnd { get; init; }
+
 
     public string HumanCode { get; init; } = string.Empty;
     public string FirstName { get; init; } = string.Empty;
@@ -216,6 +215,8 @@ internal sealed class MesLoggedOperatorsDataService
             .GroupBy(row => new
             {
                 row.Shift,
+                row.ShiftStart,
+                row.ShiftEnd,
                 row.WorkcenterCode,
                 row.WorkcenterDescription,
                 row.HumanCode,
@@ -230,6 +231,13 @@ internal sealed class MesLoggedOperatorsDataService
             {
                 Shift =
                     group.Key.Shift,
+
+                ShiftStart =
+                    group.Key.ShiftStart,
+
+                ShiftEnd =
+                    group.Key.ShiftEnd,
+
 
                 WorkcenterCode =
                     group.Key.WorkcenterCode,
@@ -314,6 +322,9 @@ internal sealed class MesLoggedOperatorsDataService
                 wc.Code                    AS WorkcenterCode,
                 wc.Description             AS WorkcenterDescription,
                 ISNULL(sh.Name, N'')       AS Shift,
+                sh.Starttime               AS ShiftStart,
+                sh.Endtime                 AS ShiftEnd,
+            
 
                 h.HumanCode                AS HumanCode,
                 h.FirstName                AS FirstName,
@@ -523,6 +534,17 @@ internal sealed class MesLoggedOperatorsDataService
                         ReadDbString(
                             reader,
                             "Shift"),
+
+                    ShiftStart =
+                        ReadDateTime(
+                            reader,
+                            "ShiftStart"),
+
+                    ShiftEnd =
+                        ReadDateTime(
+                            reader,
+                            "ShiftEnd"),
+
 
                     HumanCode =
                         ReadDbString(

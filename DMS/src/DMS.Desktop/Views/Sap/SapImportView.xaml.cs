@@ -1,6 +1,5 @@
-﻿using DMS.Desktop.Configuration;
-using DMS.Core.Sap;
-using DMS.Desktop.UI;
+﻿using DMS.Core.Sap;
+using DMS.Desktop.Configuration;
 using Microsoft.Win32;
 using System.IO;
 using System.Windows;

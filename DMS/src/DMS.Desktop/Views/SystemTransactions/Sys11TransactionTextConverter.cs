@@ -1,6 +1,5 @@
 using DMS.Desktop.Configuration.Transactions;
 using System.Globalization;
-using System.Windows;
 using System.Windows.Data;
 
 namespace DMS.Desktop.Views.SystemTransactions;

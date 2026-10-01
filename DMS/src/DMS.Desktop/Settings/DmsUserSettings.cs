@@ -7,22 +7,10 @@
 /// </summary>
 public sealed class DmsUserSettings
 {
-    /// <summary>
-    /// Maximální počet posledních transakcí uložených v historii.
-    /// Podobně jako v SAP GUI.
-    /// </summary>
     public int MaxTransactionHistoryItems { get; set; } = 10;
 
-    /// <summary>
-    /// Historie posledních zadaných transakcí.
-    /// Nejnovější položka je první.
-    /// </summary>
     public List<string> TransactionHistory { get; set; } = new();
 
-    /// <summary>
-    /// Oblíbené transakce uživatele.
-    /// Ukládá se jen kód transakce, například ART03 nebo DOC03.
-    /// </summary>
     public List<string> FavoriteTransactions { get; set; } = new()
     {
         "ART03",
@@ -32,20 +20,10 @@ public sealed class DmsUserSettings
         "ORD10"
     };
 
-    /// <summary>
-    /// Volitelná transakce spuštěná po otevření hlavního okna, například QAMENU.
-    /// Prázdná hodnota znamená bez automatického spuštění.
-    /// </summary>
     public string StartupTransaction { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Light / Dark.
-    /// </summary>
     public string ThemeMode { get; set; } = "Light";
 
-    /// <summary>
-    /// Hlavní akcentní barva klienta ve formátu HEX.
-    /// </summary>
     public string BackgroundColor { get; set; } = "#F4F6F8";
     public string PanelColor { get; set; } = "#FFFFFF";
     public string ForegroundColor { get; set; } = "#111111";
@@ -54,22 +32,33 @@ public sealed class DmsUserSettings
     public string AccentColor { get; set; } = "#0B2A4A";
     public string OnAccentColor { get; set; } = "#FFFFFF";
 
-    /// <summary>
-    /// Barevné zvýraznění stavů editovatelných řádků v DataGridu.
-    /// Používá se jednotně napříč celým klientem.
-    /// </summary>
     public string DataGridAddedRowColor { get; set; } = "#263A28";
     public string DataGridModifiedRowColor { get; set; } = "#4A3820";
     public string DataGridDeletedRowColor { get; set; } = "#4A2020";
 
-    /// <summary>
-    /// Auto = jazyk podle systému, Manual = uživatelem zvolený jazyk.
-    /// </summary>
     public string LanguageMode { get; set; } = "Auto";
-
-    /// <summary>
-    /// Uživatelem zvolená kultura, například cs-CZ, de-DE nebo en-US.
-    /// Používá se pouze při LanguageMode = Manual.
-    /// </summary>
     public string CultureName { get; set; } = "";
+
+    // Client-local SAP-like function-key preferences.
+    public bool FunctionKeysEnabled { get; set; } = true;
+    public bool ShowFunctionKeyBar { get; set; } = true;
+    public bool FunctionKeyF1Enabled { get; set; } = true;
+    public bool FunctionKeyF2Enabled { get; set; } = true;
+    public bool FunctionKeyF3Enabled { get; set; } = true;
+    public bool FunctionKeyF4Enabled { get; set; } = true;
+    public bool FunctionKeyF5Enabled { get; set; } = true;
+    public bool FunctionKeyF6Enabled { get; set; } = true;
+    public bool FunctionKeyF7Enabled { get; set; } = true;
+    public bool FunctionKeyF8Enabled { get; set; } = true;
+    public bool FunctionKeyF9Enabled { get; set; } = true;
+    public bool FunctionKeyF12Enabled { get; set; } = true;
+
+    // Built-in DMS documentation / contextual help preferences.
+    public bool DocumentationHelpEnabled { get; set; } = true;
+    public bool DocumentationTechnicalInfoEnabled { get; set; } = false;
+
+    // SCR10 – lokální nastavení konkrétního DMS klienta.
+    public string Scr10SelectedWorkcenterGroup { get; set; } = string.Empty;
+    public bool Scr10AutoRefreshEnabled { get; set; } = true;
+    public int Scr10AutoRefreshIntervalMs { get; set; } = 1000;
 }

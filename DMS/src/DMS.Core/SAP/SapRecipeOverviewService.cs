@@ -8,7 +8,7 @@ public sealed class SapRecipeOverviewService
     private readonly Dictionary<string, SapMaterial> _materialsByNumber;
     private readonly Dictionary<string, int> _recipeUsageInArticlesCountByRecipe;
     private readonly Dictionary<string, int> _recipeBomItemCountByRecipe;
-    
+
     public SapRecipeOverviewService(
     IReadOnlyList<SapMaterial> materials,
     IReadOnlyList<SapBom> boms)

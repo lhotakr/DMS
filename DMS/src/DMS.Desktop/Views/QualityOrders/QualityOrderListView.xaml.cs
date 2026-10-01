@@ -1,14 +1,16 @@
-using DMS.Core.Quality;
+﻿using DMS.Core.Quality;
 using DMS.Desktop.Logging;
+using DMS.Desktop.UI.FunctionKeys;
 using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using System.Windows.Input;
 
 namespace DMS.Desktop.Views.QualityOrders;
 
-public partial class QualityOrderListView : UserControl
+public partial class QualityOrderListView : UserControl, IDmsFunctionKeyHost
 {
     private const int MaxDisplayedRows = 500;
 
@@ -175,7 +177,9 @@ public partial class QualityOrderListView : UserControl
     {
         // Build rows once, localize them once, then keep a pre-normalized filter cache.
         // Filtering itself no longer sorts/materializes the complete result list on every keystroke.
-        _allRows = _service.BuildOrderListRows()
+        var statusScope = GetSelectedStatusFilter();
+
+        _allRows = _service.BuildOrderListRows(statusScope)
             .OrderByDescending(row => row.CreatedAtDate ?? DateTime.MinValue)
             .ThenByDescending(row => row.OrderNumber)
             .ToList();
@@ -191,7 +195,7 @@ public partial class QualityOrderListView : UserControl
             "QO05",
             "LoadQualityOrderOverview",
             _currentUserName,
-            $"Count={_allRows.Count}; DisplayLimit={MaxDisplayedRows}; Sort=CreatedAtDescending; FilterCache=True");
+            $"Count={_allRows.Count}; StatusScope={statusScope}; DisplayLimit={MaxDisplayedRows}; Sort=CreatedAtDescending; FilterCache=True");
 
         ApplyFilterSafely();
     }
@@ -325,6 +329,17 @@ public partial class QualityOrderListView : UserControl
             return;
         }
 
+        // Status changes are data-scope changes, not only visual filters.
+        // This keeps QO05 fast: it does not build/enrich finished history until
+        // the user explicitly asks for it.
+        if (sender is RadioButton radioButton &&
+            string.Equals(radioButton.GroupName, "QO05ScheduleStatus", StringComparison.Ordinal))
+        {
+            _filterTimer?.Stop();
+            ReloadData();
+            return;
+        }
+
         if (_filterTimer is null)
         {
             ApplyFilterSafely();
@@ -352,6 +367,36 @@ public partial class QualityOrderListView : UserControl
             "OpenQualityOrderEditFromOverview",
             _currentUserName,
             $"Order={row.OrderNumber}; PrintVersion={row.PrintVersionNumber}");
+
+        TransactionRequested?.Invoke($"QO02 {row.OrderNumber}");
+    }
+
+    public IReadOnlyList<DmsFunctionKeyAction> GetFunctionKeyActions()
+    {
+        return new[]
+        {
+            new DmsFunctionKeyAction(
+                Key.F2,
+                TOr("FunctionKey.Edit", "Změnit"),
+                OpenSelectedOrder),
+            new DmsFunctionKeyAction(
+                Key.F5,
+                TOr("FunctionKey.Refresh", "Obnovit"),
+                ReloadData),
+            new DmsFunctionKeyAction(
+                Key.F6,
+                TOr("FunctionKey.New", "Nová zakázka"),
+                () => TransactionRequested?.Invoke("QO01"))
+        };
+    }
+
+    private void OpenSelectedOrder()
+    {
+        if (GridOrders.SelectedItem is not QualityOrderListRow row ||
+            string.IsNullOrWhiteSpace(row.OrderNumber))
+        {
+            return;
+        }
 
         TransactionRequested?.Invoke($"QO02 {row.OrderNumber}");
     }
@@ -418,6 +463,16 @@ public partial class QualityOrderListView : UserControl
 
         TxtDateWarning.Text = T("QO05.Filter.InvalidDate");
         TxtDateWarning.Visibility = Visibility.Visible;
+    }
+
+    private string TOr(string key, string fallback)
+    {
+        var value = T(key);
+        return string.IsNullOrWhiteSpace(value) ||
+               string.Equals(value, key, StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(value, $"[[{key}]]", StringComparison.OrdinalIgnoreCase)
+            ? fallback
+            : value;
     }
 
     private string T(string key)

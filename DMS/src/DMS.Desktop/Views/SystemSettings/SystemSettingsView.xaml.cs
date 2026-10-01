@@ -1,5 +1,4 @@
 ﻿using DMS.Desktop.Configuration.SystemSettings;
-using DMS.Desktop.UI;
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Globalization;

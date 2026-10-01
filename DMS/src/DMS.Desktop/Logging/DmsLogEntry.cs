@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-
-namespace DMS.Desktop.Logging;
+﻿namespace DMS.Desktop.Logging;
 
 public sealed class DmsLogEntry
 {

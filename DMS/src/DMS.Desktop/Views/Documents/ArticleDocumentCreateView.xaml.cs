@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using DMS.Core.Documents;
 using DMS.Core.Sap;
 using DMS.Desktop.Logging;
-using DMS.Desktop.UI;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;

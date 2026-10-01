@@ -1,6 +1,5 @@
-﻿using DMS.Desktop.Configuration;
-using ClosedXML.Excel;
-using DMS.Core.Sap.Validation;
+﻿using DMS.Core.Sap.Validation;
+using DMS.Desktop.Configuration;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;

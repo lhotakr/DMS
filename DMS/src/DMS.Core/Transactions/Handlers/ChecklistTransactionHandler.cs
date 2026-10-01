@@ -1,6 +1,4 @@
-﻿using DMS.Core.Checklists;
-
-namespace DMS.Core.Transactions.Handlers;
+﻿namespace DMS.Core.Transactions.Handlers;
 
 public sealed class ChecklistTransactionHandler : ITransactionHandler
 {

@@ -1,5 +1,4 @@
 using DMS.Integration.Mes.Reporting.Definitions;
-using System.Collections;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;

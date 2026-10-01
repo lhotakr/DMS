@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using DMS.Core.Domain.Organization;
+﻿using DMS.Core.Domain.Organization;
 using DMS.Core.Domain.People;
 using DMS.Core.Domain.Units;
 
