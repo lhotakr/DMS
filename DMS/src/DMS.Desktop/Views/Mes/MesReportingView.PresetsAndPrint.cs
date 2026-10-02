@@ -1,3 +1,4 @@
+using DMS.Integration.Mes.Reporting.Definitions;
 using Microsoft.Win32;
 using System.Collections;
 using System.Globalization;
@@ -2658,10 +2659,24 @@ public partial class MesReportingView
     {
         var definition =
             CmbReport.SelectedItem
-                as DMS.Integration.Mes.Reporting.Definitions.MesReportDefinition;
+                as MesReportDefinition;
 
-        if (definition is null
-            || !IsStatesReport(
+        if (definition is null)
+        {
+            return;
+        }
+
+        if (IsPlachtaReport(
+                definition))
+        {
+            ApplyPrintablePlachtaBand(
+                row,
+                tableRow);
+
+            return;
+        }
+
+        if (!IsStatesReport(
                 definition))
         {
             return;

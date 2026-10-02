@@ -24,6 +24,7 @@ public partial class MesReportingView
     private readonly Func<string, string> _translate;
     private readonly MesDatabaseSettingsService _settingsService = new();
     private readonly MesReportDefinitionService _definitionService = new();
+    private readonly string _sapMaterialsFilePath;
 
     private MesDatabaseConnectionSettings _settings = new();
     private IReadOnlyList<MesReportDefinition> _definitions =
@@ -42,7 +43,8 @@ public partial class MesReportingView
         DmsLogger logger,
         string user,
         Func<string, string>? translate = null,
-        string? automationTemplatesPath = null)
+        string? automationTemplatesPath = null,
+        string? sapMaterialsFilePath = null)
     {
         InitializeComponent();
 
@@ -68,8 +70,9 @@ public partial class MesReportingView
             automationTemplatesPath
             ?? string.Empty;
 
-
-
+        _sapMaterialsFilePath =
+            sapMaterialsFilePath
+            ?? string.Empty;
 
         ApplyLocalization();
         InitializeDates();
@@ -844,8 +847,10 @@ public partial class MesReportingView
                     Array.Empty<MesReportingStateColor>();
 
                 var plachtaService =
-                    new MesPlachtaReportService(
-                        _settings);
+                new MesPlachtaReportService(
+                    _settings,
+                    sapMaterialsFilePath:
+                        _sapMaterialsFilePath);
 
                 var rows =
                     await plachtaService
@@ -1521,6 +1526,10 @@ public partial class MesReportingView
                         value);
                 }
             }
+
+            ApplyPlachtaExcelBands(
+                worksheet,
+                definition);
 
             worksheet
                 .ColumnsUsed()

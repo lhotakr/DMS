@@ -1,4 +1,5 @@
 ﻿using DMS.Desktop.Views.Mes;
+using DMS.Core.Sap;
 using System.IO;
 
 namespace DMS.Desktop.Views;
@@ -50,6 +51,10 @@ public partial class MainWindow
                 "Scheduler",
                 "report-templates.json");
 
+        var sapStoragePaths =
+            new SapStoragePaths(
+                GetDmsDataRootPath());
+
         _logger.AdminAction(
             "MES06",
             "OpenMesReporting",
@@ -64,7 +69,9 @@ public partial class MainWindow
             _logger,
             _currentUser.DisplayName,
             translate: key => T(key),
-            automationTemplatesPath: automationTemplatesPath)
+            automationTemplatesPath: automationTemplatesPath,
+            sapMaterialsFilePath:
+                sapStoragePaths.SapMaterialsFilePath)
         );
 
         ResetWorkspaceScroll();

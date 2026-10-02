@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace DMS.Desktop.Views.Mes;
 
@@ -672,6 +673,28 @@ public partial class MesReportingView
     {
         ResetSummaryRowAppearance(
             e.Row);
+
+        if (CmbReport.SelectedItem
+            is MesReportDefinition definition
+            && IsPlachtaReport(
+                definition))
+        {
+            if (TryGetPlachtaBand(
+                    e.Row.Item,
+                    out var shaded))
+            {
+                e.Row.Background =
+                    shaded
+                        ? new SolidColorBrush(
+                            PlachtaAlternateBandColor)
+                        : Brushes.White;
+
+                e.Row.Foreground =
+                    Brushes.Black;
+            }
+
+            return;
+        }
 
         if (e.Row.Item
             is not Mes06GridRow item
