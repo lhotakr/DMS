@@ -14,11 +14,14 @@ public sealed class Mes06PlachtaAutomationProvider
     private readonly MesPlachtaReportService _service;
 
     public Mes06PlachtaAutomationProvider(
-        MesDatabaseConnectionSettings settings)
+        MesDatabaseConnectionSettings settings,
+        string? sapMaterialsFilePath = null)
     {
         _service =
             new MesPlachtaReportService(
-                settings);
+                settings,
+                sapMaterialsFilePath:
+                    sapMaterialsFilePath);
     }
 
     public bool CanHandle(
@@ -51,6 +54,7 @@ public sealed class Mes06PlachtaAutomationProvider
                 C("ShiftCode", "Směna"),
                 C("BaanNumber", "Baan číslo"),
                 C("SapNumber", "SAP číslo"),
+                C("ProductDescription", "Popis artiklu"),
                 C("OrderCode", "Číslo zakázky"),
                 C("OrderQuantity", "Velikost zakázky"),
                 C("OperationCode", "Průchod / operace"),
@@ -77,6 +81,7 @@ public sealed class Mes06PlachtaAutomationProvider
                         ["ShiftCode"] = row.ShiftCode,
                         ["BaanNumber"] = row.BaanNumber,
                         ["SapNumber"] = row.SapNumber,
+                        ["ProductDescription"] = row.ProductDescription,
                         ["OrderCode"] = row.OrderCode,
                         ["OrderQuantity"] = row.OrderQuantity,
                         ["OperationCode"] = row.OperationCode,

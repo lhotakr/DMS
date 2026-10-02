@@ -22,15 +22,18 @@ public sealed class Mes06ScheduledReport : IDmsScheduledReport
     public const string ExecutorCode = "MES06";
 
     private readonly MesDatabaseConnectionSettings _settings;
+    private readonly string _sapMaterialsFilePath;
 
     public Mes06ScheduledReport(
-        MesDatabaseConnectionSettings settings)
+        MesDatabaseConnectionSettings settings,
+        string sapMaterialsFilePath)
     {
         _settings =
-            settings
-            ?? throw new ArgumentNullException(nameof(settings));
+            settings;
 
-        _settings.Normalize();
+        _sapMaterialsFilePath =
+            sapMaterialsFilePath
+            ?? string.Empty;
     }
 
     public string Code => ExecutorCode;
@@ -68,7 +71,8 @@ public sealed class Mes06ScheduledReport : IDmsScheduledReport
 
         var engine =
             new Mes06AutomationReportEngine(
-                _settings);
+                _settings,
+                _sapMaterialsFilePath);
 
         var request =
             new Mes06AutomationRequest

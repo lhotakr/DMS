@@ -1,9 +1,8 @@
-using DMS.Integration.Mes.Database;
+﻿using DMS.Integration.Mes.Database;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Globalization;
 using System.Text;
-using DMS.Core.Sap;
 
 namespace DMS.Integration.Mes.Reporting;
 
@@ -19,13 +18,11 @@ public sealed class MesPlachtaReportService
 
     private readonly MesDatabaseConnectionSettings _settings;
     private readonly IMesSqlConnectionFactory _connectionFactory;
-    private readonly IReadOnlyDictionary<string, string> _sapDescriptions;
     private readonly string _schema;
 
     public MesPlachtaReportService(
         MesDatabaseConnectionSettings settings,
-        IMesSqlConnectionFactory? connectionFactory = null,
-        string? sapMaterialsFilePath = null)
+        IMesSqlConnectionFactory? connectionFactory = null)
     {
         _settings =
             settings
@@ -40,25 +37,6 @@ public sealed class MesPlachtaReportService
         _schema =
             MesConnectionHealthService.ValidateIdentifier(
                 _settings.ReportingSchema);
-        _sapDescriptions =
-            string.IsNullOrWhiteSpace(sapMaterialsFilePath)
-            || !File.Exists(sapMaterialsFilePath)
-                ? new Dictionary<string, string>(
-                    StringComparer.OrdinalIgnoreCase)
-                : new JsonSapMaterialRepository(
-                        sapMaterialsFilePath)
-                    .LoadAll()
-                    .Where(material =>
-                        !string.IsNullOrWhiteSpace(
-                            material.MaterialNumber))
-                    .GroupBy(
-                        material => material.MaterialNumber.Trim(),
-                        StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => group.First().Description
-                            ?? string.Empty,
-                        StringComparer.OrdinalIgnoreCase);
     }
 
     public async Task<IReadOnlyList<MesPlachtaReportRecord>> GetReportAsync(
@@ -208,7 +186,6 @@ public sealed class MesPlachtaReportService
             ) meta
             WHERE mes.[Starttime] < @to
               AND COALESCE(mes.[Endtime], @to) > @from
-              AND NULLIF(LTRIM(RTRIM(op.[OrderCode])), '') IS NOT NULL
               {workcenterClause}
               AND (@shiftCode = '' OR sh.[Name] = @shiftCode)
               AND (@orderCode = '' OR op.[OrderCode] LIKE '%' + @orderCode + '%')
@@ -938,7 +915,7 @@ public sealed class MesPlachtaReportService
         }
     }
 
-    private MesPlachtaReportRecord ToRecord(
+    private static MesPlachtaReportRecord ToRecord(
         PlachtaAccumulator accumulator,
         AvailabilityMapping availabilityMapping)
     {
@@ -974,19 +951,6 @@ public sealed class MesPlachtaReportService
                   + accumulator.CauselessFailureExtraSeconds
                 : accumulator.AggregatedFailureSeconds;
 
-        var productDescription =
-            string.Empty;
-
-        if (!string.IsNullOrWhiteSpace(
-                accumulator.SapNumber)
-            && _sapDescriptions.TryGetValue(
-                accumulator.SapNumber.Trim(),
-                out var sapDescription))
-        {
-            productDescription =
-                sapDescription;
-        }
-
         return new MesPlachtaReportRecord
         {
             ShiftStart =
@@ -1004,8 +968,6 @@ public sealed class MesPlachtaReportService
                 accumulator.ProductCode,
             SapNumber =
                 accumulator.SapNumber,
-            ProductDescription =
-                productDescription,
             OrderCode =
                 accumulator.OrderCode,
             OrderQuantity =
@@ -1686,7 +1648,6 @@ public sealed class MesPlachtaReportRecord
     public string ShiftCode { get; init; } = string.Empty;
     public string BaanNumber { get; init; } = string.Empty;
     public string SapNumber { get; init; } = string.Empty;
-    public string ProductDescription { get; init; } = string.Empty;
     public string OrderCode { get; init; } = string.Empty;
     public decimal? OrderQuantity { get; init; }
     public string OperationCode { get; init; } = string.Empty;

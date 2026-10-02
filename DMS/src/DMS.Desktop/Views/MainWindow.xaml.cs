@@ -2823,6 +2823,9 @@ public partial class MainWindow : Window
     {
         return Path.GetFullPath(
             Path.Combine(_appSettings.ConfigurationRootPath, ".."));
+        var sapStoragePaths =
+            new SapStoragePaths(
+                GetDmsDataRootPath());
     }
     private string GetDataPath(string fileName)
     {

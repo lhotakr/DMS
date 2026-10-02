@@ -69,6 +69,8 @@ public partial class MesReportingView
             ?? string.Empty;
 
 
+
+
         ApplyLocalization();
         InitializeDates();
         InitializeLeftFilterPanel();
@@ -1313,6 +1315,12 @@ public partial class MesReportingView
         TxtReportDescription.Text =
             definition?.Description
             ?? string.Empty;
+
+        ChkHideZeros.Visibility =
+            IsPlachtaReport(
+                definition)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
 
         if (definition is null
             || definition.Chart is null

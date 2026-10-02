@@ -60,6 +60,11 @@ public partial class MesReportingView
                     "MES06.FilterPanel.Pda",
                     "PDA");
 
+            ChkHideZeros.Content =
+                T(
+                    "MES06.Filter.HideZeros",
+                    "Skrýt nuly");
+
             LblQuickPeriod.Text =
                 T(
                     "MES06.Filter.QuickSelection",
@@ -208,6 +213,8 @@ public partial class MesReportingView
             TxtOrder.Clear();
             TxtOperation.Clear();
 
+            ChkHideZeros.IsChecked = false;
+
             SelectAllWorkcenters(
                 true);
 
@@ -227,6 +234,24 @@ public partial class MesReportingView
         finally
         {
             _mes06InitializingFilters = false;
+        }
+    }
+
+    private void ChkHideZeros_Changed(
+    object sender,
+    RoutedEventArgs e)
+    {
+        if (_mes06InitializingFilters)
+        {
+            return;
+        }
+
+        if (CmbReport.SelectedItem
+            is MesReportDefinition definition
+            && IsPlachtaReport(definition))
+        {
+            ApplyGridPresentation(
+                definition);
         }
     }
 
@@ -360,6 +385,20 @@ public partial class MesReportingView
             query =
                 query.Where(
                     HasProductionData);
+        }
+
+        // Plachta is meaningful only for production periods assigned to an order.
+        // Hide MES intervals without an order automatically so empty machine rows
+        // do not pollute the shift report.
+        if (IsPlachtaReport(definition))
+        {
+            query =
+                query.Where(row =>
+                    !string.IsNullOrWhiteSpace(
+                        Convert.ToString(
+                            ReadProperty(
+                                row,
+                                "OrderCode"))));
         }
 
         return query

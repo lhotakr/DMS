@@ -17,14 +17,15 @@ public sealed class Mes06AutomationReportEngine
     private readonly IReadOnlyList<IMes06AutomationReportProvider> _providers;
 
     public Mes06AutomationReportEngine(
-        MesDatabaseConnectionSettings settings)
+        MesDatabaseConnectionSettings settings,
+        string? sapMaterialsFilePath = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
 
         _providers =
             new IMes06AutomationReportProvider[]
             {
-                new Mes06PlachtaAutomationProvider(settings),
+                new Mes06PlachtaAutomationProvider(settings, sapMaterialsFilePath),
                 new Mes06CounterAutomationProvider(settings),
                 new Mes06LoggedOperatorsAutomationProvider(settings),
                 new Mes06BonusMachAutomationProvider(settings),

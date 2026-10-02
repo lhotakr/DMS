@@ -40,6 +40,7 @@ public partial class MesReportingView
                     C("ShiftCode", "Směna", "MES06.Plachta.Column.Shift", 75),
                     C("BaanNumber", "Baan číslo", "MES06.Plachta.Column.BaanNumber", 155),
                     C("SapNumber", "SAP číslo", "MES06.Plachta.Column.SapNumber", 120),
+                    C("ProductDescription", "Popis artiklu", "MES06.Plachta.Column.ProductDescription", 220),
                     C("OrderCode", "Číslo zakázky", "MES06.Plachta.Column.Order", 125),
                     C("OrderQuantity", "Velikost zakázky", "MES06.Plachta.Column.OrderQuantity", 125, "N0"),
                     C("OperationCode", "Průchod / operace", "MES06.Plachta.Column.Operation", 130),

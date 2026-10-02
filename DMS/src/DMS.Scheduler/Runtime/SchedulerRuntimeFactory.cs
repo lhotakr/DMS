@@ -1,10 +1,9 @@
-﻿using DMS.Core.Scheduling;
+﻿using DMS.Core.Sap;
+using DMS.Core.Scheduling;
 using DMS.Integration.Mes.Database;
 using DMS.Scheduler.Configuration;
 using DMS.Scheduler.Reports;
-using System;
-using System.IO;
-using System.Linq;
+using DMS.Core.Sap;
 
 namespace DMS.Scheduler.Runtime;
 
@@ -59,7 +58,8 @@ public static class SchedulerRuntimeFactory
             new IDmsScheduledReport[]
             {
                 new Mes06ScheduledReport(
-                    mesSettings)
+                    mesSettings,
+                    sapStoragePaths.SapMaterialsFilePath)
             };
 
         // IMPORTANT:
@@ -97,6 +97,10 @@ public static class SchedulerRuntimeFactory
                 jobRepository,
                 runner,
                 logger.Write);
+
+        var sapStoragePaths =
+            new SapStoragePaths(
+                settings.DataRoot);
 
         return new SchedulerRuntime
         {
