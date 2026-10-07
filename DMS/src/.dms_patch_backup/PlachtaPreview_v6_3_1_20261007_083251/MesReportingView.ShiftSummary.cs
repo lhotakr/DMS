@@ -1,4 +1,4 @@
-﻿using DMS.Integration.Mes.Reporting.Definitions;
+using DMS.Integration.Mes.Reporting.Definitions;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -683,15 +683,14 @@ public partial class MesReportingView
                     e.Row.Item,
                     out var shaded))
             {
-                e.Row.SetResourceReference(
-                    Control.BackgroundProperty,
+                e.Row.Background =
                     shaded
-                        ? "DmsBackgroundBrush"
-                        : "DmsPanelBrush");
+                        ? new SolidColorBrush(
+                            PlachtaAlternateBandColor)
+                        : Brushes.White;
 
-                e.Row.SetResourceReference(
-                    Control.ForegroundProperty,
-                    "DmsForegroundBrush");
+                e.Row.Foreground =
+                    Brushes.Black;
             }
 
             return;
@@ -750,4 +749,3 @@ public partial class MesReportingView
             Control.FontWeightProperty);
     }
 }
-

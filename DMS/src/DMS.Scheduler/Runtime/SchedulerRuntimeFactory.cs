@@ -54,6 +54,10 @@ public static class SchedulerRuntimeFactory
             new ScheduledReportTemplateRepository(
                 settings.TemplatesPath);
 
+        var sapStoragePaths =
+            new SapStoragePaths(
+                settings.DataRoot);
+
         var reports =
             new IDmsScheduledReport[]
             {
@@ -98,9 +102,7 @@ public static class SchedulerRuntimeFactory
                 runner,
                 logger.Write);
 
-        var sapStoragePaths =
-            new SapStoragePaths(
-                settings.DataRoot);
+
 
         return new SchedulerRuntime
         {
