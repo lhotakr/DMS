@@ -1,4 +1,4 @@
-﻿using DMS.Integration.Mes.Reporting;
+using DMS.Integration.Mes.Reporting;
 using DMS.Integration.Mes.Reporting.Definitions;
 
 namespace DMS.Desktop.Views.Mes;
@@ -34,21 +34,6 @@ public partial class MesReportingView
                 DataSource = "Plachta",
                 MaxRows = 50000,
                 Chart = null,
-                Behavior =
-                    new MesReportBehaviorDefinition
-                    {
-                        Print =
-                            new MesReportPrintBehaviorDefinition
-                            {
-                                Orientation = "Landscape",
-                                RepeatColumnHeaders = true,
-                                UseMeasuredPagination = true,
-                                MaxRowsPerPage = 0,
-                                FirstPageReservedHeight = 95d,
-                                PageSafetyMargin = 28d,
-                                HeaderMinimumHeight = 24d
-                            }
-                    },
                 Columns =
                 {
                     C("WorkcenterCode", "Stroj", "MES06.Plachta.Column.Workcenter", 100),

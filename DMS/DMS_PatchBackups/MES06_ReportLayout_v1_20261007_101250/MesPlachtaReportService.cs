@@ -1,4 +1,4 @@
-﻿using DMS.Integration.Mes.Database;
+using DMS.Integration.Mes.Database;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Globalization;
@@ -987,17 +987,6 @@ public sealed class MesPlachtaReportService
                 sapDescription;
         }
 
-        var isSetup =
-            accumulator.SetupSeconds >=
-            shiftSeconds * DominantShiftThreshold;
-
-        var isReplacementMachine =
-            accumulator.ReplacementMachineSeconds >=
-            shiftSeconds * DominantShiftThreshold;
-
-        var suppressShiftMetrics =
-            isSetup
-            || isReplacementMachine;
         return new MesPlachtaReportRecord
         {
             ShiftStart =
@@ -1026,43 +1015,29 @@ public sealed class MesPlachtaReportService
             PlannedPerformance =
                 accumulator.PlannedPerformance,
             SetupMark =
-                isSetup
-            
-        ? "×"
+                accumulator.SetupSeconds >=
+                shiftSeconds * DominantShiftThreshold
+                    ? "×"
                     : string.Empty,
             ReplacementMachineMark =
-                isReplacementMachine
-            
-        ? "×"
+                accumulator.ReplacementMachineSeconds >=
+                shiftSeconds * DominantShiftThreshold
+                    ? "×"
                     : string.Empty,
             PersonnelCount =
-                suppressShiftMetrics
-                    ? null
-                    : accumulator.Personnel.Count,
+                accumulator.Personnel.Count,
             ProductionTimeHours =
-                suppressShiftMetrics
-                    ? null
-                    : productionSeconds / 3600d,
+                productionSeconds / 3600d,
             DowntimeHours =
-                suppressShiftMetrics
-                    ? null
-                    : downtimeSeconds / 3600d,
+                downtimeSeconds / 3600d,
             PrintedGross =
-                suppressShiftMetrics
-                    ? null
-                    : accumulator.PrintedGross,
+                accumulator.PrintedGross,
             PrintedNet =
-                suppressShiftMetrics
-                    ? null
-                    : printedNet,
+                printedNet,
             TotalScrap =
-                suppressShiftMetrics
-                    ? null
-                    : totalScrap,
+                totalScrap,
             ScrapPercent =
-                suppressShiftMetrics
-                    ? null
-                    : scrapPercent,
+                scrapPercent,
             Notes =
                 string.Empty
         };
@@ -1718,12 +1693,12 @@ public sealed class MesPlachtaReportRecord
     public string PlannedPerformance { get; init; } = string.Empty;
     public string SetupMark { get; init; } = string.Empty;
     public string ReplacementMachineMark { get; init; } = string.Empty;
-    public int? PersonnelCount { get; init; }
-    public double? ProductionTimeHours { get; init; }
-    public double? DowntimeHours { get; init; }
-    public decimal? PrintedGross { get; init; }
-    public decimal? PrintedNet { get; init; }
-    public decimal? TotalScrap { get; init; }
-    public decimal? ScrapPercent { get; init; }
+    public int PersonnelCount { get; init; }
+    public double ProductionTimeHours { get; init; }
+    public double DowntimeHours { get; init; }
+    public decimal PrintedGross { get; init; }
+    public decimal PrintedNet { get; init; }
+    public decimal TotalScrap { get; init; }
+    public decimal ScrapPercent { get; init; }
     public string Notes { get; init; } = string.Empty;
 }

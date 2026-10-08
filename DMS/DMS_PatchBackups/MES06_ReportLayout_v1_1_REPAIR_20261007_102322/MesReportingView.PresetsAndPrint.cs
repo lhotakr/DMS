@@ -1244,7 +1244,7 @@ public partial class MesReportingView
         }
     }
 
-    private void BtnToolbarPrint_ClickLegacy_v12(
+    private void BtnToolbarPrint_Click(
         object sender,
         RoutedEventArgs e)
     {
@@ -1335,7 +1335,7 @@ public partial class MesReportingView
             MessageBoxImage.Information);
     }
 
-    private FlowDocument BuildPrintableDocumentLegacy_v12()
+    private FlowDocument BuildPrintableDocument()
     {
         var document =
             new FlowDocument

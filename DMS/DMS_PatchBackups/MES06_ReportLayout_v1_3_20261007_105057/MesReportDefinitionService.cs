@@ -179,46 +179,6 @@ public sealed class MesReportDefinitionService
 
             definition.Columns ??= new List<MesReportColumnDefinition>();
 
-            definition.Behavior ??=
-                new MesReportBehaviorDefinition();
-
-            definition.Behavior.Print ??=
-                new MesReportPrintBehaviorDefinition();
-
-            var print =
-                definition.Behavior.Print;
-
-            print.Orientation =
-                string.Equals(
-                    print.Orientation,
-                    "Portrait",
-                    StringComparison.OrdinalIgnoreCase)
-                    ? "Portrait"
-                    : "Landscape";
-
-            print.MaxRowsPerPage =
-                Math.Clamp(
-                    print.MaxRowsPerPage,
-                    0,
-                    120);
-
-            print.FirstPageReservedHeight =
-                Math.Clamp(
-                    print.FirstPageReservedHeight,
-                    0d,
-                    450d);
-
-            print.PageSafetyMargin =
-                Math.Clamp(
-                    print.PageSafetyMargin,
-                    0d,
-                    150d);
-
-            print.HeaderMinimumHeight =
-                Math.Clamp(
-                    print.HeaderMinimumHeight,
-                    12d,
-                    80d);
             if (definition.Chart is not null)
             {
                 definition.Chart.Top =

@@ -1,4 +1,4 @@
-ï»¿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using DMS.Desktop.Logging;
 using DMS.Integration.Mes.Database;
 using DMS.Integration.Mes.Reporting;
@@ -78,7 +78,6 @@ public partial class MesReportingView
         InitializeDates();
         InitializeLeftFilterPanel();
         InitializeReportToolbar();
-        InitializeReportLayoutUi();
         InitializeAutomationTemplateUi();
 
         LoadDefinitions();
@@ -966,12 +965,6 @@ public partial class MesReportingView
             ResetMachineTimelinePresentation();
 
             ApplyGridPresentation(
-
-                definition);
-
-
-            ApplyReportLayoutToExistingGrid(
-
                 definition);
 
             if (_mes06CounterReportMode)
@@ -1066,7 +1059,7 @@ public partial class MesReportingView
         return production.Cast<object>().ToList();
     }
 
-    private void BuildColumnsLegacy(
+    private void BuildColumns(
         MesReportDefinition definition)
     {
         GridReport.Columns.Clear();
@@ -1613,8 +1606,8 @@ public partial class MesReportingView
             new MesReportDefinition
             {
                 Code = "BONUS_BASE",
-                Name = "Podklady pro prï¿½mie",
-                Description = "Souhrn vï¿½konu operï¿½torï¿½ pro vï¿½poï¿½et prï¿½miï¿½: smï¿½na, pï¿½ihlï¿½enï¿½ na stroji, hrubï¿½ a ï¿½istï¿½ produkce.",
+                Name = "Podklady pro prémie",
+                Description = "Souhrn výkonu operátorù pro výpoèet prémií: smìna, pøihlášení na stroji, hrubá a èistá produkce.",
                 DataSource = "BonusBase",
                 MaxRows = 10000,
                 NameKey = "MES06.Report.BonusBase.Name",
@@ -1624,7 +1617,7 @@ public partial class MesReportingView
                 new MesReportColumnDefinition
                 {
                     Property = "OrderCode",
-                    Header = "Zakï¿½zka",
+                    Header = "Zakázka",
                     Width = 100,
                     Format = "",
                     HeaderKey = "MES06.BonusBase.Column.Order"
@@ -1640,7 +1633,7 @@ public partial class MesReportingView
                 new MesReportColumnDefinition
                 {
                     Property = "SapNumber",
-                    Header = "SAP ï¿½ï¿½slo",
+                    Header = "SAP èíslo",
                     Width = 120,
                     Format = "",
                     HeaderKey = "MES06.BonusBase.Column.SapNumber"
@@ -1664,7 +1657,7 @@ public partial class MesReportingView
                 new MesReportColumnDefinition
                 {
                     Property = "ShiftCode",
-                    Header = "Smï¿½na",
+                    Header = "Smìna",
                     Width = 80,
                     Format = "",
                     HeaderKey = "MES06.BonusBase.Column.Shift"
@@ -1672,7 +1665,7 @@ public partial class MesReportingView
                 new MesReportColumnDefinition
                 {
                     Property = "OperatorName",
-                    Header = "Pracovnï¿½k",
+                    Header = "Pracovník",
                     Width = 180,
                     Format = "",
                     HeaderKey = "MES06.BonusBase.Column.Operator"
@@ -1680,7 +1673,7 @@ public partial class MesReportingView
                 new MesReportColumnDefinition
                 {
                     Property = "HumanCode",
-                    Header = "Osobnï¿½ ï¿½ï¿½slo",
+                    Header = "Osobní èíslo",
                     Width = 105,
                     Format = "",
                     HeaderKey = "MES06.BonusBase.Column.HumanCode"
@@ -1688,7 +1681,7 @@ public partial class MesReportingView
                 new MesReportColumnDefinition
                 {
                     Property = "LoginFrom",
-                    Header = "ï¿½as od",
+                    Header = "Èas od",
                     Width = 135,
                     Format = "dd.MM.yyyy HH:mm",
                     HeaderKey = "MES06.BonusBase.Column.From"
@@ -1696,7 +1689,7 @@ public partial class MesReportingView
                 new MesReportColumnDefinition
                 {
                     Property = "LoginTo",
-                    Header = "ï¿½as do",
+                    Header = "Èas do",
                     Width = 135,
                     Format = "dd.MM.yyyy HH:mm",
                     HeaderKey = "MES06.BonusBase.Column.To"
@@ -1704,7 +1697,7 @@ public partial class MesReportingView
                 new MesReportColumnDefinition
                 {
                     Property = "NetShiftDurationMinutes",
-                    Header = "ï¿½istï¿½ ï¿½as na stroji [min]",
+                    Header = "Èistý èas na stroji [min]",
                     Width = 160,
                     Format = "0.0",
                     HeaderKey = "MES06.BonusBase.Column.NetShiftDurationMinutes"
@@ -1712,7 +1705,7 @@ public partial class MesReportingView
                 new MesReportColumnDefinition
                 {
                     Property = "GrossProduction",
-                    Header = "StrojS hrubï¿½",
+                    Header = "StrojS hrubé",
                     Width = 120,
                     Format = "0.###",
                     HeaderKey = "MES06.BonusBase.Column.GrossProduction"
