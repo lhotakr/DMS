@@ -64,14 +64,6 @@ public partial class MesReportingView
         public string Alignment { get; set; } = "Left";
     }
 
-    private sealed class Mes06AlignmentChoice
-    {
-        public required string Code { get; init; }
-        public required string Text { get; init; }
-
-        public override string ToString() => Text;
-    }
-
     private sealed class Mes06EffectiveColumn
     {
         public required MesReportColumnDefinition Definition { get; init; }
@@ -116,10 +108,6 @@ public partial class MesReportingView
                     "MES06.ReportLayout.Tooltip",
                     "Výběr sloupců a nastavení reportu")
             };
-
-        button.SetResourceReference(
-            FrameworkElement.StyleProperty,
-            "DmsToolbarButtonStyle");
 
         button.Click +=
             BtnReportSettings_Click;
@@ -796,12 +784,7 @@ public partial class MesReportingView
             new Window
             {
                 Title =
-                    string.Format(
-                        CultureInfo.CurrentCulture,
-                        T(
-                            "MES06.ReportLayout.Title",
-                            "MES06 – Nastavení reportu: {0}"),
-                        definition.Name),
+                    $"MES06 – Nastavení reportu: {definition.Name}",
                 Width =
                     980,
                 Height =
@@ -817,13 +800,6 @@ public partial class MesReportingView
                         this)
             };
 
-        dialog.SetResourceReference(
-            Control.BackgroundProperty,
-            "DmsBackgroundBrush");
-        dialog.SetResourceReference(
-            Control.ForegroundProperty,
-            "DmsForegroundBrush");
-
         var root =
             new Grid
             {
@@ -831,10 +807,6 @@ public partial class MesReportingView
                     new Thickness(
                         14)
             };
-
-        root.SetResourceReference(
-            Panel.BackgroundProperty,
-            "DmsBackgroundBrush");
 
         root.RowDefinitions.Add(
             new RowDefinition
@@ -861,9 +833,7 @@ public partial class MesReportingView
             new TextBlock
             {
                 Text =
-                    T(
-                        "MES06.ReportLayout.Intro",
-                        "Sloupce jsou uložené pro vybraný report. Nastavení písma, zarovnání a okrajů níže je globální pro MES06."),
+                    "Sloupce jsou uložené pro vybraný report. Nastavení písma, zarovnání a okrajů níže je globální pro MES06.",
                 Margin =
                     new Thickness(
                         0,
@@ -893,32 +863,6 @@ public partial class MesReportingView
         root.Children.Add(
             tabs);
 
-        var alignmentChoices =
-            new[]
-            {
-                new Mes06AlignmentChoice
-                {
-                    Code = "Left",
-                    Text = T(
-                        "MES06.ReportLayout.Alignment.Left",
-                        "Vlevo")
-                },
-                new Mes06AlignmentChoice
-                {
-                    Code = "Center",
-                    Text = T(
-                        "MES06.ReportLayout.Alignment.Center",
-                        "Na střed")
-                },
-                new Mes06AlignmentChoice
-                {
-                    Code = "Right",
-                    Text = T(
-                        "MES06.ReportLayout.Alignment.Right",
-                        "Vpravo")
-                }
-            };
-
         var columnsGrid =
             new DataGrid
             {
@@ -940,14 +884,10 @@ public partial class MesReportingView
                         0)
             };
 
-        columnsGrid.SetResourceReference(
-            FrameworkElement.StyleProperty,
-            "DmsDataGridStyle");
-
         columnsGrid.Columns.Add(
             new DataGridCheckBoxColumn
             {
-                Header = T("MES06.ReportLayout.Column.Visible", "Zobrazit"),
+                Header = "Zobrazit",
                 Binding =
                     new Binding(
                         nameof(Mes06ColumnEditorItem.Visible))
@@ -956,7 +896,7 @@ public partial class MesReportingView
         columnsGrid.Columns.Add(
             new DataGridTextColumn
             {
-                Header = T("MES06.ReportLayout.Column.Order", "Pořadí"),
+                Header = "Pořadí",
                 Binding =
                     new Binding(
                         nameof(Mes06ColumnEditorItem.Order)),
@@ -967,7 +907,7 @@ public partial class MesReportingView
         columnsGrid.Columns.Add(
             new DataGridTextColumn
             {
-                Header = T("MES06.ReportLayout.Column.Name", "Sloupec"),
+                Header = "Sloupec",
                 Binding =
                     new Binding(
                         nameof(Mes06ColumnEditorItem.Header)),
@@ -982,7 +922,7 @@ public partial class MesReportingView
         columnsGrid.Columns.Add(
             new DataGridTextColumn
             {
-                Header = T("MES06.ReportLayout.Column.Width", "Šířka"),
+                Header = "Šířka",
                 Binding =
                     new Binding(
                         nameof(Mes06ColumnEditorItem.Width))
@@ -996,7 +936,7 @@ public partial class MesReportingView
         columnsGrid.Columns.Add(
             new DataGridTextColumn
             {
-                Header = T("MES06.ReportLayout.Column.FontSize", "Písmo"),
+                Header = "Písmo",
                 Binding =
                     new Binding(
                         nameof(Mes06ColumnEditorItem.FontSize))
@@ -1010,7 +950,7 @@ public partial class MesReportingView
         columnsGrid.Columns.Add(
             new DataGridCheckBoxColumn
             {
-                Header = T("MES06.ReportLayout.Column.Bold", "Tučně"),
+                Header = "Tučně",
                 Binding =
                     new Binding(
                         nameof(Mes06ColumnEditorItem.Bold))
@@ -1019,7 +959,7 @@ public partial class MesReportingView
         columnsGrid.Columns.Add(
             new DataGridCheckBoxColumn
             {
-                Header = T("MES06.ReportLayout.Column.Underline", "Podtržené"),
+                Header = "Podtržené",
                 Binding =
                     new Binding(
                         nameof(Mes06ColumnEditorItem.Underline))
@@ -1028,31 +968,26 @@ public partial class MesReportingView
         columnsGrid.Columns.Add(
             new DataGridComboBoxColumn
             {
-                Header = T("MES06.ReportLayout.Column.Alignment", "Zarovnání"),
+                Header = "Zarovnání",
                 ItemsSource =
-                    alignmentChoices,
-                DisplayMemberPath =
-                    nameof(Mes06AlignmentChoice.Text),
-                SelectedValuePath =
-                    nameof(Mes06AlignmentChoice.Code),
-                SelectedValueBinding =
-                    new Binding(
-                        nameof(Mes06ColumnEditorItem.Alignment))
+                    new[]
                     {
-                        Mode =
-                            BindingMode.TwoWay
+                        "Left",
+                        "Center",
+                        "Right"
                     },
+                SelectedItemBinding =
+                    new Binding(
+                        nameof(Mes06ColumnEditorItem.Alignment)),
                 Width =
-                    115
+                    105
             });
 
         tabs.Items.Add(
             new TabItem
             {
                 Header =
-                    T(
-                        "MES06.ReportLayout.Tab.Columns",
-                        "Sloupce"),
+                    "Sloupce",
                 Content =
                     columnsGrid
             });
@@ -1092,14 +1027,15 @@ public partial class MesReportingView
             new ComboBox
             {
                 Width =
-                    160,
+                    140,
                 ItemsSource =
-                    alignmentChoices,
-                DisplayMemberPath =
-                    nameof(Mes06AlignmentChoice.Text),
-                SelectedValuePath =
-                    nameof(Mes06AlignmentChoice.Code),
-                SelectedValue =
+                    new[]
+                    {
+                        "Left",
+                        "Center",
+                        "Right"
+                    },
+                SelectedItem =
                     NormalizeAlignment(
                         global.DefaultAlignment)
             };
@@ -1108,9 +1044,7 @@ public partial class MesReportingView
             new CheckBox
             {
                 Content =
-                    T(
-                        "MES06.ReportLayout.Setting.RepeatHeaders",
-                        "Opakovat záhlaví sloupců na každé tiskové stránce"),
+                    "Opakovat záhlaví sloupců na každé tiskové stránce",
                 IsChecked =
                     global.RepeatColumnHeaders,
                 Margin =
@@ -1131,35 +1065,35 @@ public partial class MesReportingView
 
         settingsPanel.Children.Add(
             CreateLayoutSettingRow(
-                T("MES06.ReportLayout.Setting.GridFontSize", "Velikost písma v tabulce"),
+                "Velikost písma v tabulce",
                 txtGridFont));
         settingsPanel.Children.Add(
             CreateLayoutSettingRow(
-                T("MES06.ReportLayout.Setting.PrintFontSize", "Velikost písma v tisku / PDF"),
+                "Velikost písma v tisku / PDF",
                 txtPrintFont));
         settingsPanel.Children.Add(
             CreateLayoutSettingRow(
-                T("MES06.ReportLayout.Setting.DefaultAlignment", "Výchozí zarovnání textu"),
+                "Výchozí zarovnání textu",
                 cmbAlignment));
         settingsPanel.Children.Add(
             CreateLayoutSettingRow(
-                T("MES06.ReportLayout.Setting.MarginLeft", "Okraj vlevo"),
+                "Okraj vlevo",
                 txtMarginLeft));
         settingsPanel.Children.Add(
             CreateLayoutSettingRow(
-                T("MES06.ReportLayout.Setting.MarginTop", "Okraj nahoře"),
+                "Okraj nahoře",
                 txtMarginTop));
         settingsPanel.Children.Add(
             CreateLayoutSettingRow(
-                T("MES06.ReportLayout.Setting.MarginRight", "Okraj vpravo"),
+                "Okraj vpravo",
                 txtMarginRight));
         settingsPanel.Children.Add(
             CreateLayoutSettingRow(
-                T("MES06.ReportLayout.Setting.MarginBottom", "Okraj dole"),
+                "Okraj dole",
                 txtMarginBottom));
         settingsPanel.Children.Add(
             CreateLayoutSettingRow(
-                T("MES06.ReportLayout.Setting.RowsPerPage", "Max. řádků na tiskovou stránku (0 = automaticky)"),
+                "Max. řádků na tiskovou stránku (0 = automaticky)",
                 txtRowsPerPage));
         settingsPanel.Children.Add(
             chkRepeatHeaders);
@@ -1168,9 +1102,7 @@ public partial class MesReportingView
             new TabItem
             {
                 Header =
-                    T(
-                        "MES06.ReportLayout.Tab.ReportPrint",
-                        "Report / tisk"),
+                    "Report / tisk",
                 Content =
                     new ScrollViewer
                     {
@@ -1200,9 +1132,7 @@ public partial class MesReportingView
             new Button
             {
                 Content =
-                    T(
-                        "MES06.ReportLayout.Button.Reset",
-                        "Výchozí"),
+                    "Výchozí",
                 MinWidth =
                     95,
                 Height =
@@ -1219,9 +1149,7 @@ public partial class MesReportingView
             new Button
             {
                 Content =
-                    T(
-                        "MES06.ReportLayout.Button.Cancel",
-                        "Zrušit"),
+                    "Zrušit",
                 MinWidth =
                     95,
                 Height =
@@ -1240,9 +1168,7 @@ public partial class MesReportingView
             new Button
             {
                 Content =
-                    T(
-                        "MES06.ReportLayout.Button.Save",
-                        "Uložit"),
+                    "Uložit",
                 MinWidth =
                     95,
                 Height =
@@ -1250,37 +1176,6 @@ public partial class MesReportingView
                 IsDefault =
                     true
             };
-
-        foreach (var textBox in
-                 new[]
-                 {
-                     txtGridFont,
-                     txtPrintFont,
-                     txtMarginLeft,
-                     txtMarginTop,
-                     txtMarginRight,
-                     txtMarginBottom,
-                     txtRowsPerPage
-                 })
-        {
-            textBox.SetResourceReference(
-                FrameworkElement.StyleProperty,
-                "DmsFormTextBoxStyle");
-        }
-
-        cmbAlignment.SetResourceReference(
-            FrameworkElement.StyleProperty,
-            "DmsSettingsComboBoxStyle");
-
-        btnReset.SetResourceReference(
-            FrameworkElement.StyleProperty,
-            "DmsFormButtonStyle");
-        btnCancel.SetResourceReference(
-            FrameworkElement.StyleProperty,
-            "DmsFormButtonStyle");
-        btnSave.SetResourceReference(
-            FrameworkElement.StyleProperty,
-            "DmsPrimaryButtonStyle");
 
         btnReset.Click +=
             (_, _) =>
@@ -1327,7 +1222,7 @@ public partial class MesReportingView
                     "30";
                 txtRowsPerPage.Text =
                     "30";
-                cmbAlignment.SelectedValue =
+                cmbAlignment.SelectedItem =
                     "Left";
                 chkRepeatHeaders.IsChecked =
                     true;
@@ -1349,9 +1244,7 @@ public partial class MesReportingView
                         item.Visible))
                 {
                     DmsMessage.Show(
-                        T(
-                            "MES06.ReportLayout.Validation.OneVisibleColumn",
-                            "Alespoň jeden sloupec musí zůstat viditelný."),
+                        "Alespoň jeden sloupec musí zůstat viditelný.",
                         "MES06",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
@@ -1414,7 +1307,7 @@ public partial class MesReportingView
                 updatedGlobal.DefaultAlignment =
                     NormalizeAlignment(
                         Convert.ToString(
-                            cmbAlignment.SelectedValue));
+                            cmbAlignment.SelectedItem));
                 updatedGlobal.RepeatColumnHeaders =
                     chkRepeatHeaders.IsChecked == true;
 
@@ -2503,8 +2396,7 @@ public partial class MesReportingView
             new Table
             {
                 CellSpacing =
-                    0
-            };
+                    0};
 
         var columnWidths =
             CalculateConfiguredPrintColumnWidths(

@@ -335,15 +335,9 @@ public partial class FrameworkDiagnosticsView : UserControl
             return;
         }
 
-        var moduleIdentifiers = modules
-            .SelectMany(module =>
-                new[]
-                {
-                    GetString(module, "Code", "code"),
-                    GetString(module, "Name", "name")
-                })
-            .Where(value => !string.IsNullOrWhiteSpace(value))
-            .Select(value => value.Trim())
+        var moduleCodes = modules
+            .Select(x => GetString(x, "Code", "code"))
+            .Where(x => !string.IsNullOrWhiteSpace(x))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var transactionCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -359,7 +353,7 @@ public partial class FrameworkDiagnosticsView : UserControl
                 duplicateTransactions.Add(code);
             }
 
-            if (!string.IsNullOrWhiteSpace(module) && !moduleIdentifiers.Contains(module))
+            if (!string.IsNullOrWhiteSpace(module) && !moduleCodes.Contains(module))
             {
                 missingModules.Add($"{code}->{module}");
             }
@@ -604,30 +598,6 @@ public partial class FrameworkDiagnosticsView : UserControl
 
             foreach (var property in element.EnumerateObject())
             {
-                if (string.Equals(
-                        property.Name,
-                        "ChildFields",
-                        StringComparison.OrdinalIgnoreCase)
-                    && property.Value.ValueKind == JsonValueKind.Array)
-                {
-                    var childFieldCodes =
-                        new HashSet<string>(
-                            StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var child in property.Value.EnumerateArray())
-                    {
-                        WalkChecklistElement(
-                            child,
-                            definitionCode,
-                            childFieldCodes,
-                            duplicateFieldCodes,
-                            catalogCodes,
-                            missingCatalogs);
-                    }
-
-                    continue;
-                }
-
                 WalkChecklistElement(
                     property.Value,
                     definitionCode,

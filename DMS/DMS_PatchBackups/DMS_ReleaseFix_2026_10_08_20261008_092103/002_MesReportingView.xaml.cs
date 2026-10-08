@@ -98,9 +98,6 @@ public partial class MesReportingView
                    translated,
                    key,
                    StringComparison.Ordinal)
-               || translated.StartsWith(
-                   "[[",
-                   StringComparison.Ordinal)
             ? fallback
             : translated;
     }
