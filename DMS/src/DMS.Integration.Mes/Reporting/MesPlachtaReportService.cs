@@ -1716,6 +1716,40 @@ public sealed class MesPlachtaReportRecord
     public decimal? OrderQuantity { get; init; }
     public string OperationCode { get; init; } = string.Empty;
     public string PlannedPerformance { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Compare only numeric shift plans with numeric net shift production.
+    /// Text or plans with units are intentionally not interpreted as quantities.
+    /// </summary>
+    public bool IsBelowPlannedPerformance
+    {
+        get
+        {
+            if (PrintedNet is not decimal printed
+                || string.IsNullOrWhiteSpace(PlannedPerformance))
+            {
+                return false;
+            }
+
+            var numericText = new string(
+                PlannedPerformance
+                    .Where(character => !char.IsWhiteSpace(character))
+                    .ToArray());
+
+            return (decimal.TryParse(
+                        numericText,
+                        NumberStyles.Number,
+                        CultureInfo.GetCultureInfo("cs-CZ"),
+                        out var planned)
+                    || decimal.TryParse(
+                        numericText,
+                        NumberStyles.Number,
+                        CultureInfo.InvariantCulture,
+                        out planned))
+                   && printed < planned;
+        }
+    }
+
     public string SetupMark { get; init; } = string.Empty;
     public string ReplacementMachineMark { get; init; } = string.Empty;
     public int? PersonnelCount { get; init; }

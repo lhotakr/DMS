@@ -208,25 +208,23 @@ public partial class MesReportingView
             var headers =
                 new[]
                 {
-                    T("MES06.BonusBase.Column.Order", "Zakázka"),
-                    T("MES06.BonusBase.Column.Product", "Artikl"),
-                    T("MES06.BonusBase.Column.SapNumber", "SAP číslo"),
-                    T("MES06.BonusBase.Column.Operation", "Operace"),
-                    T("MES06.BonusBase.Column.Workcenter", "Stroj"),
-                    T("MES06.BonusBase.Column.Shift", "Směna"),
-                    T("MES06.BonusBase.Column.Operator", "Pracovník"),
-                    T("MES06.BonusBase.Column.HumanCode", "Osobní číslo"),
-                    T("MES06.BonusBase.Column.From", "Čas od"),
-                    T("MES06.BonusBase.Column.To", "Čas do"),
-                    T("MES06.BonusBase.Column.NetShiftDurationHours", "Čistý čas na stroji [h]"),
-                    T("MES06.BonusBase.Column.PlannedShiftNorm", "Plánovaná norma / směna"),
-                    T("MES06.BonusBase.Column.AdjustedShiftNorm", "Přepočtená norma"),
-                    T("MES06.BonusBase.Column.GrossProduction", "Hrubá produkce"),
-                    T("MES06.BonusBase.Column.TotalScrap", "Celkový odpad"),
-                    T("MES06.BonusBase.Column.PrintedNet", "Natisknuto")
-
+                    ResolveCurrentReportColumnHeader("OrderCode", T("MES06.BonusBase.Column.Order", "Zakázka")),
+                    ResolveCurrentReportColumnHeader("ProductCode", T("MES06.BonusBase.Column.Product", "Artikl")),
+                    ResolveCurrentReportColumnHeader("SapNumber", T("MES06.BonusBase.Column.SapNumber", "SAP číslo")),
+                    ResolveCurrentReportColumnHeader("OperationCode", T("MES06.BonusBase.Column.Operation", "Operace")),
+                    ResolveCurrentReportColumnHeader("WorkcenterCode", T("MES06.BonusBase.Column.Workcenter", "Stroj")),
+                    ResolveCurrentReportColumnHeader("ShiftCode", T("MES06.BonusBase.Column.Shift", "Směna")),
+                    ResolveCurrentReportColumnHeader("OperatorName", T("MES06.BonusBase.Column.Operator", "Pracovník")),
+                    ResolveCurrentReportColumnHeader("HumanCode", T("MES06.BonusBase.Column.HumanCode", "Osobní číslo")),
+                    ResolveCurrentReportColumnHeader("LoginFrom", T("MES06.BonusBase.Column.From", "Čas od")),
+                    ResolveCurrentReportColumnHeader("LoginTo", T("MES06.BonusBase.Column.To", "Čas do")),
+                    ResolveCurrentReportColumnHeader("NetShiftDurationHours", T("MES06.BonusBase.Column.NetShiftDurationHours", "Čistý čas na stroji [h]")),
+                    ResolveCurrentReportColumnHeader("PlannedShiftNorm", T("MES06.BonusBase.Column.PlannedShiftNorm", "Plánovaná norma / směna")),
+                    ResolveCurrentReportColumnHeader("AdjustedShiftNorm", T("MES06.BonusBase.Column.AdjustedShiftNorm", "Přepočtená norma")),
+                    ResolveCurrentReportColumnHeader("GrossProduction", T("MES06.BonusBase.Column.GrossProduction", "Hrubá produkce")),
+                    ResolveCurrentReportColumnHeader("TotalScrap", T("MES06.BonusBase.Column.TotalScrap", "Celkový odpad")),
+                    ResolveCurrentReportColumnHeader("PrintedNet", T("MES06.BonusBase.Column.PrintedNet", "Natisknuto"))
                 };
-
             for (var column = 0;
                  column < headers.Length;
                  column++)

@@ -83,7 +83,8 @@ public partial class MesReportingView
 
     private void ApplyPlachtaExcelBands(
         IXLWorksheet worksheet,
-        MesReportDefinition definition)
+        MesReportDefinition definition,
+        int exportedColumnCount)
     {
         if (!IsPlachtaReport(
                 definition)
@@ -127,7 +128,7 @@ public partial class MesReportingView
                     excelRow,
                     1,
                     excelRow,
-                    definition.Columns.Count);
+                    exportedColumnCount);
 
             if (TryGetPlachtaBand(
                     row,

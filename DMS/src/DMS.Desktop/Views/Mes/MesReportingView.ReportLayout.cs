@@ -1,4 +1,5 @@
-﻿using DMS.Integration.Mes.Reporting.Definitions;
+﻿using DMS.Integration.Mes.Reporting;
+using DMS.Integration.Mes.Reporting.Definitions;
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -17,7 +18,7 @@ public partial class MesReportingView
 {
     private sealed class Mes06ReportLayoutDocument
     {
-        public int Version { get; set; } = 1;
+        public int Version { get; set; } = 2;
         public Mes06GlobalReportLayout Global { get; set; } = new();
         public Dictionary<string, Mes06ReportLayoutSettings> Reports { get; set; } = new();
     }
@@ -37,14 +38,20 @@ public partial class MesReportingView
 
     private sealed class Mes06ReportLayoutSettings
     {
+        public int DecimalPlaces { get; set; } = 1;
+        // null = not yet migrated from previous layout; empty = user disabled all.
+        public List<Mes06ConditionalRule>? Rules { get; set; }
         public Dictionary<string, Mes06ColumnLayoutSettings> Columns { get; set; } = new();
     }
 
     private sealed class Mes06ColumnLayoutSettings
     {
         public bool Visible { get; set; } = true;
+        public string CustomHeader { get; set; } = string.Empty;
         public int Order { get; set; }
         public double Width { get; set; } = 120d;
+        // MES06 per-column decimal precision v1; null keeps old report settings.
+        public int? DecimalPlaces { get; set; }
         public double FontSize { get; set; }
         public bool Bold { get; set; }
         public bool Underline { get; set; }
@@ -55,9 +62,11 @@ public partial class MesReportingView
     {
         public string Property { get; init; } = string.Empty;
         public string Header { get; init; } = string.Empty;
+        public string CustomHeader { get; set; } = string.Empty;
         public bool Visible { get; set; }
         public int Order { get; set; }
         public double Width { get; set; }
+        public int DecimalPlaces { get; set; } = 1;
         public double FontSize { get; set; }
         public bool Bold { get; set; }
         public bool Underline { get; set; }
@@ -218,6 +227,11 @@ public partial class MesReportingView
 
     private void NormalizeReportLayoutDocument()
     {
+        _mes06ReportLayoutDocument.Version =
+            Math.Max(
+                2,
+                _mes06ReportLayoutDocument.Version);
+
         _mes06ReportLayoutDocument.Global ??=
             new Mes06GlobalReportLayout();
 
@@ -230,6 +244,7 @@ public partial class MesReportingView
         foreach (var report in
                  _mes06ReportLayoutDocument.Reports.Values)
         {
+            report.DecimalPlaces = Math.Clamp(report.DecimalPlaces, 0, 6);
             report.Columns =
                 new Dictionary<string, Mes06ColumnLayoutSettings>(
                     report.Columns
@@ -416,6 +431,44 @@ public partial class MesReportingView
         return layout;
     }
 
+    private static string ResolveReportColumnHeader(
+        Mes06ColumnLayoutSettings layout,
+        string? defaultHeader)
+    {
+        var custom =
+            layout.CustomHeader?.Trim();
+
+        return string.IsNullOrWhiteSpace(
+                custom)
+            ? defaultHeader ?? string.Empty
+            : custom;
+    }
+
+    private string ResolveCurrentReportColumnHeader(
+        string property,
+        string defaultHeader)
+    {
+        if (CmbReport.SelectedItem
+            is not MesReportDefinition definition)
+        {
+            return defaultHeader;
+        }
+
+        var reportLayout =
+            GetReportLayout(
+                definition);
+
+        if (!reportLayout.Columns.TryGetValue(
+                property,
+                out var layout))
+        {
+            return defaultHeader;
+        }
+
+        return ResolveReportColumnHeader(
+            layout,
+            defaultHeader);
+    }
     private IReadOnlyList<Mes06EffectiveColumn> GetEffectiveReportColumns(
         MesReportDefinition definition)
     {
@@ -447,6 +500,29 @@ public partial class MesReportingView
                 definition.Columns.IndexOf(
                     item.Definition))
             .ToList();
+    }
+
+    private int ResolveColumnDecimalPlaces(
+        MesReportDefinition definition,
+        string property)
+    {
+        var report = GetReportLayout(definition);
+        var column = FindColumnLayout(definition, property);
+        return Math.Clamp(column?.DecimalPlaces ?? report.DecimalPlaces, 0, 6);
+    }
+
+    private string ResolveReportColumnFormat(
+        MesReportDefinition definition,
+        string property,
+        string? originalFormat)
+    {
+        // Integers, dates and text keep their original display formats.
+        var numeric = _currentRows.Take(64).Any(row =>
+            ReadPrintableValue(row, property) is decimal or double or float);
+
+        return numeric
+            ? $"N{ResolveColumnDecimalPlaces(definition, property)}"
+            : originalFormat ?? string.Empty;
     }
 
     private void BuildColumns(
@@ -484,11 +560,12 @@ public partial class MesReportingView
                         BindingMode.OneWay
                 };
 
-            if (!string.IsNullOrWhiteSpace(
-                    column.Format))
+            var columnFormat = ResolveReportColumnFormat(
+                definition, column.Property, column.Format);
+
+            if (!string.IsNullOrWhiteSpace(columnFormat))
             {
-                binding.StringFormat =
-                    column.Format;
+                binding.StringFormat = columnFormat;
             }
 
             if (IsPlachtaReport(
@@ -503,7 +580,9 @@ public partial class MesReportingView
                 new DataGridTextColumn
                 {
                     Header =
-                        column.Header,
+                        ResolveReportColumnHeader(
+                            layout,
+                            column.Header),
                     Binding =
                         binding,
                     Width =
@@ -517,7 +596,7 @@ public partial class MesReportingView
                             : Visibility.Collapsed,
                     ElementStyle =
                         CreateReportCellStyle(
-                            layout)
+                            layout, definition, column.Property)
                 });
         }
 
@@ -574,12 +653,30 @@ public partial class MesReportingView
                         40d,
                         layout.Width));
 
+            var definitionColumn =
+                definition.Columns.FirstOrDefault(column =>
+                    string.Equals(
+                        column.Property,
+                        item.Property,
+                        StringComparison.OrdinalIgnoreCase));
+
+            var defaultHeader =
+                definitionColumn?.Header
+                ?? Convert.ToString(
+                    item.Column.Header)
+                ?? item.Property;
+
+            item.Column.Header =
+                ResolveReportColumnHeader(
+                    layout,
+                    defaultHeader);
+
             if (item.Column
                 is DataGridTextColumn textColumn)
             {
                 textColumn.ElementStyle =
                     CreateReportCellStyle(
-                        layout);
+                        layout, definition, item.Property);
             }
         }
 
@@ -612,7 +709,9 @@ public partial class MesReportingView
     }
 
     private Style CreateReportCellStyle(
-        Mes06ColumnLayoutSettings layout)
+        Mes06ColumnLayoutSettings layout,
+        MesReportDefinition definition,
+        string property)
     {
         var global =
             _mes06ReportLayoutDocument.Global;
@@ -656,6 +755,8 @@ public partial class MesReportingView
             new Setter(
                 FrameworkElement.VerticalAlignmentProperty,
                 VerticalAlignment.Center));
+
+        AppendConfiguredConditionalFormatting(style, definition, property);
 
         return style;
     }
@@ -769,12 +870,16 @@ public partial class MesReportingView
                         descriptor.Key,
                     Header =
                         descriptor.Value.Header,
+                    CustomHeader =
+                        layout.CustomHeader,
                     Visible =
                         layout.Visible,
                     Order =
                         layout.Order,
                     Width =
                         layout.Width,
+                    DecimalPlaces =
+                        ResolveColumnDecimalPlaces(definition, descriptor.Key),
                     FontSize =
                         layout.FontSize > 0d
                             ? layout.FontSize
@@ -803,11 +908,11 @@ public partial class MesReportingView
                             "MES06 – Nastavení reportu: {0}"),
                         definition.Name),
                 Width =
-                    980,
+                    1180,
                 Height =
                     690,
                 MinWidth =
-                    800,
+                    980,
                 MinHeight =
                     560,
                 WindowStartupLocation =
@@ -863,7 +968,7 @@ public partial class MesReportingView
                 Text =
                     T(
                         "MES06.ReportLayout.Intro",
-                        "Sloupce jsou uložené pro vybraný report. Nastavení písma, zarovnání a okrajů níže je globální pro MES06."),
+                        "Sloupce a desetinná místa se ukládají pro vybraný report. Nastavení písma, zarovnání a okrajů je globální pro MES06."),
                 Margin =
                     new Thickness(
                         0,
@@ -967,12 +1072,29 @@ public partial class MesReportingView
         columnsGrid.Columns.Add(
             new DataGridTextColumn
             {
-                Header = T("MES06.ReportLayout.Column.Name", "Sloupec"),
+                Header = T("MES06.ReportLayout.Column.Name", "Výchozí název"),
                 Binding =
                     new Binding(
                         nameof(Mes06ColumnEditorItem.Header)),
                 IsReadOnly =
                     true,
+                Width =
+                    190
+            });
+
+        columnsGrid.Columns.Add(
+            new DataGridTextColumn
+            {
+                Header = T(
+                    "MES06.ReportLayout.Column.CustomName",
+                    "Vlastní název (prázdné = výchozí)"),
+                Binding =
+                    new Binding(
+                        nameof(Mes06ColumnEditorItem.CustomHeader))
+                    {
+                        Mode = BindingMode.TwoWay,
+                        UpdateSourceTrigger = UpdateSourceTrigger.LostFocus
+                    },
                 Width =
                     new DataGridLength(
                         1,
@@ -991,6 +1113,19 @@ public partial class MesReportingView
                     },
                 Width =
                     80
+            });
+
+        columnsGrid.Columns.Add(
+            new DataGridComboBoxColumn
+            {
+                Header = T("MES06.ReportLayout.Column.DecimalPlaces", "Decimal places"),
+                ItemsSource = Enumerable.Range(0, 7).ToArray(),
+                SelectedItemBinding = new Binding(
+                    nameof(Mes06ColumnEditorItem.DecimalPlaces))
+                {
+                    Mode = BindingMode.TwoWay
+                },
+                Width = 105
             });
 
         columnsGrid.Columns.Add(
@@ -1057,8 +1192,12 @@ public partial class MesReportingView
                     columnsGrid
             });
 
+        tabs.Items.Add(CreateMes06ConditionalFormattingTab(
+            definition, out var ruleEditorRows, out var ruleEditorGrid));
+
         var global =
             _mes06ReportLayoutDocument.Global;
+
 
         var txtGridFont =
             CreateLayoutTextBox(
@@ -1254,6 +1393,7 @@ public partial class MesReportingView
         foreach (var textBox in
                  new[]
                  {
+                     
                      txtGridFont,
                      txtPrintFont,
                      txtMarginLeft,
@@ -1297,12 +1437,15 @@ public partial class MesReportingView
 
                     item.Visible =
                         true;
+                    item.CustomHeader =
+                        string.Empty;
                     item.Order =
                         descriptor.Order;
                     item.Width =
                         Math.Max(
                             60d,
                             descriptor.Width);
+                    item.DecimalPlaces = 1;
                     item.FontSize =
                         12d;
                     item.Bold =
@@ -1312,6 +1455,11 @@ public partial class MesReportingView
                     item.Alignment =
                         "Left";
                 }
+
+                ruleEditorRows.Clear();
+                if (IsPlachtaReport(definition))
+                    ruleEditorRows.Add(new Mes06ConditionalRule());
+                ruleEditorGrid.Items.Refresh();
 
                 txtGridFont.Text =
                     "12";
@@ -1357,6 +1505,12 @@ public partial class MesReportingView
                         MessageBoxImage.Warning);
                     return;
                 }
+
+                if (!TrySaveMes06ConditionalRules(
+                        definition, ruleEditorRows, ruleEditorGrid))
+                    return;
+
+
 
                 var updatedGlobal =
                     _mes06ReportLayoutDocument.Global;
@@ -1430,6 +1584,9 @@ public partial class MesReportingView
 
                     layout.Visible =
                         item.Visible;
+                    layout.CustomHeader =
+                        item.CustomHeader?.Trim()
+                        ?? string.Empty;
                     layout.Order =
                         item.Order;
                     layout.Width =
@@ -1441,6 +1598,7 @@ public partial class MesReportingView
                             item.FontSize,
                             7d,
                             28d);
+                    layout.DecimalPlaces = Math.Clamp(item.DecimalPlaces, 0, 6);
                     layout.Bold =
                         item.Bold;
                     layout.Underline =
@@ -1461,7 +1619,7 @@ public partial class MesReportingView
                     "MES06",
                     "AUDIT",
                     _user,
-                    $"Report layout changed; Report={definition.Code}; VisibleColumns={editorItems.Count(item => item.Visible)}; RepeatHeaders={updatedGlobal.RepeatColumnHeaders}; RowsPerPage={updatedGlobal.RowsPerPrintPage}");
+                    $"Report layout changed; Report={definition.Code}; VisibleColumns={editorItems.Count(item => item.Visible)}; RenamedColumns={editorItems.Count(item => !string.IsNullOrWhiteSpace(item.CustomHeader))}; RepeatHeaders={updatedGlobal.RepeatColumnHeaders}; RowsPerPage={updatedGlobal.RowsPerPrintPage}");
 
                 dialog.DialogResult =
                     true;
@@ -2566,14 +2724,20 @@ public partial class MesReportingView
             foreach (var column in
                      columns)
             {
-                tableRow.Cells.Add(
-                    CreateConfiguredPrintCell(
-                        GetConfiguredPrintableCellText(
-                            column,
-                            row),
-                        column,
-                        definition,
-                        forceBold: false));
+                var cell = CreateConfiguredPrintCell(
+                    GetConfiguredPrintableCellText(column, row),
+                    column,
+                    definition,
+                    forceBold: false);
+
+                if (definition is not null)
+                {
+                    ApplyConfiguredConditionalPrintCell(
+                        cell, definition, row,
+                        ExtractGridColumnProperty(column));
+                }
+
+                tableRow.Cells.Add(cell);
             }
 
             rowGroup.Rows.Add(

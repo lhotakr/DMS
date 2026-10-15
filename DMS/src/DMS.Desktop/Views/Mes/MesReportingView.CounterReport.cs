@@ -1,4 +1,4 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using DMS.Integration.Mes.Reporting;
 using Microsoft.Win32;
 using System.Windows;
@@ -516,21 +516,20 @@ public partial class MesReportingView
             var headers =
                 new[]
                 {
-                    T("MES06.Counter.Column.Shift", "Shift"),
-                    T("MES06.Counter.Column.Timestamp", "Time"),
-                    T("MES06.Counter.Column.Workcenter", "Workcenter"),
-                    T("MES06.Counter.Column.Order", "Order"),
-                    T("MES06.Counter.Column.Operation", "Operation"),
-                    T("MES06.Counter.Column.Article", "Article"),
-                    T("MES06.Counter.Column.SapNumber", "SAP number"),
-                    T("MES06.Counter.Column.OrderQuantity", "Order quantity"),
-                    T("MES06.Counter.Column.Counter", "Counter"),
-                    T("MES06.Counter.Column.Kind", "Kind"),
-                    T("MES06.Counter.Column.Value", "Value"),
-                    T("MES06.Counter.Column.UserText", "User text"),
-                    T("MES06.Counter.Column.Operators", "Operators")
+                    ResolveCurrentReportColumnHeader("ShiftName", T("MES06.Counter.Column.Shift", "Shift")),
+                    ResolveCurrentReportColumnHeader("Timestamp", T("MES06.Counter.Column.Timestamp", "Time")),
+                    ResolveCurrentReportColumnHeader("WorkcenterCode", T("MES06.Counter.Column.Workcenter", "Workcenter")),
+                    ResolveCurrentReportColumnHeader("OrderCode", T("MES06.Counter.Column.Order", "Order")),
+                    ResolveCurrentReportColumnHeader("OperationCode", T("MES06.Counter.Column.Operation", "Operation")),
+                    ResolveCurrentReportColumnHeader("ProductCode", T("MES06.Counter.Column.Article", "Article")),
+                    ResolveCurrentReportColumnHeader("SapArticleNumber", T("MES06.Counter.Column.SapNumber", "SAP number")),
+                    ResolveCurrentReportColumnHeader("OrderQuantity", T("MES06.Counter.Column.OrderQuantity", "Order quantity")),
+                    ResolveCurrentReportColumnHeader("CounterName", T("MES06.Counter.Column.Counter", "Counter")),
+                    ResolveCurrentReportColumnHeader("CounterKind", T("MES06.Counter.Column.Kind", "Kind")),
+                    ResolveCurrentReportColumnHeader("Value", T("MES06.Counter.Column.Value", "Value")),
+                    ResolveCurrentReportColumnHeader("CustomText", T("MES06.Counter.Column.UserText", "User text")),
+                    ResolveCurrentReportColumnHeader("WorkersDisplay", T("MES06.Counter.Column.Operators", "Operators"))
                 };
-
             for (var column = 0;
                  column < headers.Length;
                  column++)

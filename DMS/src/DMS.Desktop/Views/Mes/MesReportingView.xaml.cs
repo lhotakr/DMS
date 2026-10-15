@@ -1500,16 +1500,50 @@ public partial class MesReportingView
                 workbook.Worksheets.Add(
                     "MES Report");
 
+
+            // MES06 Excel visible-column presets v2.
+            // Export the columns that are actually displayed in the grid,
+            // in their visual order (not the original definition order).
+            var excelColumns = GridReport.Columns
+                .OfType<DataGridTextColumn>()
+                .Where(column => column.Visibility == Visibility.Visible)
+                .OrderBy(column => column.DisplayIndex)
+                .Select(column => new
+                {
+                    Column = column,
+                    Property = ExtractGridColumnProperty(column),
+                    Header = Convert.ToString(column.Header) ?? string.Empty
+                })
+                .Where(column => !string.IsNullOrWhiteSpace(column.Property))
+                .ToList();
+
+            if (excelColumns.Count == 0)
+            {
+                DmsMessage.Show(
+                    T("MES06.ReportLayout.Validation.OneVisibleColumn",
+                        "At least one column must remain visible."),
+                    "MES06", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var exportColumns =
+                GetEffectiveReportColumns(
+                    definition);
+
             for (var columnIndex = 0;
-                 columnIndex < definition.Columns.Count;
+                 columnIndex < exportColumns.Count;
                  columnIndex++)
             {
+                var exportColumn =
+                    exportColumns[columnIndex];
+
                 worksheet.Cell(
                         1,
                         columnIndex + 1)
                     .Value =
-                    definition.Columns[columnIndex]
-                        .Header;
+                    ResolveReportColumnHeader(
+                        exportColumn.Layout,
+                        exportColumn.Definition.Header);
             }
 
             for (var rowIndex = 0;
@@ -1520,14 +1554,16 @@ public partial class MesReportingView
                     _currentRows[rowIndex];
 
                 for (var columnIndex = 0;
-                     columnIndex < definition.Columns.Count;
+                     columnIndex < exportColumns.Count;
                      columnIndex++)
                 {
+                    var exportColumn =
+                        exportColumns[columnIndex];
+
                     var value =
                         ReadProperty(
                             row,
-                            definition.Columns[columnIndex]
-                                .Property);
+                            exportColumn.Definition.Property);
 
                     SetExcelCellValue(
                         worksheet.Cell(
@@ -1536,14 +1572,123 @@ public partial class MesReportingView
                         value);
                 }
             }
-
             ApplyPlachtaExcelBands(
                 worksheet,
-                definition);
+                definition,
+                excelColumns.Count);
+
+            // Light vertical separators, also visible in printed spreadsheets.
+            var excelLastRow = _currentRows.Count + 1;
+            for (var columnNumber = 1;
+                 columnNumber < excelColumns.Count;
+                 columnNumber++)
+            {
+                var rightEdge = worksheet.Range(
+                    1, columnNumber, excelLastRow, columnNumber);
+                rightEdge.Style.Border.RightBorder = XLBorderStyleValues.Thin;
+                rightEdge.Style.Border.RightBorderColor = XLColor.FromHtml("#CDD2D8");
+            }
 
             worksheet
                 .ColumnsUsed()
                 .AdjustToContents();
+
+            // Match the report's stored width and typographic preferences.
+            // Excel widths are measured in characters rather than WPF pixels.
+            for (var columnIndex = 0;
+                 columnIndex < excelColumns.Count;
+                 columnIndex++)
+            {
+                var exported = excelColumns[columnIndex];
+                var layout = FindColumnLayout(definition, exported.Property);
+                var configuredPixels = layout?.Width ??
+                    (exported.Column.Width.IsAbsolute
+                        ? exported.Column.Width.Value
+                        : Math.Max(70d, exported.Column.ActualWidth));
+                worksheet.Column(columnIndex + 1).Width =
+                    Math.Clamp(configuredPixels / 7d, 6d, 65d);
+
+                var cells = worksheet.Range(
+                    2, columnIndex + 1,
+                    _currentRows.Count + 1, columnIndex + 1);
+                var alignment = string.IsNullOrWhiteSpace(layout?.Alignment)
+                    ? _mes06ReportLayoutDocument.Global.DefaultAlignment
+                    : layout.Alignment;
+                cells.Style.Alignment.Horizontal = alignment switch
+                {
+                    "Center" => XLAlignmentHorizontalValues.Center,
+                    "Right" => XLAlignmentHorizontalValues.Right,
+                    _ => XLAlignmentHorizontalValues.Left
+                };
+                cells.Style.Font.Bold = layout?.Bold == true;
+                cells.Style.Font.Italic = false;
+                if (layout?.Underline == true)
+                    cells.Style.Font.Underline = XLFontUnderlineValues.Single;
+                var fontSize = layout?.FontSize > 0d
+                    ? layout.FontSize : _mes06ReportLayoutDocument.Global.GridFontSize;
+                cells.Style.Font.FontSize = fontSize;
+            }
+
+            // Excel print defaults: one page wide, unlimited pages tall.
+            // Repeat headers on every printed page; do not shrink all rows
+            // to a single unreadable sheet of paper.
+            worksheet.PageSetup.PageOrientation = XLPageOrientation.Landscape;
+            worksheet.PageSetup.FitToPages(1, 0);
+            worksheet.PageSetup.SetRowsToRepeatAtTop(1, 1);
+            worksheet.PageSetup.PrintAreas.Add(
+                1, 1, _currentRows.Count + 1,
+                excelColumns.Count);
+
+            // MES06 Excel: PDF-style print header/footer and narrow margins.
+            // ClosedXML margin values are in inches (not millimetres).
+            var printSetup = worksheet.PageSetup;
+            printSetup.Margins.Left = 0.25d;
+            printSetup.Margins.Right = 0.25d;
+            printSetup.Margins.Top = 0.55d;
+            printSetup.Margins.Bottom = 0.45d;
+            printSetup.Margins.Header = 0.16d;
+            printSetup.Margins.Footer = 0.16d;
+            printSetup.AlignHFWithMargins = true;
+            // The data columns may be scaled, but the header/footer stays readable.
+            printSetup.ScaleHFWithDocument = false;
+
+            var excelTitle = $"{TxtTitle.Text} \u2013 {definition.Name}";
+            var excelFilterSummary = BuildPrintFilterSummary();
+
+            // An extremely long machine filter would otherwise overflow the
+            // printed sheet. The full filters remain accessible in MES06.
+            const int maxExcelFilterLength = 175;
+            if (excelFilterSummary.Length > maxExcelFilterLength)
+            {
+                excelFilterSummary =
+                    excelFilterSummary[..(maxExcelFilterLength - 3)] + "...";
+            }
+
+            printSetup.Header.Center
+                .AddText(excelTitle, XLHFOccurrence.AllPages)
+                .SetBold()
+                .SetFontSize(10d);
+            if (!string.IsNullOrWhiteSpace(excelFilterSummary))
+            {
+                printSetup.Header.Center
+                    .AddText("\n" + excelFilterSummary, XLHFOccurrence.AllPages)
+                    .SetFontSize(7d);
+            }
+
+            printSetup.Footer.Left.AddText(
+                string.Format(
+                    T("MES06.Print.Generated", "Generated {0} by {1}"),
+                    DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"),
+                    _user),
+                XLHFOccurrence.AllPages).SetFontSize(7d);
+            printSetup.Footer.Right.AddText(
+                XLHFPredefinedText.PageNumber, XLHFOccurrence.AllPages);
+            printSetup.Footer.Right.AddText(
+                " / ", XLHFOccurrence.AllPages);
+            printSetup.Footer.Right.AddText(
+                XLHFPredefinedText.NumberOfPages, XLHFOccurrence.AllPages);
+
+            worksheet.SheetView.FreezeRows(1);
 
             workbook.SaveAs(
                 dialog.FileName);

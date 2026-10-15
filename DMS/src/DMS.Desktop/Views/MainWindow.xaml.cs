@@ -2802,8 +2802,8 @@ public partial class MainWindow : Window
         StatusSap.Content = T("Status.SapTestDisconnected");
         ApplyMesDatabaseStatusText();
         StatusSso.Content = T("Status.SsoWindowsLogin");
-        StatusVersion.Content = T("Status.Version", "1.2.0");
-        StatusDate.Content = T("Status.Date", "23.09.2026");
+        StatusVersion.Content = T("Status.Version", "1.3.0");
+        StatusDate.Content = T("Status.Date", "08.10.2026");
 
         TxtWelcomeTitle.Text = T("Welcome.Title");
         TxtWelcomeSubtitle.Text = T("Welcome.Subtitle");

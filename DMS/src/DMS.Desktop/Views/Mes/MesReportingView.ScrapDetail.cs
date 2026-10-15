@@ -1,4 +1,4 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using DMS.Desktop.UI;
 using DMS.Integration.Mes.Reporting;
 using DMS.Integration.Mes.Reporting.Definitions;
@@ -673,20 +673,19 @@ public partial class MesReportingView
             var headers =
                 new[]
                 {
-                    "Point in time",
-                    "Work center",
-                    "Item",
-                    "Item designation",
-                    "Order",
-                    "Item group",
-                    "Personnel",
-                    "Counter",
-                    "Amount",
-                    "Unit",
-                    "Percental",
-                    "User text"
+                    ResolveCurrentReportColumnHeader("PointInTimeText", "Point in time"),
+                    ResolveCurrentReportColumnHeader("WorkcenterCode", "Work center"),
+                    ResolveCurrentReportColumnHeader("Item", "Item"),
+                    ResolveCurrentReportColumnHeader("ItemDesignation", "Item designation"),
+                    ResolveCurrentReportColumnHeader("OrderCode", "Order"),
+                    ResolveCurrentReportColumnHeader("ItemGroup", "Item group"),
+                    ResolveCurrentReportColumnHeader("Personnel", "Personnel"),
+                    ResolveCurrentReportColumnHeader("CounterName", "Counter"),
+                    ResolveCurrentReportColumnHeader("Amount", "Amount"),
+                    ResolveCurrentReportColumnHeader("Unit", "Unit"),
+                    ResolveCurrentReportColumnHeader("Percental", "Percental"),
+                    ResolveCurrentReportColumnHeader("UserText", "User text")
                 };
-
             for (var column = 0;
                  column < headers.Length;
                  column++)
