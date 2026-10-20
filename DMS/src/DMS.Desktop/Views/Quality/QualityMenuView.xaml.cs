@@ -7,26 +7,62 @@ public partial class QualityMenuView : UserControl
 {
     private readonly Action<string> _executeTransaction;
     private readonly Func<string, (bool Allowed, string Reason)> _authorization;
+    private readonly Func<string, string> _translate;
 
     private static readonly MenuRow[] Rows =
     {
-        new(new MenuItem("QA01", "Založení artiklu"), new MenuItem("QA02", "Úprava artiklu"), new MenuItem("QA03", "Náhled artiklu")),
-        new(new MenuItem("QA05", "Přehled artiklů"), new MenuItem("QATASK", "Přehled úkolů")),
-        new(new MenuItem("QO01", "Založení zakázky"), new MenuItem("QO02", "Změna zakázky"), new MenuItem("QO03", "Náhled zakázky")),
-        new(new MenuItem("QO05", "Přehled zakázek"), new MenuItem("QO06", "Uvolnění / blokace zakázek")),
-        new(new MenuItem("QA00", "Import z PowerApps"), new MenuItem("QASET", "Nastavení modulu"))
+        new(new MenuItem("QA01", "Create article"), new MenuItem("QA02", "Edit article"), new MenuItem("QA03", "Article preview")),
+        new(new MenuItem("QA05", "Article overview"), new MenuItem("QATASK", "Task overview")),
+        new(new MenuItem("QO01", "Create order"), new MenuItem("QO02", "Edit order"), new MenuItem("QO03", "Order preview")),
+        new(new MenuItem("QO05", "Order overview"), new MenuItem("QO06", "Release / block orders")),
+        new(new MenuItem("QA00", "Import from PowerApps"), new MenuItem("QASET", "Module settings"))
     };
 
     public QualityMenuView(
         Action<string> executeTransaction,
-        Func<string, (bool Allowed, string Reason)> authorization)
+        Func<string, (bool Allowed, string Reason)> authorization,
+        Func<string, string> translate)
     {
         InitializeComponent();
         _executeTransaction = executeTransaction;
         _authorization = authorization;
+        _translate = translate ?? throw new ArgumentNullException(nameof(translate));
+        ApplyLocalization();
         BuildMenu();
     }
 
+    private string TOr(
+        string key,
+        string fallback)
+    {
+        var value = _translate(key);
+
+        return string.IsNullOrWhiteSpace(value)
+               || string.Equals(value, key, StringComparison.Ordinal)
+               || value.StartsWith("[[", StringComparison.Ordinal)
+            ? fallback
+            : value;
+    }
+
+    private void ApplyLocalization()
+    {
+        TxtMenuTitle.Text =
+            TOr(
+                "QAMENU.Title",
+                "Quality module – main menu");
+
+        TxtDisabledHint.Text =
+            TOr(
+                "QAMENU.DisabledHint",
+                "A disabled button means the transaction is unavailable or the user is not authorized to run it.");
+    }
+
+    private string GetTransactionTitle(MenuItem item)
+    {
+        return TOr(
+            $"Transaction.{item.Code}.Name",
+            item.FallbackTitle);
+    }
     private void BuildMenu()
     {
         MenuRows.Children.Clear();
@@ -42,13 +78,15 @@ public partial class QualityMenuView : UserControl
                 var authorization = _authorization(item.Code);
                 var button = new Button
                 {
-                    Content = $"{item.Code} – {item.Title}",
+                    Content = $"{item.Code} – {GetTransactionTitle(item)}",
                     Tag = item.Code,
                     MinHeight = 68,
                     Margin = new Thickness(i == 0 ? 0 : 5, 0, i == row.Items.Length - 1 ? 0 : 5, 0),
                     IsEnabled = authorization.Allowed,
                     Opacity = authorization.Allowed ? 1.0 : 0.48,
-                    ToolTip = authorization.Allowed ? $"Spustit {item.Code}" : authorization.Reason,
+                    ToolTip = authorization.Allowed
+                        ? string.Format(TOr("QAMENU.RunTransaction", "Run {0}"), item.Code)
+                        : authorization.Reason,
                     FontSize = 16,
                     FontWeight = FontWeights.SemiBold
                 };
@@ -61,6 +99,6 @@ public partial class QualityMenuView : UserControl
         }
     }
 
-    private sealed record MenuItem(string Code, string Title);
+    private sealed record MenuItem(string Code, string FallbackTitle);
     private sealed record MenuRow(params MenuItem[] Items);
 }

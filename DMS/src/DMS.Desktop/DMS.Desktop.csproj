@@ -14,6 +14,7 @@
     <InformationalVersion>1.0.0</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <DmsBuildDate>$([System.DateTime]::Now.ToString('dd.MM.yy'))</DmsBuildDate>
+
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="20261019-141025 HEINZ-GLAS Decor s.r.o.pfx" />
     <None Remove="Assets\DMS_SystemIcon.ico" />
     <None Remove="Assets\LogoHG.jpg" />
   </ItemGroup>
@@ -39,6 +41,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
 
   <ItemGroup>
     <ProjectReference Include="..\DMS.Core\DMS.Core.csproj" />
@@ -72,4 +75,7 @@
   <ItemGroup>
     <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.5" />
   </ItemGroup>
+
+
+
 </Project>

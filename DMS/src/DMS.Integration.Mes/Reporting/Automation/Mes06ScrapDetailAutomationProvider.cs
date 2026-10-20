@@ -1,4 +1,5 @@
-using DMS.Integration.Mes.Database;
+﻿using DMS.Integration.Mes.Database;
+using DMS.Integration.Mes.Reporting.Models;
 using System;
 using System.Linq;
 using System.Threading;
@@ -59,8 +60,13 @@ public sealed class Mes06ScrapDetailAutomationProvider
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        // Keep scheduler output aligned with the interactive SCRAP_DETAIL
+        // definition. MesId and raw PointInTime are internal/helper values;
+        // PointInTimeText is the user-facing report column.
         return Mes06AutomationProjection.FromObjects(
             request.ReportCode,
-            rows);
+            rows,
+            nameof(Mes06ScrapDetailRecord.MesId),
+            nameof(Mes06ScrapDetailRecord.PointInTime));
     }
 }

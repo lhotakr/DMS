@@ -22,8 +22,12 @@ public partial class MesReportingView
     private const string ScrapDetailReportCode =
         "SCRAP_DETAIL";
 
-    private const int ScrapDetailMaxRows =
-        100000;
+    // Interactive safety cap. Full long-range exports belong in Scheduler.
+    private const int ScrapDetailInteractiveMaxRows =
+        25000;
+
+    private const int ScrapDetailBroadRangeDays =
+        31;
 
     private readonly HashSet<string> _scrapSelectedCounters =
         new(
@@ -41,6 +45,7 @@ public partial class MesReportingView
     private Expander? _scrapCounterExpander;
     private TextBlock? _scrapCounterSummary;
     private bool _scrapUiInitialized;
+    private bool _scrapDetailWasTruncated;
 
     protected override void OnInitialized(
         EventArgs e)
@@ -168,7 +173,7 @@ public partial class MesReportingView
                 DescriptionKey =
                     "MES06.Report.ScrapDetail.Description",
                 DataSource = "ScrapDetail",
-                MaxRows = ScrapDetailMaxRows,
+                MaxRows = ScrapDetailInteractiveMaxRows,
                 Columns =
                 {
                     Column("PointInTimeText", "Point in time", 135),
@@ -521,6 +526,68 @@ public partial class MesReportingView
             }
         }
 
+        var interactiveLimit =
+            Math.Min(
+                ScrapDetailInteractiveMaxRows,
+                Math.Max(
+                    1000,
+                    definition!.MaxRows > 0
+                        ? definition.MaxRows
+                        : ScrapDetailInteractiveMaxRows));
+
+        var rangeDays =
+            Math.Max(
+                1,
+                (int)Math.Ceiling(
+                    (to - from).TotalDays));
+
+        var isBroadRequest =
+            rangeDays > ScrapDetailBroadRangeDays
+            || (_scrapSelectedCounters.Count == 0
+                && rangeDays > 7)
+            || (workcenters.Count > 8
+                && rangeDays > 14);
+
+        if (isBroadRequest)
+        {
+            var counterDescription =
+                _scrapSelectedCounters.Count == 0
+                    ? T(
+                        "MES06.ScrapDetail.Guard.AllCounters",
+                        "all counters")
+                    : string.Format(
+                        T(
+                            "MES06.ScrapDetail.Guard.SelectedCounters",
+                            "{0} selected counters"),
+                        _scrapSelectedCounters.Count);
+
+            var continueLoad =
+                DmsMessage.Confirm(
+                    T(
+                        "MES06.ScrapDetail.Guard.Title",
+                        "Large scrap report"),
+                    string.Format(
+                        T(
+                            "MES06.ScrapDetail.Guard.BroadWarning",
+                            "The request is very broad: {0} days, {1} work centers, {2}. To protect the application, interactive MES06 will load at most {3:N0} rows. Use Scheduler for a complete long-range export or narrow the filters. Continue?"),
+                        rangeDays,
+                        workcenters.Count,
+                        counterDescription,
+                        interactiveLimit),
+                    Window.GetWindow(
+                        this));
+
+            if (!continueLoad)
+            {
+                TxtStatus.Text =
+                    "SCRAP_DETAIL loading cancelled.";
+                return;
+            }
+        }
+
+        _scrapDetailWasTruncated =
+            false;
+
         BtnLoad.IsEnabled = false;
         TxtStatus.Text =
             "Načítám roční report odpadů...";
@@ -543,12 +610,23 @@ public partial class MesReportingView
                     TxtProduct.Text?.Trim()
                     ?? string.Empty,
                     _scrapSelectedCounters.ToList(),
-                    ScrapDetailMaxRows);
+                    interactiveLimit + 1);
 
             _mes06CounterReportMode = false;
 
+            _scrapDetailWasTruncated =
+                rows.Count > interactiveLimit;
+
+            var visibleRows =
+                _scrapDetailWasTruncated
+                    ? rows
+                        .Take(
+                            interactiveLimit)
+                        .ToList()
+                    : rows.ToList();
+
             _currentRows =
-                rows
+                visibleRows
                     .Cast<object>()
                     .ToList();
 
@@ -566,13 +644,35 @@ public partial class MesReportingView
             UpdateKpis();
 
             TxtStatus.Text =
-                $"Načteno {_currentRows.Count:N0} řádků.";
+                _scrapDetailWasTruncated
+                    ? string.Format(
+                        T(
+                            "MES06.ScrapDetail.Guard.TruncatedStatus",
+                            "Loaded {0:N0} rows – safety limit {1:N0} reached; the result is truncated."),
+                        _currentRows.Count,
+                        interactiveLimit)
+                    : $"Načteno {_currentRows.Count:N0} řádků.";
 
             _logger.AdminAction(
                 "MES06",
                 "LoadScrapDetailReport",
                 _user,
-                $"From={from:O}; To={to:O}; Workcenters={GetSelectedWorkcenterAuditText()}; Counters={(_scrapSelectedCounters.Count == 0 ? "ALL" : string.Join(",", _scrapSelectedCounters))}; Rows={_currentRows.Count}");
+                $"From={from:O}; To={to:O}; Workcenters={GetSelectedWorkcenterAuditText()}; Counters={(_scrapSelectedCounters.Count == 0 ? "ALL" : string.Join(",", _scrapSelectedCounters))}; Rows={_currentRows.Count}; Truncated={_scrapDetailWasTruncated}; InteractiveLimit={interactiveLimit}");
+
+            if (_scrapDetailWasTruncated)
+            {
+                DmsMessage.Show(
+                    string.Format(
+                        T(
+                            "MES06.ScrapDetail.Guard.TruncatedMessage",
+                            "The report contains more data than is safe to display interactively. DMS displayed at most {0:N0} rows. Narrow the period / work centers / counters, or use Scheduler for a complete export."),
+                        interactiveLimit),
+                    T(
+                        "MES06.ScrapDetail.Guard.Title",
+                        "Large scrap report"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
         catch (Exception ex)
         {
@@ -644,6 +744,27 @@ public partial class MesReportingView
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
+        }
+
+        if (_scrapDetailWasTruncated)
+        {
+            var continueExport =
+                DmsMessage.Confirm(
+                    T(
+                        "MES06.ScrapDetail.Guard.Title",
+                        "Large scrap report"),
+                    string.Format(
+                        T(
+                            "MES06.ScrapDetail.Guard.ExportTruncated",
+                            "The current SCRAP_DETAIL result is truncated by the safety limit. Excel will contain only the currently loaded {0:N0} rows. Use Scheduler for a complete export. Continue with this limited export?"),
+                        rows.Count),
+                    Window.GetWindow(
+                        this));
+
+            if (!continueExport)
+            {
+                return;
+            }
         }
 
         var dialog =

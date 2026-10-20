@@ -1,4 +1,4 @@
-using DMS.Core.Transactions;
+﻿using DMS.Core.Transactions;
 using DMS.Desktop.Help;
 using DMS.Desktop.Views.Help;
 using System.IO;
@@ -67,6 +67,7 @@ public partial class MainWindow
                 catalog,
                 executeTransaction: ExecuteTransaction,
                 openDocumentation: OpenFullDocumentationFromHelpWindow,
+                translate: key => T(key),
                 showTechnicalInfo: _userSettings.DocumentationTechnicalInfoEnabled)
             {
                 Owner = this,

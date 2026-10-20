@@ -1073,6 +1073,8 @@ public partial class MesReportingView
             ExportFlowDocumentToPdf(
                 document,
                 dialog.FileName);
+            // MES06 memory optimization v1.1: release PDF document object graph.
+            document.Blocks.Clear();
 
             _logger.AdminAction(
                 "MES06",
@@ -1224,6 +1226,15 @@ public partial class MesReportingView
                 $"Rows={_currentRows.Count}; Preset={_activePresetName}");
 
             window.ShowDialog();
+            // MES06 memory optimization v1.1:
+            // FlowDocumentPageViewer retains page visuals while Document is attached.
+            viewer.Document =
+                null;
+
+            window.Content =
+                null;
+
+            document.Blocks.Clear();
         }
         catch (Exception ex)
         {
@@ -1542,28 +1553,7 @@ public partial class MesReportingView
             paginator.ComputePageCount();
         }
 
-        var pages =
-            new List<Mes06PdfPageImage>();
-
-        for (var pageIndex = 0;
-             pageIndex < paginator.PageCount;
-             pageIndex++)
-        {
-            var page =
-                paginator.GetPage(
-                    pageIndex);
-
-            if (page == DocumentPage.Missing)
-            {
-                continue;
-            }
-
-            pages.Add(
-                RenderDocumentPageForPdf(
-                    page));
-        }
-
-        if (pages.Count == 0)
+        if (paginator.PageCount <= 0)
         {
             throw new InvalidOperationException(
                 T(
@@ -1571,11 +1561,193 @@ public partial class MesReportingView
                     "The report did not generate any PDF pages."));
         }
 
-        WriteImagePdf(
+        WriteFlowDocumentPdf(
             filePath,
-            pages);
+            paginator);
     }
 
+    private static void WriteFlowDocumentPdf(
+        string filePath,
+        DocumentPaginator paginator)
+    {
+        // Render and write one page at a time. The old implementation kept
+        // every JPEG page byte array alive until the entire report was rendered.
+        var pageCount =
+            paginator.PageCount;
+
+        var objectCount =
+            2
+            + pageCount * 3;
+
+        var offsets =
+            new long[
+                objectCount
+                + 1];
+
+        using var stream =
+            new FileStream(
+                filePath,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None);
+
+        WritePdfAscii(
+            stream,
+            "%PDF-1.4\n");
+
+        stream.Write(
+            new byte[]
+            {
+                0x25,
+                0xE2,
+                0xE3,
+                0xCF,
+                0xD3,
+                0x0A
+            });
+
+        offsets[1] =
+            stream.Position;
+
+        WritePdfObject(
+            stream,
+            1,
+            "<< /Type /Catalog /Pages 2 0 R >>");
+
+        offsets[2] =
+            stream.Position;
+
+        var kids =
+            string.Join(
+                " ",
+                Enumerable.Range(
+                        0,
+                        pageCount)
+                    .Select(index =>
+                        $"{3 + index * 3} 0 R"));
+
+        WritePdfObject(
+            stream,
+            2,
+            $"<< /Type /Pages /Count {pageCount} /Kids [{kids}] >>");
+
+        for (var index = 0;
+             index < pageCount;
+             index++)
+        {
+            var documentPage =
+                paginator.GetPage(
+                    index);
+
+            if (documentPage ==
+                DocumentPage.Missing)
+            {
+                throw new InvalidOperationException(
+                    $"MES06 PDF page {index + 1} could not be rendered.");
+            }
+
+            var page =
+                RenderDocumentPageForPdf(
+                    documentPage);
+
+            var pageObject =
+                3
+                + index * 3;
+
+            var contentObject =
+                pageObject
+                + 1;
+
+            var imageObject =
+                pageObject
+                + 2;
+
+            var widthPoints =
+                page.WidthPoints.ToString(
+                    "0.###",
+                    CultureInfo.InvariantCulture);
+
+            var heightPoints =
+                page.HeightPoints.ToString(
+                    "0.###",
+                    CultureInfo.InvariantCulture);
+
+            offsets[pageObject] =
+                stream.Position;
+
+            WritePdfObject(
+                stream,
+                pageObject,
+                $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {widthPoints} {heightPoints}] /Resources << /XObject << /Im0 {imageObject} 0 R >> >> /Contents {contentObject} 0 R >>");
+
+            var content =
+                $"q\n{widthPoints} 0 0 {heightPoints} 0 0 cm\n/Im0 Do\nQ\n";
+
+            var contentBytes =
+                Encoding.ASCII.GetBytes(
+                    content);
+
+            offsets[contentObject] =
+                stream.Position;
+
+            WritePdfAscii(
+                stream,
+                $"{contentObject} 0 obj\n<< /Length {contentBytes.Length} >>\nstream\n");
+
+            stream.Write(
+                contentBytes,
+                0,
+                contentBytes.Length);
+
+            WritePdfAscii(
+                stream,
+                "endstream\nendobj\n");
+
+            offsets[imageObject] =
+                stream.Position;
+
+            WritePdfAscii(
+                stream,
+                $"{imageObject} 0 obj\n<< /Type /XObject /Subtype /Image /Width {page.PixelWidth} /Height {page.PixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length {page.JpegBytes.Length} >>\nstream\n");
+
+            stream.Write(
+                page.JpegBytes,
+                0,
+                page.JpegBytes.Length);
+
+            WritePdfAscii(
+                stream,
+                "\nendstream\nendobj\n");
+        }
+
+        var xrefOffset =
+            stream.Position;
+
+        WritePdfAscii(
+            stream,
+            $"xref\n0 {objectCount + 1}\n");
+
+        WritePdfAscii(
+            stream,
+            "0000000000 65535 f \n");
+
+        for (var objectNumber = 1;
+             objectNumber <= objectCount;
+             objectNumber++)
+        {
+            WritePdfAscii(
+                stream,
+                offsets[objectNumber]
+                    .ToString(
+                        "D10",
+                        CultureInfo.InvariantCulture)
+                + " 00000 n \n");
+        }
+
+        WritePdfAscii(
+            stream,
+            $"trailer\n<< /Size {objectCount + 1} /Root 1 0 R >>\nstartxref\n{xrefOffset}\n%%EOF\n");
+    }
     private static Mes06PdfPageImage RenderDocumentPageForPdf(
         DocumentPage page)
     {
@@ -1583,7 +1755,7 @@ public partial class MesReportingView
             96d;
 
         const double pdfRenderDpi =
-            180d;
+            144d;
 
         var pageSize =
             page.Size;
@@ -1656,7 +1828,7 @@ public partial class MesReportingView
             new JpegBitmapEncoder
             {
                 QualityLevel =
-                    94
+                    90
             };
 
         encoder.Frames.Add(

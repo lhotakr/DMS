@@ -1967,6 +1967,8 @@ public partial class MesReportingView
             printDialog.PrintDocument(
                 paginator,
                 $"MES06 - {printReportName}");
+            // MES06 memory optimization v1.1: release direct-print document.
+            document.Blocks.Clear();
 
             _logger.AdminAction(
                 "MES06",

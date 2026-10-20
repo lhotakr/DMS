@@ -1,4 +1,4 @@
-<Window x:Class="DMS.Desktop.Views.Help.HelpWindow"
+﻿<Window x:Class="DMS.Desktop.Views.Help.HelpWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="DMS Help"
@@ -19,7 +19,7 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
             <TextBlock x:Name="TxtWindowTitle"
-                       Text="Nápověda DMS"
+                       Text="DMS Help"
                        FontSize="22"
                        FontWeight="Bold"
                        Foreground="{DynamicResource DmsForegroundBrush}"/>

@@ -13,7 +13,8 @@ public partial class MainWindow
             {
                 var allowed = UserCanExecuteTransaction(code, out var message);
                 return (allowed, allowed ? string.Empty : message);
-            }));
+            },
+            key => T(key)));
         ResetWorkspaceScroll();
     }
 }

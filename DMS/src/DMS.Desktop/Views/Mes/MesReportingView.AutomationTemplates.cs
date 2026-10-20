@@ -1,4 +1,5 @@
-using DMS.Core.Scheduling;
+﻿using DMS.Core.Scheduling;
+using System.Collections.Generic;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -143,6 +144,21 @@ public partial class MesReportingView
             template.Operation =
                 current.Operation;
 
+            // Scheduler cannot see this user's LocalAppData MES06 layout.
+            // Publish the current layout together with the automation preset.
+            template.Columns =
+                CaptureScheduledColumnLayout(
+                    definition);
+
+            template.Rules =
+                CaptureScheduledConditionalRules(
+                    definition);
+
+            file.Version =
+                Math.Max(
+                    file.Version,
+                    2);
+
             template.UpdatedAtUtc =
                 DateTime.UtcNow;
 
@@ -164,7 +180,7 @@ public partial class MesReportingView
                     ? "AUDIT_CREATE"
                     : "AUDIT",
                 _user,
-                $"AutomationTemplateId={template.Id}; Name={template.Name}; Report={template.ReportCode}");
+                $"AutomationTemplateId={template.Id}; Name={template.Name}; Report={template.ReportCode}; LayoutColumns={template.Columns.Count}; ConditionalRules={template.Rules.Count}");
 
             TxtStatus.Text =
                 string.Format(
@@ -184,5 +200,97 @@ public partial class MesReportingView
                     "MES06.Automation.PublishFailed",
                     "Automation template could not be saved.");
         }
+    }
+    private List<ScheduledReportConditionalRule> CaptureScheduledConditionalRules(
+        DMS.Integration.Mes.Reporting.Definitions.MesReportDefinition? definition)
+    {
+        if (definition is null)
+        {
+            return new List<ScheduledReportConditionalRule>();
+        }
+
+        return GetMes06ConditionalRules(
+                definition)
+            .Select(rule =>
+                new ScheduledReportConditionalRule
+                {
+                    Enabled = rule.Enabled,
+                    TargetProperty = rule.TargetProperty,
+                    ComparisonMode = rule.ComparisonMode,
+                    ComparisonProperty = rule.ComparisonProperty,
+                    ComparisonValue = rule.ComparisonValue,
+                    Operator = rule.Operator,
+                    Foreground = rule.Foreground,
+                    Background = rule.Background,
+                    Bold = rule.Bold,
+                    Underline = rule.Underline,
+                    Italic = rule.Italic
+                })
+            .ToList();
+    }
+    private List<ScheduledReportColumnLayout> CaptureScheduledColumnLayout(
+        DMS.Integration.Mes.Reporting.Definitions.MesReportDefinition? definition)
+    {
+        var result =
+            new List<ScheduledReportColumnLayout>();
+
+        if (definition is null)
+        {
+            return result;
+        }
+
+        var reportLayout =
+            GetReportLayout(
+                definition);
+
+        var defaultOrder =
+            0;
+
+        foreach (var column in
+                 definition.Columns.Where(column =>
+                     !string.IsNullOrWhiteSpace(
+                         column.Property)))
+        {
+            var layout =
+                EnsureColumnLayout(
+                    reportLayout,
+                    column.Property,
+                    column.Width,
+                    defaultOrder++);
+
+            result.Add(
+                new ScheduledReportColumnLayout
+                {
+                    Key =
+                        column.Property,
+                    Header =
+                        ResolveReportColumnHeader(
+                            layout,
+                            column.Header),
+                    Visible =
+                        layout.Visible,
+                    Order =
+                        layout.Order,
+                    Width =
+                        layout.Width,
+                    DecimalPlaces =
+                        layout.DecimalPlaces
+                        ?? reportLayout.DecimalPlaces,
+                    Bold =
+                        layout.Bold,
+                    Underline =
+                        layout.Underline,
+                    Alignment =
+                        layout.Alignment
+                });
+        }
+
+        return result
+            .OrderBy(column =>
+                column.Order)
+            .ThenBy(column =>
+                column.Key,
+                StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 }

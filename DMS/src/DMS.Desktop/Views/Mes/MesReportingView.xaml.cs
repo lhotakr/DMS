@@ -927,6 +927,10 @@ public partial class MesReportingView
                 loadedRows);
 
             ApplyPendingPresetShift();
+            // MES06 memory optimization v1.1:
+            // Drop the previous report object graph only after the replacement
+            // dataset has loaded successfully.
+            ReleaseMes06TransientPresentation();
             if (IsLoggedOperatorsReport(
                     definition))
             {
@@ -1032,6 +1036,31 @@ public partial class MesReportingView
         }
     }
 
+    private void ReleaseMes06TransientPresentation()
+    {
+        GridReport.UnselectAll();
+        GridCounterSummary.UnselectAll();
+
+        GridReport.ItemsSource =
+            null;
+
+        GridCounterSummary.ItemsSource =
+            null;
+
+        ChartHost.Content =
+            null;
+
+        CounterSummaryBorder.Visibility =
+            Visibility.Collapsed;
+
+        _currentRows =
+            Array.Empty<object>();
+
+        _plachtaBandSource =
+            null;
+
+        _plachtaBandByWorkcenter.Clear();
+    }
     private static async Task<IReadOnlyList<object>> LoadRowsAsync(
         IMesReportingDataService service,
         MesReportDefinition definition,

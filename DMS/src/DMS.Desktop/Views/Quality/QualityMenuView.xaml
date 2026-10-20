@@ -4,13 +4,13 @@
              Background="{DynamicResource DmsBackgroundBrush}">
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="18">
-            <TextBlock Text="Modul kvality – hlavní menu"
+            <TextBlock x:Name="TxtMenuTitle" Text="Quality module – main menu"
                        FontSize="26" FontWeight="Bold"
                        HorizontalAlignment="Center"
                        Foreground="{DynamicResource DmsForegroundBrush}"
                        Margin="0,0,0,24"/>
             <StackPanel x:Name="MenuRows"/>
-            <TextBlock Text="Neaktivní tlačítko znamená, že transakce není dostupná nebo k ní uživatel nemá oprávnění."
+            <TextBlock x:Name="TxtDisabledHint" Text="A disabled button means the transaction is unavailable or the user is not authorized to run it."
                        Foreground="{DynamicResource DmsMutedForegroundBrush}"
                        TextWrapping="Wrap" Margin="0,14,0,0"/>
         </StackPanel>
