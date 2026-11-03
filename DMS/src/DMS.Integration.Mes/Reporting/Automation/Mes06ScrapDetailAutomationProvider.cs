@@ -1,4 +1,4 @@
-﻿using DMS.Integration.Mes.Database;
+using DMS.Integration.Mes.Database;
 using DMS.Integration.Mes.Reporting.Models;
 using System;
 using System.Linq;
@@ -43,19 +43,13 @@ public sealed class Mes06ScrapDetailAutomationProvider
         cancellationToken.ThrowIfCancellationRequested();
 
         var rows =
-            await _service.GetReportAsync(
+            await _service.GetReportForSchedulerAsync(
                 request.From,
                 request.To,
                 request.WorkcenterCodes,
                 request.Order,
                 request.Operation,
                 request.Article,
-                // Current automation request does not yet carry the interactive
-                // counter selection. Empty list intentionally means ALL counters.
-                Array.Empty<string>(),
-                Math.Max(
-                    request.MaxRows,
-                    100000),
                 cancellationToken);
 
         cancellationToken.ThrowIfCancellationRequested();

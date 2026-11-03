@@ -140,7 +140,7 @@ public sealed class SchedulerProcessManager
         // "background" immediately starts the hidden "run --background"
         // process and exits, so no persistent console window is left open.
         var command =
-            $"\"{executable}\" background";
+            $"\"{executable}\" run";
 
         using var key =
             Registry.CurrentUser.CreateSubKey(

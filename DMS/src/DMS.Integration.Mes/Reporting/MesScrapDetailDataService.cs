@@ -366,6 +366,57 @@ public sealed class MesScrapDetailDataService
             .ToList();
     }
 
+    /// <summary>Scheduler-only complete historical data retrieval.</summary>
+    public async Task<IReadOnlyList<Mes06ScrapDetailRecord>> GetReportForSchedulerAsync(
+        DateTime from, DateTime to, IReadOnlyList<string> workcenterCodes,
+        string orderCode, string operationCode, string productCode,
+        CancellationToken cancellationToken = default)
+    {
+        if (to <= from) throw new ArgumentException("Invalid scheduler date range.");
+        const int limit = 100000;
+        var pending = new Stack<(DateTime From, DateTime To)>();
+        pending.Push((from, to));
+        var all = new List<Mes06ScrapDetailRecord>();
+        while (pending.Count > 0)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var range = pending.Pop();
+            var rows = await GetReportAsync(
+                range.From, range.To, workcenterCodes,
+                orderCode, operationCode, productCode,
+                Array.Empty<string>(), limit, cancellationToken);
+            if (rows.Count >= limit)
+            {
+                long ticks = range.To.Ticks - range.From.Ticks;
+                if (ticks <= 1) throw new InvalidOperationException(
+                    "SCRAP_DETAIL cannot split saturated interval further.");
+                var mid = new DateTime(range.From.Ticks + ticks / 2, range.From.Kind);
+                if (mid <= range.From || mid >= range.To)
+                    throw new InvalidOperationException("Invalid interval split.");
+                pending.Push((mid, range.To));
+                pending.Push((range.From, mid));
+                continue;
+            }
+            all.AddRange(rows);
+        }
+        var totals = all.GroupBy(r => r.MesId)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Amount ?? 0m));
+        return all.Select(r =>
+        {
+            var total = totals[r.MesId];
+            return new Mes06ScrapDetailRecord
+            {
+                MesId = r.MesId, PointInTime = r.PointInTime,
+                WorkcenterCode = r.WorkcenterCode, Item = r.Item,
+                ItemDesignation = r.ItemDesignation, OrderCode = r.OrderCode,
+                ItemGroup = r.ItemGroup, Personnel = r.Personnel,
+                CounterName = r.CounterName, Amount = r.Amount, Unit = r.Unit,
+                Percental = r.Amount.HasValue && total != 0m
+                    ? r.Amount.Value / total : null,
+                UserText = r.UserText
+            };
+        }).ToList();
+    }
     private async Task<IReadOnlyDictionary<Guid, string>> LoadPersonnelAsync(
         SqlConnection connection,
         IReadOnlyList<ScrapRawRow> rows,
