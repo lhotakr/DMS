@@ -680,6 +680,17 @@ public partial class MesReportingView
             }
         }
 
+        // Recover from a saved layout that hides every report column.
+        // This does not overwrite the user's stored configuration.
+        if (discovered.Count > 0
+            && !discovered.Any(item => item.Column.Visibility == Visibility.Visible))
+        {
+            foreach (var item in discovered)
+            {
+                item.Column.Visibility = Visibility.Visible;
+            }
+        }
+
         var ordered =
             discovered
                 .OrderBy(item =>
@@ -1393,7 +1404,7 @@ public partial class MesReportingView
         foreach (var textBox in
                  new[]
                  {
-                     
+
                      txtGridFont,
                      txtPrintFont,
                      txtMarginLeft,
@@ -2882,3 +2893,4 @@ public partial class MesReportingView
         };
     }
 }
+

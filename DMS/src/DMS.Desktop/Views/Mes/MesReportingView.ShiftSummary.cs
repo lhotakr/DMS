@@ -111,13 +111,24 @@ public partial class MesReportingView
     /// Applies MES06 grid-only presentation. Raw _currentRows stay untouched
     /// for charts, KPI calculation and Excel export.
     /// </summary>
-    private void ApplyGridPresentation(
-     MesReportDefinition definition)
+    private void ApplyGridPresentation(MesReportDefinition definition)
     {
         if (IsBonusReport(definition))
         {
             BuildBonusReportColumns();
             GridReport.ItemsSource = _currentRows;
+            return;
+        }
+
+        if (IsOeeReport(definition))
+        {
+            BuildOeeReportPresentation(definition);
+            return;
+        }
+
+        if (IsProcessValuesReport(definition))
+        {
+            BuildProcessValuesPresentation(definition);
             return;
         }
 

@@ -981,6 +981,58 @@ public partial class MesReportingView
 
                 definition);
 
+            // MES06 - Grid diagnostics
+            var totalColumns = GridReport.Columns.Count;
+            var visibleColumns = GridReport.Columns.Count(c => c.Visibility == Visibility.Visible);
+            var definedColumns = definition.Columns?.Count ?? 0;
+            var boundRows = GridReport.ItemsSource is System.Collections.ICollection collection
+                ? collection.Count
+                : -1;
+
+            var diagnosticMessage =
+                $"Report={definition.Code}; " +
+                $"LoadedRows={_currentRows.Count}; " +
+                $"BoundRows={boundRows}; " +
+                $"DefinedColumns={definedColumns}; " +
+                $"GridColumns={totalColumns}; " +
+                $"VisibleColumns={visibleColumns}; " +
+                $"GridVisibility={GridReport.Visibility}; " +
+                $"GridWidth={GridReport.ActualWidth:F0}; " +
+                $"GridHeight={GridReport.ActualHeight:F0}";
+
+            _logger.AdminAction(
+                "MES06",
+                "MES06_GRID_DIAGNOSTIC_V1",
+                _user,
+                diagnosticMessage);
+
+            GridReport.Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    var visibleAfterLayout = GridReport.Columns
+                        .Count(c => c.Visibility == Visibility.Visible);
+
+                    _logger.AdminAction(
+                        "MES06",
+                        "MES06_GRID_LAYOUT_V1",
+                        _user,
+                        $"Report={definition.Code}; " +
+                        $"Rows={GridReport.Items.Count}; " +
+                        $"Columns={GridReport.Columns.Count}; " +
+                        $"VisibleColumns={visibleAfterLayout}; " +
+                        $"Visibility={GridReport.Visibility}; " +
+                        $"ActualWidth={GridReport.ActualWidth:F0}; " +
+                        $"ActualHeight={GridReport.ActualHeight:F0}");
+                }),
+                System.Windows.Threading.DispatcherPriority.Loaded);
+
+            // Restore the grid when switching back from visual-only reports.
+            if (!IsMachineTimelineReport(definition)
+                && !IsProductionGraphReport(definition))
+            {
+                GridReport.Visibility = Visibility.Visible;
+            }
+
             if (_mes06CounterReportMode)
             {
                 ChartHost.Content = null;
@@ -1381,6 +1433,10 @@ public partial class MesReportingView
         SelectionChangedEventArgs e)
     {
         ApplySelectedDefinition();
+
+        if (!_mes06InitializingFilters && !_presetUiUpdating){
+            ClearActivePresetForReportSelecion();
+        }
 
         var definition =
             CmbReport.SelectedItem
@@ -1939,3 +1995,4 @@ public partial class MesReportingView
     }
 
 }
+

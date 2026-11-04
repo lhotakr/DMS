@@ -242,7 +242,7 @@ public partial class MesReportingView
                         "MES06.Preset.Starter.DailyScrap",
                         "Daily scrap"),
                 ReportCode =
-                    reportCode,
+                    string.Empty,
                 QuickPeriodCode =
                     "YESTERDAY",
                 SelectAllWorkcenters =
@@ -257,6 +257,16 @@ public partial class MesReportingView
 
         _activePresetName =
             starter.Name;
+    }
+
+    private void ClearActivePresetForReportSelecion()
+    {
+        if(string.IsNullOrWhiteSpace(_activePresetName))
+        {
+            return;
+        }
+        _activePresetName = string.Empty;
+        RefreshPresetMenu();
     }
 
     private void RefreshPresetMenu()
@@ -274,12 +284,15 @@ public partial class MesReportingView
 
             LstReportPresets.ItemsSource =
                 items;
-
+            /*
             var selectedName =
                 !string.IsNullOrWhiteSpace(
                     _activePresetName)
                     ? _activePresetName
                     : _mes06PresetDocument.DefaultPresetName;
+            */
+
+            var selectedName = _activePresetName;
 
             var selected =
                 items.FirstOrDefault(preset =>
@@ -352,22 +365,8 @@ public partial class MesReportingView
 
         try
         {
-            if (!string.IsNullOrWhiteSpace(
-                    preset.ReportCode))
-            {
-                var definition =
-                    _definitions.FirstOrDefault(item =>
-                        string.Equals(
-                            item.Code,
-                            preset.ReportCode,
-                            StringComparison.OrdinalIgnoreCase));
-
-                if (definition is not null)
-                {
-                    CmbReport.SelectedItem =
-                        definition;
-                }
-            }
+            // Presets are shared filter sets. Never change the active report.
+            // Legacy ReportCode values are intentionally ignored.
 
             var quick =
                 CmbQuickPeriod.Items
@@ -582,11 +581,9 @@ public partial class MesReportingView
             Name =
                 name.Trim(),
 
-            ReportCode =
-                (CmbReport.SelectedItem
-                    as DMS.Integration.Mes.Reporting.Definitions.MesReportDefinition)
-                ?.Code
-                ?? string.Empty,
+            // New presets are report-independent. Keep ReportCode only
+            // for backwards-compatible JSON deserialization.
+            ReportCode = string.Empty,
 
             QuickPeriodCode =
                 (CmbQuickPeriod.SelectedItem
@@ -3054,3 +3051,4 @@ public partial class MesReportingView
                ?? string.Empty;
     }
 }
+
