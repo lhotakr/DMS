@@ -149,6 +149,26 @@ public partial class MesReportingView
                 button);
         }
 
+        var calculatedButton = new Button
+        {
+            Content = "ƒx",
+            Width = 48,
+            Height = 36,
+            Margin = new Thickness(0, 0, 8, 0),
+            ToolTip = "Vypočítané sloupce aktuální sestavy"
+        };
+        calculatedButton.SetResourceReference(
+            FrameworkElement.StyleProperty,
+            "DmsToolbarButtonStyle");
+        calculatedButton.Click += (_, _) =>
+        {
+            if (CmbReport.SelectedItem is MesReportDefinition selected)
+                OpenCalculatedColumnsEditor(selected);
+        };
+        panel.Children.Insert(
+            panel.Children.IndexOf(button) + 1,
+            calculatedButton);
+
         _mes06ReportSettingsButton =
             button;
     }

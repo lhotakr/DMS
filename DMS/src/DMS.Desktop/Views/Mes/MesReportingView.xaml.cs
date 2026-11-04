@@ -981,6 +981,8 @@ public partial class MesReportingView
 
                 definition);
 
+            AppendCalculatedColumns(definition);
+
             // MES06 - Grid diagnostics
             var totalColumns = GridReport.Columns.Count;
             var visibleColumns = GridReport.Columns.Count(c => c.Visibility == Visibility.Visible);

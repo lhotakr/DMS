@@ -1,0 +1,28 @@
+diff --git a/DMS/src/DMS.Desktop/Views/Mes/MesReportingView.ReportLayout.cs b/DMS/src/DMS.Desktop/Views/Mes/MesReportingView.ReportLayout.cs
+--- a/DMS/src/DMS.Desktop/Views/Mes/MesReportingView.ReportLayout.cs
++++ b/DMS/src/DMS.Desktop/Views/Mes/MesReportingView.ReportLayout.cs
+@@ -1,2 +1,17 @@
+         _mes06ReportSettingsButton =
+             button;
++
++        var calculatedButton = new Button
++        {
++            Content = "ƒx", Width = 48, Height = 36,
++            Margin = new Thickness(0, 0, 8, 0),
++            ToolTip = "Vypočítané sloupce aktuální sestavy"
++        };
++        calculatedButton.SetResourceReference(
++            FrameworkElement.StyleProperty, "DmsToolbarButtonStyle");
++        calculatedButton.Click += (_, _) =>
++        {
++            if (CmbReport.SelectedItem is MesReportDefinition selected)
++                OpenCalculatedColumnsEditor(selected);
++        };
++        panel.Children.Insert(panel.Children.IndexOf(button) + 1, calculatedButton);
+diff --git a/DMS/src/DMS.Desktop/Views/Mes/MesReportingView.xaml.cs b/DMS/src/DMS.Desktop/Views/Mes/MesReportingView.xaml.cs
+--- a/DMS/src/DMS.Desktop/Views/Mes/MesReportingView.xaml.cs
++++ b/DMS/src/DMS.Desktop/Views/Mes/MesReportingView.xaml.cs
+@@ -2,2 +2,3 @@
+ 
+                 definition);
++            AppendCalculatedColumns(definition);
