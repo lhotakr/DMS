@@ -16,7 +16,7 @@ namespace DMS.Desktop.Views.Orders;
 /// MESORD phase 1: read-only order header and operation history.
 /// Daily production, personnel and process samples require verified historical SQL sources.
 /// </summary>
-public sealed class MesOrderHistoryView : UserControl
+public sealed partial class MesOrderHistoryView : UserControl
 {
     private readonly string _orderNumber;
     private readonly string _configRoot;
@@ -45,6 +45,7 @@ public sealed class MesOrderHistoryView : UserControl
         AddColumn("Dobré kusy", nameof(MesProductionOrderOperationRecord.FinishedQuantity));
         AddColumn("Odpad", nameof(MesProductionOrderOperationRecord.ScrapQuantity));
         root.Children.Add(_operations);
+        root.Children.Add(_analyticsPanel);
         root.Children.Add(new TextBlock {
             Text = "Denní výroba, historie přihlášení operátorů a procesní hodnoty: čeká se na ověření historických zdrojů dat FASTEC. Zde se nezobrazují odhadované hodnoty.",
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 18, 0, 8), Foreground = Brushes.DarkOrange
@@ -82,6 +83,7 @@ public sealed class MesOrderHistoryView : UserControl
             if (order == null) { _status.Text = "Zakázka nebyla nalezena mezi dostupnými nearchivovanými zakázkami. Archivované zakázky vyžadují samostatný dotaz."; return; }
             var operations = await service.GetOperationsAsync(order.Id, order.OrderCode);
             _operations.ItemsSource = operations;
+            await LoadAnalyticsAsync(settings, order.ActualStart, order.ActualEnd);
             _status.Text = "Načteno z FASTEC · stav " + order.StatusCode;
             _summary.Text = $"Artikl: {order.ProductCode}  |  SAP: {order.SapArticleNumber}\n" +
                 $"Popis: {order.ProductDescription}\n" +
