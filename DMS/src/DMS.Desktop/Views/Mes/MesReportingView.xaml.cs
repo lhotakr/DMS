@@ -1,4 +1,4 @@
-﻿using ClosedXML.Excel;
+using ClosedXML.Excel;
 using DMS.Desktop.Logging;
 using DMS.Integration.Mes.Database;
 using DMS.Integration.Mes.Reporting;
@@ -981,6 +981,7 @@ public partial class MesReportingView
 
                 definition);
 
+            EnsureBaseReportColumns(definition);
             AppendCalculatedColumns(definition);
 
             // MES06 - Grid diagnostics

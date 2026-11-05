@@ -76,6 +76,45 @@ public partial class MesReportingView
         }
     }
 
+    // MES06_V5_BASE_COLUMNS: Keep source columns when a report definition lacks them.
+    // Do not change the original ItemsSource or the built-in Plachta/OEE calculations.
+    private void EnsureBaseReportColumns(DMS.Integration.Mes.Reporting.Definitions.MesReportDefinition definition)
+    {
+        var existingBase = GridReport.Columns
+            .OfType<DataGridTextColumn>()
+            .Where(c => c.Binding is Binding b && b.Path?.Path != ".")
+            .ToList();
+        if (existingBase.Any(c => c.Visibility == Visibility.Visible))
+            return;
+
+        // When all source columns are hidden by a saved layout, restore them
+        // rather than presenting a table containing only calculated fields.
+        if (existingBase.Count > 0)
+        {
+            foreach (var col in existingBase)
+                col.Visibility = Visibility.Visible;
+            return;
+        }
+
+        var sample = _currentRows.FirstOrDefault();
+        if (sample == null) return;
+        foreach (var property in sample.GetType().GetProperties(
+                     System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))
+        {
+            if (!property.CanRead || property.GetIndexParameters().Length != 0) continue;
+            var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            if (!(type.IsPrimitive || type.IsEnum || type == typeof(decimal) ||
+                  type == typeof(string) || type == typeof(DateTime) || type == typeof(Guid)))
+                continue;
+            GridReport.Columns.Add(new DataGridTextColumn
+            {
+                Header = property.Name,
+                Binding = new Binding(property.Name) { Mode = BindingMode.OneWay },
+                Width = new DataGridLength(130)
+            });
+        }
+    }
+
     private void OpenCalculatedColumnsEditor(DMS.Integration.Mes.Reporting.Definitions.MesReportDefinition definition)
     {
         var store = ReadCalculatedColumns();
@@ -126,7 +165,15 @@ public partial class MesReportingView
         var right = new DockPanel(); Grid.SetColumn(right, 2); columns.Children.Add(right);
         var title = new TextBlock { Text = "Vlastnosti sloupce", FontSize = 20, FontWeight = FontWeights.SemiBold, Foreground = foreground, Margin = new Thickness(0, 0, 0, 14) };
         DockPanel.SetDock(title, Dock.Top); right.Children.Add(title);
-        var details = new StackPanel(); right.Children.Add(details);
+        var detailsScroll = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            CanContentScroll = true
+        };
+        var details = new StackPanel { Margin = new Thickness(0, 0, 12, 12) };
+        detailsScroll.Content = details;
+        right.Children.Add(detailsScroll);
         TextBox Field(string label, int height = 34)
         {
             details.Children.Add(new TextBlock { Text = label, Foreground = muted, Margin = new Thickness(0, 9, 0, 4) });
@@ -291,6 +338,7 @@ public partial class MesReportingView
         {
             ApplyGridPresentation(definition);
             ApplyReportLayoutToExistingGrid(definition);
+            EnsureBaseReportColumns(definition);
             AppendCalculatedColumns(definition);
         }
     }
