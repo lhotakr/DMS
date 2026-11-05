@@ -564,6 +564,23 @@ public partial class MainWindow : Window
 
         var loader = new TransactionDefinitionLoader();
         var definitions = loader.LoadFromJson(configPath);
+        // MESORD transaction registration (independent of deployed transactions.json)
+        if (!definitions.Any(x => string.Equals(x.Code, "MESORD", StringComparison.OrdinalIgnoreCase)))
+        {
+            var mesordDefinitions = definitions.ToList();
+            mesordDefinitions.Add(new DMS.Core.Transactions.TransactionDefinition
+            {
+                Code = "MESORD",
+                Name = "Historie vyrobni zakazky",
+                Module = "Zakazky",
+                Description = "Historie zakazky FASTEC, operace a souhrn vyroby.",
+                HandlerKey = "MesOrderHistory",
+                RequiresArticleNumber = false,
+                IsActive = true,
+                Roles = new System.Collections.Generic.List<string> { "DMS_ADMIN", "DMS_TECHNOLOGIE", "DMS_READONLY" }
+            });
+            definitions = mesordDefinitions;
+        }
         definitions = DMS.Core.Checklists.ChecklistTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Quality.QualityMenuTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Framework.FrameworkTransactionDefinitions.AddMissing(definitions);
