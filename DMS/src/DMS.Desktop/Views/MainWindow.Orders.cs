@@ -6,6 +6,13 @@ namespace DMS.Desktop.Views;
 /// </summary>
 public partial class MainWindow
 {
+    private void RenderMesOrderHistory(string orderNumber)
+    {
+        WorkspacePanel.Children.Clear();
+        WorkspacePanel.Children.Add(new DMS.Desktop.Views.Orders.MesOrderHistoryView(
+            orderNumber, _appSettings.ConfigurationRootPath, _logger));
+        ResetWorkspaceScroll();
+    }
     private void RenderOrderOverview()
     {
         WorkspacePanel.Children.Clear();

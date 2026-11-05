@@ -1,4 +1,4 @@
-﻿using DMS.Core.Sap;
+using DMS.Core.Sap;
 using DMS.Core.Security;
 using DMS.Core.Transactions;
 using DMS.Core.Transactions.Handlers;
@@ -661,6 +661,7 @@ public partial class MainWindow : Window
     new SimpleMessageTransactionHandler("MesWorkplaceOverview", "MES soupis pracovišť"),
     new SimpleMessageTransactionHandler("MesDatabaseSettings", "MES SQL settings"),
     new SimpleMessageTransactionHandler("MesReporting", "MES reporting"),
+    new SimpleMessageTransactionHandler("MesOrderHistory", "Historie zakazky MES"),
     new SimpleMessageTransactionHandler("SimpleMessage", "Transakce"),
 };
 
@@ -1439,6 +1440,11 @@ public partial class MainWindow : Window
                 RenderScr10();
                 break;
 
+
+            case "MESORD":
+                if (string.IsNullOrWhiteSpace(result.Parameter)) RenderOrderOverview();
+                else RenderMesOrderHistory(result.Parameter);
+                break;
 
             case "ORD10":
                 RenderOrderOverview();

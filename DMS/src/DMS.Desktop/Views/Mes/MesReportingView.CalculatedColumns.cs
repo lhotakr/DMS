@@ -258,27 +258,41 @@ public partial class MesReportingView
         dataList.MouseDoubleClick += (_, _) =>
         {
             if (selected == null || dataList.SelectedItem is not string item) return;
+            if (item.Contains("vzorec: NE")) return;
             var key = item.Split(' ')[0];
             formulaBox.SelectedText = key; formulaBox.Focus();
         };
         void RefreshAvailableData()
         {
             dataList.Items.Clear();
+            // Catalog is based on the current report schema, not only the first row.
+            // Numeric values alone can be referenced by the formula engine.
             var sample = _currentRows.FirstOrDefault();
-            if (sample != null)
-                foreach (var property in sample.GetType().GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public).OrderBy(p => p.Name))
-                {
-                    if (!property.CanRead || property.GetIndexParameters().Length > 0) continue;
-                    var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-                    if (type != typeof(byte) && type != typeof(short) && type != typeof(int) && type != typeof(long) &&
-                        type != typeof(float) && type != typeof(double) && type != typeof(decimal) &&
-                        type != typeof(uint) && type != typeof(ushort) && type != typeof(ulong)) continue;
-                    var value = property.GetValue(sample);
-                    dataList.Items.Add(property.Name + "    (" + (value?.ToString() ?? "null") + ")");
-                }
-            foreach (var col in items) dataList.Items.Add(col.Key + "    (vypočítaný sloupec)");
-        }
-        Button ActionButton(Panel parent, string caption, Action action, bool primary = false)
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var properties = sample?.GetType().GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public)
+                ?? Array.Empty<System.Reflection.PropertyInfo>();
+            foreach (var property in properties.OrderBy(p => p.Name))
+            {
+                if (!property.CanRead || property.GetIndexParameters().Length != 0) continue;
+                var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                var numeric = type == typeof(byte) || type == typeof(short) || type == typeof(int) ||
+                              type == typeof(long) || type == typeof(float) || type == typeof(double) ||
+                              type == typeof(decimal) || type == typeof(uint) || type == typeof(ushort) ||
+                              type == typeof(ulong) || type == typeof(sbyte);
+                object? value = null;
+                try { value = property.GetValue(sample); } catch { /* diagnostic catalog only */ }
+                var description = definition.Columns.FirstOrDefault(c => string.Equals(c.Property, property.Name, StringComparison.OrdinalIgnoreCase))?.Header;
+                var label = property.Name + "  |  " + (description ?? property.Name) + "  |  " +
+                            type.Name + "  |  " + (numeric ? "vzorec: ANO" : "vzorec: NE") +
+                            "  |  " + (value?.ToString() ?? "null");
+                dataList.Items.Add(label);
+                seen.Add(property.Name);
+            }
+            foreach (var column in definition.Columns.Where(c => !string.IsNullOrWhiteSpace(c.Property) && !seen.Contains(c.Property)))
+                dataList.Items.Add(column.Property + "  |  " + column.Header + "  |  definice sestavy (nenacteno)  |  vzorec: NE");
+            foreach (var col in items)
+                dataList.Items.Add(col.Key + "  |  " + col.Header + "  |  vypocitany sloupec  |  vzorec: ANO");
+        }        Button ActionButton(Panel parent, string caption, Action action, bool primary = false)
         {
             var button = new Button { Content = caption, MinWidth = 90, Padding = new Thickness(12, 7, 12, 7), Margin = new Thickness(0, 0, 8, 0),
                 Background = primary ? accent : surface, Foreground = foreground, BorderBrush = muted };
