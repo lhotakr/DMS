@@ -25,7 +25,7 @@ public partial class MainWindow
                 openTechnology: sapArticleNumber =>
                     ExecuteTransaction(
                         $"TEC03 {sapArticleNumber}"),
-                translate: key => T(key)));
+                translate: key => T(key), openMesOrder: code => ExecuteTransaction($"MESORD {code}")));
 
         ResetWorkspaceScroll();
     }

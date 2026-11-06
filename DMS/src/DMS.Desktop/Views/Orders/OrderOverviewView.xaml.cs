@@ -67,6 +67,7 @@ public partial class OrderOverviewView : UserControl
     private readonly DmsLogger _logger;
     private readonly string _user;
     private readonly Action<string> _openTechnology;
+    private readonly Action<string>? _openMesOrder;
     private readonly Func<string, string> _translate;
     private readonly MesDatabaseSettingsService _settingsService = new();
 
@@ -105,9 +106,12 @@ public partial class OrderOverviewView : UserControl
         DmsLogger logger,
         string user,
         Action<string> openTechnology,
-        Func<string, string>? translate = null)
+        Func<string, string>? translate = null,
+        Action<string>? openMesOrder = null)
     {
         InitializeComponent();
+        GridOrders.MouseDoubleClick += GridOrders_MesOrderDoubleClick;
+        _openMesOrder = openMesOrder;
 
         _configurationRootPath =
             configurationRootPath

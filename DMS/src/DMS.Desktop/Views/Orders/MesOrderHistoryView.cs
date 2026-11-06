@@ -33,9 +33,10 @@ public sealed partial class MesOrderHistoryView : UserControl
         _logger = logger;
         var root = new StackPanel { Margin = new Thickness(18) };
         root.Children.Add(new TextBlock { Text = "MESORD – historie výrobní zakázky", FontSize = 23, FontWeight = FontWeights.SemiBold });
-        root.Children.Add(new TextBlock { Text = "FASTEC / závod 2000 · Zakázka " + _orderNumber, FontSize = 15, Margin = new Thickness(0, 6, 0, 4) });
+        root.Children.Add(_plantInfo);
         root.Children.Add(_status);
         root.Children.Add(_summary);
+        root.Children.Add(_quantityCard);
         root.Children.Add(new TextBlock { Text = "Operace zakázky", FontSize = 18, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 8) });
         AddColumn("Operace", nameof(MesProductionOrderOperationRecord.OperationCode));
         AddColumn("Pracoviště", nameof(MesProductionOrderOperationRecord.WorkcenterCode));
@@ -90,6 +91,7 @@ public sealed partial class MesOrderHistoryView : UserControl
                 $"Plán: {order.TargetQuantity:N0}  |  Hotovo: {order.FinishedQuantity:N0}  |  NOK: {order.ScrapQuantity:N0}\n" +
                 $"Skutečný začátek: {order.ActualStart:dd.MM.yyyy HH:mm}  |  Konec: {order.ActualEnd:dd.MM.yyyy HH:mm}\n" +
                 $"Operací: {order.OperationCount}  |  Původ dat: FASTEC dbo.d_pda_po / dbo.d_pda_po_routing";
+            ApplyTodoHeader(order);
         }
         catch (Exception ex)
         {

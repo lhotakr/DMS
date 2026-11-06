@@ -21,9 +21,12 @@ public sealed partial class MesOrderHistoryView
     private readonly List<MesCounterRecord> _allCounters = new();
     private readonly List<MesProductionRecord> _allProduction = new();
     private readonly List<MesLoggedOperatorRecord> _allOperators = new();
+    private readonly List<MesReportingStateColor> _stateColors = new();
+    private readonly List<Mes06ProcessValueRecord> _processMessages = new();
     private readonly List<string> _analyticsErrors = new();
     private readonly ComboBox _operationSelector = new() { MinWidth = 220, Margin = new Thickness(8, 0, 0, 0) };
-    private readonly StackPanel _dayPanel = new();
+    private readonly System.Windows.Controls.Calendar _calendar = new() { SelectionMode = CalendarSelectionMode.SingleDate,
+        Margin = new Thickness(4), HorizontalAlignment = HorizontalAlignment.Left };
     private DateTime _analyticsFrom, _analyticsTo;
     private DateTime? _selectedDay;
     private bool _dataLoaded;
@@ -64,16 +67,113 @@ public sealed partial class MesOrderHistoryView
         IsReadOnly = true, CanUserAddRows = false,
         MinHeight = 90, MaxHeight = 280, Margin = new Thickness(0, 3, 0, 12)
     };
-    private static Brush StateBrush(MesStateRecord state)
+    private static Color? ParseFastecColor(string raw)
     {
-        if (state.IsSetup) return new SolidColorBrush(Color.FromRgb(234, 179, 8));
-        if (state.IsBreak || state.IsCauselessFailure) return new SolidColorBrush(Color.FromRgb(239, 68, 68));
-        var name = (state.CategoryName + " " + state.StateName).ToLowerInvariant();
-        if (name.Contains("production") || name.Contains("produkc") || name.Contains("running") || name.Contains("výrob"))
-            return new SolidColorBrush(Color.FromRgb(34, 197, 94));
-        if (name.Contains("down") || name.Contains("prostoj") || name.Contains("fault") || name.Contains("poruch"))
-            return new SolidColorBrush(Color.FromRgb(239, 68, 68));
-        return new SolidColorBrush(Color.FromRgb(96, 165, 250));
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        try
+        {
+            var converted = ColorConverter.ConvertFromString(raw.Trim());
+            if (converted is Color c) return c;
+        }
+        catch { /* Some FASTEC colors are stored as numeric components. */ }
+        var parts = raw.Split(new[] {',',';',' '}, StringSplitOptions.RemoveEmptyEntries);
+        if ((parts.Length == 3 || parts.Length == 4) &&
+            parts.All(x => byte.TryParse(x, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)))
+        {
+            var values = parts.Select(x => byte.Parse(x, CultureInfo.InvariantCulture)).ToArray();
+            return values.Length == 3 ? Color.FromRgb(values[0],values[1],values[2])
+                : Color.FromArgb(values[0],values[1],values[2],values[3]);
+        }
+        return null;
+    }
+    private Brush StateBrush(MesStateRecord state)
+    {
+        var definition = _stateColors.FirstOrDefault(x =>
+            string.Equals(x.WorkcenterCode,state.WorkcenterCode,StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x.StateName,state.StateName,StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(x.CategoryName,state.CategoryName,StringComparison.OrdinalIgnoreCase))
+            ?? _stateColors.FirstOrDefault(x =>
+                string.Equals(x.WorkcenterCode,state.WorkcenterCode,StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.StateName,state.StateName,StringComparison.OrdinalIgnoreCase))
+            ?? _stateColors.FirstOrDefault(x =>
+                string.IsNullOrEmpty(x.WorkcenterCode) &&
+                string.Equals(x.StateName,state.StateName,StringComparison.OrdinalIgnoreCase));
+        var color = ParseFastecColor(definition?.StateColor ?? "")
+            ?? ParseFastecColor(definition?.CategoryColor ?? "")
+            ?? Color.FromRgb(130,141,153);
+        return new SolidColorBrush(color);
+    }
+    private static bool IsRelevant(MesStateRecord state) =>
+        !string.Equals((state.StateName ?? "").Trim(), "Náhradní stroj", StringComparison.OrdinalIgnoreCase)
+        && !string.Equals((state.CategoryName ?? "").Trim(), "Náhradní stroj", StringComparison.OrdinalIgnoreCase);
+    private static string UnitHours(double minutes) => (minutes / 60d).ToString("N2", new CultureInfo("cs-CZ")) + " h";
+    private static double UnionMinutes(IEnumerable<(DateTime from, DateTime to)> raw, DateTime from, DateTime to)
+    {
+        var ranges = raw.Select(r => (a: r.from > from ? r.from : from, b: r.to < to ? r.to : to))
+            .Where(r => r.b > r.a).OrderBy(r=>r.a).ToList();
+        if (ranges.Count == 0) return 0;
+        double minutes = 0;
+        var a = ranges[0].a; var b = ranges[0].b;
+        foreach (var r in ranges.Skip(1))
+        {
+            if (r.a <= b) { if (r.b > b) b = r.b; }
+            else { minutes += (b-a).TotalMinutes; a = r.a; b = r.b; }
+        }
+        return minutes + (b-a).TotalMinutes;
+    }
+    private static Border Swatch(Brush fill, string tooltip = "") => new()
+    {
+        Width=13, Height=13, Margin=new Thickness(0,0,7,0), Background=fill,
+        CornerRadius=new CornerRadius(3), ToolTip=tooltip
+    };
+    private UIElement PieChart(IReadOnlyList<MesStateRecord> states, DateTime start, DateTime end)
+    {
+        var items = states.GroupBy(x=>x.StateName).Select(g=>new
+        {
+            Name=g.Key, Value=g.Sum(x=>Minutes(x.Starttime,x.Endtime ?? _analyticsTo,start,end)),
+            Color=StateBrush(g.First())
+        }).Where(x=>x.Value>0).OrderByDescending(x=>x.Value).ToList();
+        if (items.Count == 0) return Label("Pro tuto směnu nejsou dostupné záznamy stavů.");
+        var layout = new StackPanel { Orientation=Orientation.Horizontal, Margin=new Thickness(0,7,0,12) };
+        var pie = new Canvas { Width=188, Height=188, Margin=new Thickness(0,0,20,0) };
+        double sum=items.Sum(x=>x.Value), angle=-90d;
+        foreach (var item in items)
+        {
+            var sweep=360*item.Value/sum;
+            var startAngle=angle*Math.PI/180;
+            var endAngle=(angle+sweep)*Math.PI/180;
+            var center=new Point(94,94);
+            // Full circle must be rendered as ellipse, not a 360° ArcSegment.
+            if (sweep > 359.99)
+            {
+                pie.Children.Add(new System.Windows.Shapes.Ellipse {
+                    Width=180,Height=180,Fill=item.Color,ToolTip=item.Name+" · "+UnitHours(item.Value)
+                });
+                break;
+            }
+            var p1=new Point(94+90*Math.Cos(startAngle),94+90*Math.Sin(startAngle));
+            var p2=new Point(94+90*Math.Cos(endAngle),94+90*Math.Sin(endAngle));
+            var figure=new PathFigure { StartPoint=center,IsClosed=true,IsFilled=true };
+            figure.Segments.Add(new LineSegment(p1,true));
+            figure.Segments.Add(new ArcSegment(p2,new Size(90,90),0,sweep>180,SweepDirection.Clockwise,true));
+            figure.Segments.Add(new LineSegment(center,true));
+            pie.Children.Add(new System.Windows.Shapes.Path {
+                Data=new PathGeometry(new[] { figure }),Fill=item.Color,
+                ToolTip=item.Name+" · "+UnitHours(item.Value)+" · "+(100*item.Value/sum).ToString("N1")+" %"
+            });
+            angle+=sweep;
+        }
+        layout.Children.Add(pie);
+        var legend=new StackPanel { VerticalAlignment=VerticalAlignment.Center };
+        foreach (var item in items)
+        {
+            var line=new StackPanel { Orientation=Orientation.Horizontal, Margin=new Thickness(0,3,0,3) };
+            line.Children.Add(Swatch(item.Color));
+            line.Children.Add(Label(item.Name+" — "+UnitHours(item.Value)+" ("+(100*item.Value/sum).ToString("N1")+" %)",12));
+            legend.Children.Add(line);
+        }
+        layout.Children.Add(legend);
+        return layout;
     }
     private static bool Overlap(DateTime start, DateTime end, DateTime from, DateTime to) =>
         start < to && end > from;
@@ -94,7 +194,11 @@ public sealed partial class MesOrderHistoryView
         if (_analyticsTo <= _analyticsFrom) { _analyticsPanel.Children.Add(Label("Neplatné období zakázky.")); return; }
 
         var reporting = new MesReportingDataService(settings);
-        _allStates.Clear(); _allCounters.Clear(); _allProduction.Clear(); _allOperators.Clear(); _analyticsErrors.Clear();
+        var enrichment = new MesReportingEnrichmentService(settings);
+        _allStates.Clear(); _allCounters.Clear(); _allProduction.Clear(); _allOperators.Clear();
+        _stateColors.Clear(); _processMessages.Clear(); _analyticsErrors.Clear();
+        try { _stateColors.AddRange(await enrichment.GetStateColorsAsync()); }
+        catch (Exception ex) { _analyticsErrors.Add("Barvy stavů: " + ex.Message); }
         _dataLoaded = false;
         _analyticsPanel.Children.Add(Label("Načítám výrobní historii, čítače a operátory…"));
         // Bounded windows avoid one huge report. Every request is read-only.
@@ -110,6 +214,8 @@ public sealed partial class MesOrderHistoryView
             catch (Exception ex) { _analyticsErrors.Add("Výroba: " + ex.Message); }
             try { _allOperators.AddRange(await reporting.GetLoggedOperatorsAsync(filter, Array.Empty<string>(), "", "")); }
             catch (Exception ex) { _analyticsErrors.Add("Operátoři: " + ex.Message); }
+            try { _processMessages.AddRange(await enrichment.GetProcessValuesAsync(start,end,Array.Empty<string>(),"",_orderNumber,"","")); }
+            catch (Exception ex) { _analyticsErrors.Add("Procesní zprávy: " + ex.Message); }
         }
         Deduplicate();
         _dataLoaded = true;
@@ -139,7 +245,7 @@ public sealed partial class MesOrderHistoryView
         }
         _operationSelector.SelectedIndex = 0;
         _operationSelector.SelectionChanged += OperationChanged;
-        _selectedDay = null;
+        _selectedDay = _allProduction.Select(x => x.Starttime.Date).OrderBy(x => x).Cast<DateTime?>().FirstOrDefault();
         RenderAnalytics();
     }
     private void OperationChanged(object sender, SelectionChangedEventArgs e)
@@ -158,6 +264,8 @@ public sealed partial class MesOrderHistoryView
         _allStates.Clear(); _allStates.AddRange(s);
         _allCounters.Clear(); _allCounters.AddRange(c);
         _allOperators.Clear(); _allOperators.AddRange(o);
+        var messages=_processMessages.GroupBy(x => (x.Id,x.Starttime,x.Endtime,x.OperationCode)).Select(g=>g.First()).ToList();
+        _processMessages.Clear(); _processMessages.AddRange(messages);
     }
     private void RenderAnalytics()
     {
@@ -177,10 +285,14 @@ public sealed partial class MesOrderHistoryView
             selection == null || string.IsNullOrEmpty(selection.Code) ||
             (workcenter == selection.Workcenter &&
              intervals.Any(p => p.Starttime <= instant && (p.Endtime ?? _analyticsTo) > instant));
-        var states = _allStates.Where(s => selection == null || string.IsNullOrEmpty(selection.Code)
+        var states = _allStates.Where(IsRelevant).Where(s => selection == null || string.IsNullOrEmpty(selection.Code)
             || (s.WorkcenterCode == selection.Workcenter && intervals.Any(p =>
                 Overlap(s.Starttime, s.Endtime ?? _analyticsTo, p.Starttime, p.Endtime ?? _analyticsTo)))).ToList();
         var counters = _allCounters.Where(c => FitsOperation(c.WorkcenterCode, c.Timestamp)).ToList();
+        var messages = _processMessages.Where(x =>
+            string.Equals(x.OrderCode,_orderNumber,StringComparison.OrdinalIgnoreCase) &&
+            (selection == null || string.IsNullOrEmpty(selection.Code) ||
+             (x.OperationCode == selection.Code && x.WorkcenterCode == selection.Workcenter))).ToList();
         var operators = _allOperators.Where(o => o.HasOperator &&
             string.Equals(o.OrderCode, _orderNumber, StringComparison.OrdinalIgnoreCase) &&
             (selection == null || string.IsNullOrEmpty(selection.Code) ||
@@ -201,42 +313,43 @@ public sealed partial class MesOrderHistoryView
         _analyticsPanel.Children.Add(panel);
 
         _analyticsPanel.Children.Add(Label("Rozložení stavů zakázky", 18));
-        _analyticsPanel.Children.Add(Table(states.GroupBy(x => x.StateName).Select(g => new
-        {
-            Stav = g.Key, Výskytů = g.Count(),
-            Hodin = Math.Round(g.Sum(x => Minutes(x.Starttime,x.Endtime ?? _analyticsTo,_analyticsFrom,_analyticsTo))/60,2)
-        }).OrderByDescending(x=>x.Hodin).Cast<object>()));
-        _analyticsPanel.Children.Add(Label("Čítače – poslední hodnota v historii", 18));
-        _analyticsPanel.Children.Add(Table(counters.GroupBy(x=>x.CounterName).Select(g=>new
-        {
-            Čítač = g.Key, Událostí = g.Count(),
-            PosledníHodnota = Math.Round(g.OrderByDescending(x=>x.Timestamp).First().Value,0)
-        }).OrderBy(x=>x.Čítač).Cast<object>()));
-        _analyticsPanel.Children.Add(Label("Čítače mohou být kumulativní – poslední hodnota není součet výroby."));
+        _analyticsPanel.Children.Add(PieChart(states,_analyticsFrom,_analyticsTo));
+        _analyticsPanel.Children.Add(Label("Souhrn čítačů", 18));
+        _analyticsPanel.Children.Add(Table(counters.GroupBy(x=>new { x.WorkcenterCode,x.CounterName })
+            .Select(g=>new {
+                Pracoviště=g.Key.WorkcenterCode, Čítač=g.Key.CounterName,
+                Hodnota=Math.Round(g.OrderByDescending(x=>x.Timestamp).First().Value,0)
+            }).OrderBy(x=>x.Pracoviště).ThenBy(x=>x.Čítač).Cast<object>()));
+        _analyticsPanel.Children.Add(Label("Hodnota = poslední zaznamenaná hodnota, nikoli automatický součet. Typ čítače je potřeba ověřit ve FASTEC."));
 
-        _analyticsPanel.Children.Add(Label("Výrobní kalendář", 19));
-        _dayPanel.Children.Clear();
-        var days = new WrapPanel { Margin = new Thickness(0,4,0,10) };
-        for (var date = _analyticsFrom.Date; date <= _analyticsTo.Date; date = date.AddDays(1))
+        _analyticsPanel.Children.Add(Label("Kalendář výroby", 19));
+        if (_calendar.Parent is Panel previousParent) previousParent.Children.Remove(_calendar);
+        _calendar.SelectedDatesChanged -= CalendarChanged;
+        _calendar.DisplayDateStart=_analyticsFrom.Date;
+        _calendar.DisplayDateEnd=_analyticsTo.Date;
+        _calendar.DisplayDate=_selectedDay ?? _analyticsFrom.Date;
+        _calendar.SelectedDate=null;
+        _calendar.BlackoutDates.Clear();
+        for (var day=_analyticsFrom.Date;day<=_analyticsTo.Date;day=day.AddDays(1))
         {
-            var day = date;
-            var count = intervals.Count(p=>Overlap(p.Starttime,p.Endtime ?? _analyticsTo,day,day.AddDays(1)));
-            var hasStates = states.Any(s=>Overlap(s.Starttime,s.Endtime ?? _analyticsTo,day,day.AddDays(1)));
-            var button = new Button {
-                Content = day.ToString("ddd dd.MM", new CultureInfo("cs-CZ")) + "\n" + count + " intervalů",
-                Width = 115, Height = 58, Margin = new Thickness(3), Padding = new Thickness(4),
-                Background = day == _selectedDay ? new SolidColorBrush(Color.FromRgb(59,130,246)) :
-                    hasStates ? new SolidColorBrush(Color.FromRgb(36,115,80)) : Brushes.Transparent
-            };
-            button.Click += (_,_) => { _selectedDay = _selectedDay == day ? null : day; RenderAnalytics(); };
-            days.Children.Add(button);
+            var isProduction=intervals.Any(p=>Overlap(p.Starttime,p.Endtime ?? _analyticsTo,day,day.AddDays(1)));
+            if (!isProduction) _calendar.BlackoutDates.Add(new CalendarDateRange(day));
         }
-        _analyticsPanel.Children.Add(days);
+        _calendar.SelectedDate=_selectedDay;
+        _calendar.SelectedDatesChanged += CalendarChanged;
+        _analyticsPanel.Children.Add(Card(_calendar));
+        if (_selectedDay.HasValue)
+        {
+            var clear=new Button { Content="Zobrazit všechny směny",Margin=new Thickness(0,0,0,8),Padding=new Thickness(8) };
+            clear.Click+=(_,__)=>{_selectedDay=null;RenderAnalytics();};
+            _analyticsPanel.Children.Add(clear);
+        }
         var aFrom = _selectedDay ?? _analyticsFrom;
         var aTo = _selectedDay.HasValue ? _selectedDay.Value.AddDays(1) : _analyticsTo;
         if (aFrom < _analyticsFrom) aFrom = _analyticsFrom;
         if (aTo > _analyticsTo) aTo = _analyticsTo;
         if (_selectedDay.HasValue) _analyticsPanel.Children.Add(Label("Vybraný den: " + _selectedDay.Value.ToString("dd.MM.yyyy") + " (kliknutím zrušíš filtr)"));
+        var shiftTabs = new TabControl { Margin=new Thickness(0,7,0,12) };
         for (var shift = ShiftBeginning(aFrom); shift < aTo; shift = shift.AddHours(8))
         {
             var start = shift > aFrom ? shift : aFrom;
@@ -246,9 +359,9 @@ public sealed partial class MesOrderHistoryView
             var shiftCounters = counters.Where(c=>c.Timestamp>=start && c.Timestamp<end).ToList();
             var shiftOperators = operators.Where(o=>o.LoginFrom.HasValue &&
                 Overlap(o.LoginFrom.Value,o.LoginTo ?? _analyticsTo,start,end)).ToList();
-            var expander = new Expander {
-                Header = $"{ShiftLabel(shift)} · {shift:dd.MM.yyyy} · {start:HH:mm}–{end:HH:mm}",
-                IsExpanded = _selectedDay.HasValue, Margin = new Thickness(0,5,0,5)
+            var tab = new TabItem {
+                Header = $"{ShiftLabel(shift)} · {shift:dd.MM.yyyy}",
+                ToolTip = $"{start:HH:mm}–{end:HH:mm}"
             };
             var content = new StackPanel { Margin = new Thickness(10) };
             content.Children.Add(Label("Časová osa stavů",16));
@@ -287,28 +400,45 @@ public sealed partial class MesOrderHistoryView
                 canvas.Children.Add(segment);
             }
             content.Children.Add(timeline);
-            content.Children.Add(Label("Stavy a prostoje",15));
+            content.Children.Add(Label("Stavy a prostoje — podíl a trvání",15));
+            content.Children.Add(PieChart(shiftStates,start,end));
             content.Children.Add(Table(shiftStates.GroupBy(x=>x.StateName).Select(g=>new {
                 Stav = g.Key, Výskytů = g.Count(),
                 Minut = Math.Round(g.Sum(x=>Minutes(x.Starttime,x.Endtime ?? _analyticsTo,start,end)),1),
                 PodílProcent = Math.Round(100*g.Sum(x=>Minutes(x.Starttime,x.Endtime ?? _analyticsTo,start,end))/Math.Max(1,(end-start).TotalMinutes),1)
             }).OrderByDescending(x=>x.Minut).Cast<object>()));
             content.Children.Add(Label("Operátoři",15));
-            content.Children.Add(Table(shiftOperators.GroupBy(x=>new {x.HumanCode,x.SapNumber,x.OperatorName})
+            content.Children.Add(Table(shiftOperators.GroupBy(x=>new {x.HumanCode,x.OperatorName})
                 .Select(g=>new {
-                    SAP = g.Key.SapNumber, Operátor = g.Key.OperatorName,
-                    Přihlášení = g.Min(x=>x.LoginFrom),
-                    Odhlášení = g.Max(x=>x.LoginTo),
-                    Minut = Math.Round(g.Sum(x=>Minutes(x.LoginFrom ?? start,x.LoginTo ?? _analyticsTo,start,end)),1)
+                    OsobníČíslo=g.Key.HumanCode, Jméno=g.Key.OperatorName,
+                    Od=g.Min(x=>x.LoginFrom), Do=g.Max(x=>x.LoginTo),
+                    Hodin=Math.Round(UnionMinutes(g.Where(x=>x.LoginFrom.HasValue)
+                        .Select(x=>(x.LoginFrom.Value,x.LoginTo ?? _analyticsTo)),start,end)/60,2)
                 }).Cast<object>()));
-            content.Children.Add(Label("Čítačové události",15));
-            content.Children.Add(Table(shiftCounters.Select(c=>new {
-                Čas = c.Timestamp, Pracoviště = c.WorkcenterCode, Čítač = c.CounterName,
-                Hodnota = Math.Round(c.Value,0)
+            content.Children.Add(Label("Čítače",15));
+            content.Children.Add(Table(shiftCounters.GroupBy(c=>c.CounterName)
+                .Select(g=>new {
+                    Čítač=g.Key, Hodnota=Math.Round(g.OrderByDescending(c=>c.Timestamp).First().Value,0)
+                }).OrderBy(x=>x.Čítač).Cast<object>()));
+            content.Children.Add(Label("Procesní zprávy",15));
+            var shiftMessages=messages.Where(m=>Overlap(m.Starttime,m.Endtime,start,end)).ToList();
+            if (shiftMessages.Count == 0) content.Children.Add(Label("Pro tuto směnu nejsou procesní zprávy."));
+            else content.Children.Add(Table(shiftMessages.Select(m=>new {
+                Od=m.Starttime, Do=m.Endtime, Zpráva=m.StateName
             }).Cast<object>()));
-            content.Children.Add(Label("Procesní hodnoty: volitelné; zatím nejsou napojené."));
-            expander.Content = content;
-            _analyticsPanel.Children.Add(expander);
+            content.Children.Add(Label("Číselné procesní hodnoty (např. teplota): prozatím chybí ověřený historický SQL zdroj."));
+            tab.Content = new ScrollViewer { Content=content,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,MaxHeight=650 };
+            shiftTabs.Items.Add(tab);
         }
+        if (shiftTabs.Items.Count == 0) _analyticsPanel.Children.Add(Label("Pro výběr nejsou dostupné směny."));
+        else _analyticsPanel.Children.Add(shiftTabs);
+    }
+    private void CalendarChanged(object sender, SelectionChangedEventArgs args)
+    {
+        if (!_dataLoaded) return;
+        var chosen=_calendar.SelectedDate;
+        if (!chosen.HasValue || chosen.Value==_selectedDay) return;
+        _selectedDay=chosen.Value.Date;
+        RenderAnalytics();
     }
 }
