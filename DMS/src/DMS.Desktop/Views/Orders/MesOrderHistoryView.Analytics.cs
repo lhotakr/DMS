@@ -246,7 +246,7 @@ public sealed partial class MesOrderHistoryView
         }
         _operationSelector.SelectedIndex = 0;
         _operationSelector.SelectionChanged += OperationChanged;
-        _selectedDay = _allProduction.Select(x => x.Starttime.Date).OrderBy(x => x).Cast<DateTime?>().FirstOrDefault();
+        _selectedDay = null; // V6: aggregate all shift-days until a day is explicitly selected.
         RenderAnalytics();
     }
     private void OperationChanged(object sender, SelectionChangedEventArgs e)
@@ -279,6 +279,7 @@ public sealed partial class MesOrderHistoryView
         if (_operationSelector.Parent is Panel parent) parent.Children.Remove(_operationSelector);
         header.Children.Add(_operationSelector);
         _analyticsPanel.Children.Add(Card(header));
+        AddExportControlsV6();
 
         var intervals = _allProduction.Where(x => selection == null || string.IsNullOrEmpty(selection.Code)
             || (x.OperationCode == selection.Code && x.WorkcenterCode == selection.Workcenter)).ToList();
@@ -332,7 +333,8 @@ public sealed partial class MesOrderHistoryView
         _calendar.DisplayDate = _selectedDay ?? _analyticsFrom.Date;
         for (var day=_analyticsFrom.Date;day<=_analyticsTo.Date;day=day.AddDays(1))
         {
-            var isProduction=intervals.Any(p=>Overlap(p.Starttime,p.Endtime ?? _analyticsTo,day,day.AddDays(1)));
+            var fromShiftDay=day.AddHours(5).AddMinutes(55);
+            var isProduction=intervals.Any(p=>Overlap(p.Starttime,p.Endtime ?? _analyticsTo,fromShiftDay,fromShiftDay.AddDays(1)));
             if (!isProduction) _calendar.BlackoutDates.Add(new CalendarDateRange(day));
         }
         // A stale selection must never be assigned to a blacked-out or out-of-range date.
@@ -351,99 +353,8 @@ public sealed partial class MesOrderHistoryView
             clear.Click+=(_,__)=>{_selectedDay=null;RenderAnalytics();};
             _analyticsPanel.Children.Add(clear);
         }
-        var aFrom = _selectedDay ?? _analyticsFrom;
-        var aTo = _selectedDay.HasValue ? _selectedDay.Value.AddDays(1) : _analyticsTo;
-        if (aFrom < _analyticsFrom) aFrom = _analyticsFrom;
-        if (aTo > _analyticsTo) aTo = _analyticsTo;
-        if (_selectedDay.HasValue) _analyticsPanel.Children.Add(Label("Vybraný den: " + _selectedDay.Value.ToString("dd.MM.yyyy") + " (kliknutím zrušíš filtr)"));
-        var shiftTabs = new TabControl { Margin=new Thickness(0,7,0,12) };
-        for (var shift = ShiftBeginning(aFrom); shift < aTo; shift = shift.AddHours(8))
-        {
-            var start = shift > aFrom ? shift : aFrom;
-            var end = shift.AddHours(8) < aTo ? shift.AddHours(8) : aTo;
-            if (end <= start) continue;
-            var shiftStates = states.Where(s=>Overlap(s.Starttime,s.Endtime ?? _analyticsTo,start,end)).ToList();
-            var shiftCounters = counters.Where(c=>c.Timestamp>=start && c.Timestamp<end).ToList();
-            var shiftOperators = operators.Where(o=>o.LoginFrom.HasValue &&
-                Overlap(o.LoginFrom.Value,o.LoginTo ?? _analyticsTo,start,end)).ToList();
-            var tab = new TabItem {
-                Header = $"{ShiftLabel(shift)} · {shift:dd.MM.yyyy}",
-                ToolTip = $"{start:HH:mm}–{end:HH:mm}"
-            };
-            var content = new StackPanel { Margin = new Thickness(10) };
-            content.Children.Add(Label("Časová osa stavů",16));
-            var timeline = new Grid { Height = 30, Margin = new Thickness(0,6,0,8), Background = new SolidColorBrush(Color.FromRgb(85,92,103)) };
-            foreach (var state in shiftStates.OrderBy(x=>x.Starttime))
-            {
-                var from = state.Starttime > start ? state.Starttime : start;
-                var to = (state.Endtime ?? _analyticsTo) < end ? (state.Endtime ?? _analyticsTo) : end;
-                if (to <= from) continue;
-                var left = (from-start).TotalSeconds/(end-start).TotalSeconds;
-                var width = (to-from).TotalSeconds/(end-start).TotalSeconds;
-                var segment = new Border {
-                    Background = StateBrush(state),
-                    ToolTip = $"{state.StateName}\n{from:HH:mm:ss}–{to:HH:mm:ss}\n{(to-from).TotalMinutes:N1} min",
-                    HorizontalAlignment = HorizontalAlignment.Left,
-                    Width = Math.Max(1, width * 1000), Height = 30
-                };
-                // Canvas gives precise positioning and keeps gaps visible.
-                var canvas = timeline.Children.OfType<Canvas>().FirstOrDefault();
-                if (canvas == null)
-                {
-                    canvas = new Canvas { ClipToBounds = true };
-                    timeline.Children.Add(canvas);
-                    canvas.SizeChanged += (_,__) => {
-                        foreach (var b in canvas.Children.OfType<Border>())
-                        {
-                            if (b.Tag is Tuple<double,double> t) {
-                                Canvas.SetLeft(b,t.Item1*canvas.ActualWidth);
-                                b.Width=Math.Max(1,t.Item2*canvas.ActualWidth);
-                            }
-                        }
-                    };
-                }
-                segment.Tag = Tuple.Create(left,width);
-                Canvas.SetLeft(segment,left*1000);
-                canvas.Children.Add(segment);
-            }
-            content.Children.Add(timeline);
-            content.Children.Add(Label("Stavy a prostoje — podíl a trvání",15));
-            content.Children.Add(PieChart(shiftStates,start,end));
-            content.Children.Add(Table(shiftStates.GroupBy(x=>x.StateName).Select(g=>new {
-                Stav = g.Key, Výskytů = g.Count(),
-                Minut = Math.Round(g.Sum(x=>Minutes(x.Starttime,x.Endtime ?? _analyticsTo,start,end)),1),
-                PodílProcent = Math.Round(100*g.Sum(x=>Minutes(x.Starttime,x.Endtime ?? _analyticsTo,start,end))/Math.Max(1,(end-start).TotalMinutes),1)
-            }).OrderByDescending(x=>x.Minut).Cast<object>()));
-            content.Children.Add(Label("Operátoři",15));
-            content.Children.Add(Table(shiftOperators.GroupBy(x=>new {x.HumanCode,x.OperatorName})
-                .Select(g=>new {
-                    OsobníČíslo=g.Key.HumanCode, Jméno=g.Key.OperatorName,
-                    Od=g.Min(x=>x.LoginFrom), Do=g.Max(x=>x.LoginTo),
-                    Hodin=Math.Round(UnionMinutes(g.Where(x=>x.LoginFrom.HasValue)
-                        .Select(x=>(x.LoginFrom.Value,x.LoginTo ?? _analyticsTo)),start,end)/60,2)
-                }).Cast<object>()));
-            content.Children.Add(Label("Čítače",15));
-            content.Children.Add(Table(shiftCounters.GroupBy(c=>c.CounterName)
-                .Select(g=>new {
-                    Čítač=g.Key, Hodnota=Math.Round(g.OrderByDescending(c=>c.Timestamp).First().Value,0)
-                }).OrderBy(x=>x.Čítač).Cast<object>()));
-            // Uses the same read-only FASTEC source and DTO as MES06 PROCESS_VALUES.
-            // These are historical process states/messages, not numeric measurements.
-            content.Children.Add(Label("Procesní hodnoty (MES06)",15));
-            var shiftMessages=messages.Where(m=>Overlap(m.Starttime,m.Endtime,start,end))
-                .OrderBy(m=>m.Starttime).ToList();
-            if (shiftMessages.Count == 0) content.Children.Add(Label("Pro tuto směnu nejsou procesní záznamy."));
-            else content.Children.Add(Table(shiftMessages.Select(m=>new {
-                Úroveň=m.Level, Pracoviště=m.WorkcenterCode, Stav=m.StateName,
-                Od=m.Starttime, Do=m.Endtime, Délka=m.DurationText,
-                Zakázka=m.OrderCode, Artikl=m.ProductCode,
-                Operace=m.OperationCode, Směna=m.ShiftName
-            }).Cast<object>()));
-            tab.Content = new ScrollViewer { Content=content,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,MaxHeight=650 };
-            shiftTabs.Items.Add(tab);
-        }
-        if (shiftTabs.Items.Count == 0) _analyticsPanel.Children.Add(Label("Pro výběr nejsou dostupné směny."));
-        else _analyticsPanel.Children.Add(shiftTabs);
+        // V6: always exactly three tabs, aggregating all matching shift-days.
+        RenderShiftTabsV6();
     }
     private void CalendarChanged(object sender, SelectionChangedEventArgs args)
     {
