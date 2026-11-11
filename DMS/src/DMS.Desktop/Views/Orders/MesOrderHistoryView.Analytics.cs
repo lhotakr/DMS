@@ -30,6 +30,7 @@ public sealed partial class MesOrderHistoryView
     private DateTime _analyticsFrom, _analyticsTo;
     private DateTime? _selectedDay;
     private bool _dataLoaded;
+    private bool _calendarRenderQueued;
 
     private sealed class OperationChoice
     {
@@ -304,13 +305,7 @@ public sealed partial class MesOrderHistoryView
         if (selection != null && !string.IsNullOrEmpty(selection.Code))
             _analyticsPanel.Children.Add(Label("Poznámka: stavy a čítače nemají ve zdrojových záznamech číslo operace. Přiřazení k operaci vychází z překryvu výrobních intervalů a pracoviště."));
 
-        var stateMinutes = states.Sum(s => Minutes(s.Starttime,s.Endtime ?? _analyticsTo,_analyticsFrom,_analyticsTo));
-        var panel = new WrapPanel();
-        panel.Children.Add(Card(Label("Zaznamenané stavy\n" + Math.Round(stateMinutes / 60,1).ToString("N1") + " h",18), new Thickness(0,4,8,4)));
-        panel.Children.Add(Card(Label("Výrobní intervaly\n" + intervals.Count.ToString("N0"),18), new Thickness(0,4,8,4)));
-        panel.Children.Add(Card(Label("Čítačové události\n" + counters.Count.ToString("N0"),18), new Thickness(0,4,8,4)));
-        panel.Children.Add(Card(Label("Operátoři\n" + operators.Select(o=>o.HumanCode).Distinct().Count().ToString("N0"),18), new Thickness(0,4,8,4)));
-        _analyticsPanel.Children.Add(panel);
+        // MESORD ToDo 2026-11-06: unneeded KPI cards omitted; charts and tables remain.
 
         _analyticsPanel.Children.Add(Label("Rozložení stavů zakázky", 18));
         _analyticsPanel.Children.Add(PieChart(states,_analyticsFrom,_analyticsTo));
@@ -323,19 +318,31 @@ public sealed partial class MesOrderHistoryView
         _analyticsPanel.Children.Add(Label("Hodnota = poslední zaznamenaná hodnota, nikoli automatický součet. Typ čítače je potřeba ověřit ve FASTEC."));
 
         _analyticsPanel.Children.Add(Label("Kalendář výroby", 19));
-        if (_calendar.Parent is Panel previousParent) previousParent.Children.Remove(_calendar);
+        // Card(...) wraps the calendar in Border, not Panel. Detach from both types
+        // before assigning the same WPF element to a new parent.
+        if (_calendar.Parent is Border previousBorder) previousBorder.Child = null;
+        else if (_calendar.Parent is Panel previousParent) previousParent.Children.Remove(_calendar);
         _calendar.SelectedDatesChanged -= CalendarChanged;
-        _calendar.DisplayDateStart=_analyticsFrom.Date;
-        _calendar.DisplayDateEnd=_analyticsTo.Date;
-        _calendar.DisplayDate=_selectedDay ?? _analyticsFrom.Date;
-        _calendar.SelectedDate=null;
+        // First clear the prior selection, then change the permitted date interval.
+        // This avoids coercing an old selection into a newly restricted interval.
+        _calendar.SelectedDate = null;
         _calendar.BlackoutDates.Clear();
+        _calendar.DisplayDateStart = _analyticsFrom.Date;
+        _calendar.DisplayDateEnd = _analyticsTo.Date;
+        _calendar.DisplayDate = _selectedDay ?? _analyticsFrom.Date;
         for (var day=_analyticsFrom.Date;day<=_analyticsTo.Date;day=day.AddDays(1))
         {
             var isProduction=intervals.Any(p=>Overlap(p.Starttime,p.Endtime ?? _analyticsTo,day,day.AddDays(1)));
             if (!isProduction) _calendar.BlackoutDates.Add(new CalendarDateRange(day));
         }
-        _calendar.SelectedDate=_selectedDay;
+        // A stale selection must never be assigned to a blacked-out or out-of-range date.
+        if (_selectedDay.HasValue
+            && _selectedDay.Value >= _analyticsFrom.Date
+            && _selectedDay.Value <= _analyticsTo.Date
+            && !_calendar.BlackoutDates.Contains(_selectedDay.Value))
+            _calendar.SelectedDate = _selectedDay.Value;
+        else
+            _selectedDay = null;
         _calendar.SelectedDatesChanged += CalendarChanged;
         _analyticsPanel.Children.Add(Card(_calendar));
         if (_selectedDay.HasValue)
@@ -420,13 +427,18 @@ public sealed partial class MesOrderHistoryView
                 .Select(g=>new {
                     Čítač=g.Key, Hodnota=Math.Round(g.OrderByDescending(c=>c.Timestamp).First().Value,0)
                 }).OrderBy(x=>x.Čítač).Cast<object>()));
-            content.Children.Add(Label("Procesní zprávy",15));
-            var shiftMessages=messages.Where(m=>Overlap(m.Starttime,m.Endtime,start,end)).ToList();
-            if (shiftMessages.Count == 0) content.Children.Add(Label("Pro tuto směnu nejsou procesní zprávy."));
+            // Uses the same read-only FASTEC source and DTO as MES06 PROCESS_VALUES.
+            // These are historical process states/messages, not numeric measurements.
+            content.Children.Add(Label("Procesní hodnoty (MES06)",15));
+            var shiftMessages=messages.Where(m=>Overlap(m.Starttime,m.Endtime,start,end))
+                .OrderBy(m=>m.Starttime).ToList();
+            if (shiftMessages.Count == 0) content.Children.Add(Label("Pro tuto směnu nejsou procesní záznamy."));
             else content.Children.Add(Table(shiftMessages.Select(m=>new {
-                Od=m.Starttime, Do=m.Endtime, Zpráva=m.StateName
+                Úroveň=m.Level, Pracoviště=m.WorkcenterCode, Stav=m.StateName,
+                Od=m.Starttime, Do=m.Endtime, Délka=m.DurationText,
+                Zakázka=m.OrderCode, Artikl=m.ProductCode,
+                Operace=m.OperationCode, Směna=m.ShiftName
             }).Cast<object>()));
-            content.Children.Add(Label("Číselné procesní hodnoty (např. teplota): prozatím chybí ověřený historický SQL zdroj."));
             tab.Content = new ScrollViewer { Content=content,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,MaxHeight=650 };
             shiftTabs.Items.Add(tab);
         }
@@ -439,6 +451,20 @@ public sealed partial class MesOrderHistoryView
         var chosen=_calendar.SelectedDate;
         if (!chosen.HasValue || chosen.Value==_selectedDay) return;
         _selectedDay=chosen.Value.Date;
-        RenderAnalytics();
+        // Defer reparenting until the Calendar has completed its selection event.
+        // Multiple fast clicks are coalesced; the latest selected day wins.
+        if (_calendarRenderQueued) return;
+        _calendarRenderQueued = true;
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            _calendarRenderQueued = false;
+            if (!_dataLoaded || !IsLoaded) return;
+            try { RenderAnalytics(); }
+            catch (Exception ex)
+            {
+                _logger.Error("MESORD calendar refresh failed.", ex);
+                _status.Text = "Zobrazení vybraného dne selhalo. Podrobnosti jsou v LOG03.";
+            }
+        }), System.Windows.Threading.DispatcherPriority.Background);
     }
 }

@@ -31,6 +31,7 @@ public sealed partial class MesOrderHistoryView : UserControl
         _orderNumber = (orderNumber ?? string.Empty).Trim();
         _configRoot = configurationRootPath;
         _logger = logger;
+        _calendar.SetResourceReference(FrameworkElement.StyleProperty, "DmsMesOrderCalendarStyle");
         var root = new StackPanel { Margin = new Thickness(18) };
         root.Children.Add(new TextBlock { Text = "MESORD – historie výrobní zakázky", FontSize = 23, FontWeight = FontWeights.SemiBold });
         root.Children.Add(_plantInfo);
@@ -43,14 +44,11 @@ public sealed partial class MesOrderHistoryView : UserControl
         AddColumn("Popis", nameof(MesProductionOrderOperationRecord.Description));
         AddColumn("Začátek", nameof(MesProductionOrderOperationRecord.ActualStart));
         AddColumn("Konec", nameof(MesProductionOrderOperationRecord.ActualEnd));
-        AddColumn("Dobré kusy", nameof(MesProductionOrderOperationRecord.FinishedQuantity));
-        AddColumn("Odpad", nameof(MesProductionOrderOperationRecord.ScrapQuantity));
+        AddColumn("Dobré kusy", nameof(MesProductionOrderOperationRecord.FinishedQuantity), "N0");
+        AddColumn("Odpad", nameof(MesProductionOrderOperationRecord.ScrapQuantity), "N0");
         root.Children.Add(_operations);
         root.Children.Add(_analyticsPanel);
-        root.Children.Add(new TextBlock {
-            Text = "Denní výroba, historie přihlášení operátorů a procesní hodnoty: čeká se na ověření historických zdrojů dat FASTEC. Zde se nezobrazují odhadované hodnoty.",
-            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 18, 0, 8), Foreground = Brushes.DarkOrange
-        });
+        // MESORD ToDo 2026-11-06: removed outdated reporting-source warning.
         root.Children.Add(new TextBlock {
             Text = "Intercompany: vazba na zakázku závodu 9200 a evidence kvality jsou připraveny jako samostatné rozšíření, nikoli jako změna dat FASTEC.",
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 8)
@@ -59,10 +57,18 @@ public sealed partial class MesOrderHistoryView : UserControl
         Loaded += async (_, _) => { if (_loaded) return; _loaded = true; await LoadAsync(); };
     }
 
-    private void AddColumn(string header, string property) => _operations.Columns.Add(new DataGridTextColumn
+    private void AddColumn(string header, string property, string? numberFormat = null)
     {
-        Header = header, Binding = new Binding(property), Width = new DataGridLength(1, DataGridLengthUnitType.Star)
-    });
+        var binding = new Binding(property);
+        if (!string.IsNullOrEmpty(numberFormat))
+            binding.StringFormat = numberFormat;
+
+        _operations.Columns.Add(new DataGridTextColumn
+        {
+            Header = header, Binding = binding,
+            Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+        });
+    }
 
     private async Task LoadAsync()
     {
