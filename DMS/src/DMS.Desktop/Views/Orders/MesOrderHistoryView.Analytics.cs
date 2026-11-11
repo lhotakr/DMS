@@ -40,15 +40,7 @@ public sealed partial class MesOrderHistoryView
         public override string ToString() => Caption;
     }
 
-    private static DateTime ShiftBeginning(DateTime time)
-    {
-        var day = time.Date;
-        if (time.TimeOfDay < new TimeSpan(5,55,0)) return day.AddDays(-1).AddHours(21).AddMinutes(55);
-        if (time.TimeOfDay < new TimeSpan(13,55,0)) return day.AddHours(5).AddMinutes(55);
-        if (time.TimeOfDay < new TimeSpan(21,55,0)) return day.AddHours(13).AddMinutes(55);
-        return day.AddHours(21).AddMinutes(55);
-    }
-    private static string ShiftLabel(DateTime start) => start.Hour == 5 ? "Ranní" : start.Hour == 13 ? "Odpolední" : "Noční";
+    // MESORD v6.1: real historical shift boundaries come from FASTEC DimShiftEvent.
     private static TextBlock Label(string text, int size = 14) => new()
     {
         Text = text, FontSize = size, TextWrapping = TextWrapping.Wrap,
@@ -198,8 +190,23 @@ public sealed partial class MesOrderHistoryView
         var enrichment = new MesReportingEnrichmentService(settings);
         _allStates.Clear(); _allCounters.Clear(); _allProduction.Clear(); _allOperators.Clear();
         _stateColors.Clear(); _processMessages.Clear(); _analyticsErrors.Clear();
+        _mesordShiftEventsV61.Clear();
         try { _stateColors.AddRange(await enrichment.GetStateColorsAsync()); }
         catch (Exception ex) { _analyticsErrors.Add("Barvy stavů: " + ex.Message); }
+        try
+        {
+            // Identical read-only FASTEC source used in MES06. The wider query
+            // includes the previous night shift and historical boundary changes.
+            _mesordShiftEventsV61.AddRange(await enrichment.GetShiftEventsAsync(
+                _analyticsFrom.AddDays(-2), _analyticsTo.AddDays(2)));
+            if (_mesordShiftEventsV61.Count == 0)
+                _analyticsErrors.Add("Směny: FASTEC DimShiftEvent nevrátil žádné směnové intervaly. Směny neodhadujeme.");
+        }
+        catch (Exception ex)
+        {
+            _analyticsErrors.Add("Směny: nelze načíst definice z FASTEC. Záložky nejsou odhadované. " + ex.Message);
+            _logger.Error("MESORD historical FASTEC shift load failed.", ex);
+        }
         _dataLoaded = false;
         _analyticsPanel.Children.Add(Label("Načítám výrobní historii, čítače a operátory…"));
         // Bounded windows avoid one huge report. Every request is read-only.
@@ -308,15 +315,8 @@ public sealed partial class MesOrderHistoryView
 
         // MESORD ToDo 2026-11-06: unneeded KPI cards omitted; charts and tables remain.
 
-        _analyticsPanel.Children.Add(Label("Rozložení stavů zakázky", 18));
-        _analyticsPanel.Children.Add(PieChart(states,_analyticsFrom,_analyticsTo));
-        _analyticsPanel.Children.Add(Label("Souhrn čítačů", 18));
-        _analyticsPanel.Children.Add(Table(counters.GroupBy(x=>new { x.WorkcenterCode,x.CounterName })
-            .Select(g=>new {
-                Pracoviště=g.Key.WorkcenterCode, Čítač=g.Key.CounterName,
-                Hodnota=Math.Round(g.OrderByDescending(x=>x.Timestamp).First().Value,0)
-            }).OrderBy(x=>x.Pracoviště).ThenBy(x=>x.Čítač).Cast<object>()));
-        _analyticsPanel.Children.Add(Label("Hodnota = poslední zaznamenaná hodnota, nikoli automatický součet. Typ čítače je potřeba ověřit ve FASTEC."));
+        // MESORD v6.1: both overviews share the available horizontal space.
+        AddCompactOrderOverviewV61(states, counters);
 
         _analyticsPanel.Children.Add(Label("Kalendář výroby", 19));
         // Card(...) wraps the calendar in Border, not Panel. Detach from both types
@@ -328,19 +328,26 @@ public sealed partial class MesOrderHistoryView
         // This avoids coercing an old selection into a newly restricted interval.
         _calendar.SelectedDate = null;
         _calendar.BlackoutDates.Clear();
-        _calendar.DisplayDateStart = _analyticsFrom.Date;
-        _calendar.DisplayDateEnd = _analyticsTo.Date;
-        _calendar.DisplayDate = _selectedDay ?? _analyticsFrom.Date;
-        for (var day=_analyticsFrom.Date;day<=_analyticsTo.Date;day=day.AddDays(1))
+        // The calendar must use actual shift events from FASTEC.
+        var allDatabaseShifts = GetShiftWindowsFromDatabaseV61(false);
+        var firstDay = allDatabaseShifts.Count == 0 ? _analyticsFrom.Date :
+            allDatabaseShifts.Min(s => s.ShiftDay.Date);
+        var lastDay = allDatabaseShifts.Count == 0 ? _analyticsTo.Date :
+            allDatabaseShifts.Max(s => s.ShiftDay.Date);
+        _calendar.DisplayDateStart = firstDay;
+        _calendar.DisplayDateEnd = lastDay;
+        _calendar.DisplayDate = _selectedDay ?? firstDay;
+        for (var day=firstDay;day<=lastDay;day=day.AddDays(1))
         {
-            var fromShiftDay=day.AddHours(5).AddMinutes(55);
-            var isProduction=intervals.Any(p=>Overlap(p.Starttime,p.Endtime ?? _analyticsTo,fromShiftDay,fromShiftDay.AddDays(1)));
+            var dayShifts = allDatabaseShifts.Where(s => s.ShiftDay.Date == day);
+            var isProduction = dayShifts.Any(s => intervals.Any(p =>
+                Overlap(p.Starttime, p.Endtime ?? _analyticsTo, s.Start, s.End)));
             if (!isProduction) _calendar.BlackoutDates.Add(new CalendarDateRange(day));
         }
         // A stale selection must never be assigned to a blacked-out or out-of-range date.
         if (_selectedDay.HasValue
-            && _selectedDay.Value >= _analyticsFrom.Date
-            && _selectedDay.Value <= _analyticsTo.Date
+            && _selectedDay.Value >= firstDay
+            && _selectedDay.Value <= lastDay
             && !_calendar.BlackoutDates.Contains(_selectedDay.Value))
             _calendar.SelectedDate = _selectedDay.Value;
         else

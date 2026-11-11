@@ -27,6 +27,8 @@ public sealed partial class MesOrderHistoryView
         public DateTime Start { get; init; }
         public DateTime End { get; init; }
         public string Name { get; init; } = "";
+        public string SourceName { get; init; } = "";
+        public DateTime ShiftDay { get; init; }
     }
 
     private sealed class MesordV6Data
@@ -40,23 +42,8 @@ public sealed partial class MesOrderHistoryView
 
     private static readonly string[] MesordV6ShiftNames = { "Ranní", "Odpolední", "Noční" };
 
-    private List<MesordV6ShiftWindow> GetShiftWindowsV6()
-    {
-        var result = new List<MesordV6ShiftWindow>();
-        if (_analyticsTo <= _analyticsFrom) return result;
-        var earliest = _selectedDay?.Date.AddHours(5).AddMinutes(55);
-        var latest = earliest?.AddDays(1);
-        // Bound includes the shift that started before the query and crosses midnight.
-        for (var start = ShiftBeginning(_analyticsFrom); start < _analyticsTo; start = start.AddHours(8))
-        {
-            if (earliest.HasValue && (start < earliest.Value || start >= latest!.Value)) continue;
-            var a = start > _analyticsFrom ? start : _analyticsFrom;
-            var b = start.AddHours(8) < _analyticsTo ? start.AddHours(8) : _analyticsTo;
-            if (b <= a) continue;
-            result.Add(new MesordV6ShiftWindow { Start = a, End = b, Name = ShiftLabel(start) });
-        }
-        return result;
-    }
+    private List<MesordV6ShiftWindow> GetShiftWindowsV6() =>
+        GetShiftWindowsFromDatabaseV61();
 
     private MesordV6Data BuildDataV6(OperationChoice? operation)
     {
@@ -112,12 +99,16 @@ public sealed partial class MesOrderHistoryView
     {
         var data = BuildDataV6(_operationSelector.SelectedItem as OperationChoice);
         if (_selectedDay.HasValue)
-            _analyticsPanel.Children.Add(Label("Směnový den: " + _selectedDay.Value.ToString("dd.MM.yyyy") + " (05:55–05:55 následujícího dne)"));
+            _analyticsPanel.Children.Add(Label("Směnový den: " + _selectedDay.Value.ToString("dd.MM.yyyy") + " (hranice podle FASTEC DimShiftEvent)"));
         else
             _analyticsPanel.Children.Add(Label("Všechny směnové dny zakázky – sloučeno podle typu směny"));
 
         var tabs = new TabControl { Margin = new Thickness(0, 7, 0, 12) };
-        foreach (var name in MesordV6ShiftNames)
+        if (data.Windows.Count == 0)
+            _analyticsPanel.Children.Add(Label("FASTEC: žádné směnové intervaly pro vybrané období. Směny se neodhadují."));
+        var shiftTabs = MesordV6ShiftNames.Concat(data.Windows.Select(w => w.Name)
+            .Where(name => !MesordV6ShiftNames.Contains(name))).Distinct();
+        foreach (var name in shiftTabs)
         {
             var windows = data.Windows.Where(w => w.Name == name).ToList();
             var states = data.States.Where(s => OverlapsWindowsV6(s.Starttime, s.Endtime ?? _analyticsTo, windows)).ToList();
@@ -127,9 +118,40 @@ public sealed partial class MesOrderHistoryView
             var messages = data.Messages.Where(m => OverlapsWindowsV6(m.Starttime, m.Endtime, windows)).ToList();
 
             var content = new StackPanel { Margin = new Thickness(8) };
-            content.Children.Add(Label($"{name} · {windows.Count} směn · stavy {states.Count} · operátoři {operators.Count} · čítače {counters.Count}", 14));
+            // MESORD v6.1: redundant shift banner removed.
 
-            // Every row denotes a distinct workcenter + process state, as in MES06.
+            // Two different views: state share by duration and actual chronological sequence.
+            content.Children.Add(Label("Stavy a prostoje – podíl a trvání", 16));
+            content.Children.Add(CreateShiftPieV61(states, windows));
+            content.Children.Add(Label("Průběh směny – chronologie stavů", 16));
+            var stateTimelines = new StackPanel();
+            foreach (var window in windows)
+            {
+                var w = window;
+                var windowStates = states.Where(s => Overlap(s.Starttime, s.Endtime ?? _analyticsTo, w.Start, w.End)).ToList();
+                var expander = new Expander
+                {
+                    Header = $"{w.ShiftDay:dd.MM.yyyy} · {w.Start:HH:mm}–{w.End:HH:mm} · FASTEC: {w.SourceName}",
+                    Margin = new Thickness(0, 3, 0, 3)
+                };
+                if (windows.Count <= 2)
+                {
+                    expander.Content = CreateShiftStateTimelineV61(windowStates, w.Start, w.End);
+                    expander.IsExpanded = true;
+                }
+                else
+                {
+                    expander.Expanded += (_, _) =>
+                    {
+                        if (expander.Content == null)
+                            expander.Content = CreateShiftStateTimelineV61(windowStates, w.Start, w.End);
+                    };
+                }
+                stateTimelines.Children.Add(expander);
+            }
+            content.Children.Add(stateTimelines);
+
+            // MES06 process-message timeline stays immediately above the three tables.
             content.Children.Add(Label("Procesní hodnoty – časová osa MES06", 16));
             var processStack = new StackPanel();
             foreach (var window in windows)
@@ -213,11 +235,10 @@ public sealed partial class MesOrderHistoryView
     }
 
     private static UIElement CreateProcessTimelineV6(
-        IReadOnlyList<Mes06ProcessValueRecord> messages, DateTime start, DateTime end)
+        IReadOnlyList<Mes06ProcessValueRecord> messages, DateTime start, DateTime end, double chartWidth = 1120)
     {
-        const double chartWidth = 1120;
         const double left = 240;
-        const double plotWidth = chartWidth - left - 20;
+        double plotWidth = chartWidth - left - 20;
         const double rowHeight = 23;
         var lanes = messages.GroupBy(m => (m.WorkcenterCode, m.StateName)).ToList();
         var height = 46 + rowHeight * lanes.Count;
@@ -342,24 +363,25 @@ public sealed partial class MesOrderHistoryView
                 "Operace: " + (operation?.Caption ?? "Celá zakázka"),
                 "Období zakázky: " + _analyticsFrom.ToString("dd.MM.yyyy HH:mm") + "–" + _analyticsTo.ToString("dd.MM.yyyy HH:mm"),
                 "Směnový den: " + (_selectedDay?.ToString("dd.MM.yyyy") ?? "všechny směnové dny"),
-                "Směny: 05:55–13:55 / 13:55–21:55 / 21:55–05:55",
+                "Směny: podle historické tabulky FASTEC DimShiftEvent (Starttime/Endtime/Name)",
                 "Čítače: historické zaznamenané hodnoty, bez automatického součtu.",
                 "Procesní hodnoty: historické stavové intervaly MES06; nikoliv naměřené teploty.",
                 "Vytvořeno: " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")
             };
-            if (pdf) WritePdfV6(dialog.FileName, meta, tables);
-            else WriteExcelV6(dialog.FileName, meta, tables);
+            if (pdf) WritePdfV6(dialog.FileName, meta, tables, data);
+            else WriteExcelV6(dialog.FileName, meta, tables, data);
             _logger.Info($"MESORD Export{fileType}: Order={_orderNumber}; Operation={operation?.Code}; ShiftDay={_selectedDay:yyyy-MM-dd}; File={dialog.FileName}");
-            MessageBox.Show($"Export {fileType} byl vytvořen:\n{dialog.FileName}", "MESORD", MessageBoxButton.OK, MessageBoxImage.Information);
+            OfferOpenMesordExportV61(dialog.FileName);
         }
         catch (Exception ex)
         {
             _logger.Error("MESORD export failed.", ex);
-            MessageBox.Show("Export se nepodařil:\n" + ex.Message, "MESORD", MessageBoxButton.OK, MessageBoxImage.Error);
+            DMS.Desktop.UI.DmsMessage.Error("MESORD", "Export se nepodařil:\n" + ex.Message, Window.GetWindow(this));
         }
     }
 
-    private static void WriteExcelV6(string path, IReadOnlyList<string> meta, IEnumerable<MesordV6ExportTable> tables)
+    private void WriteExcelV6(string path, IReadOnlyList<string> meta, IEnumerable<MesordV6ExportTable> tables,
+        MesordV6Data data)
     {
         using var workbook = new XLWorkbook();
         var summary = workbook.Worksheets.Add("Zakázka");
@@ -367,6 +389,7 @@ public sealed partial class MesOrderHistoryView
         summary.Cell(1, 1).Style.Font.Bold = true;
         for (var i = 0; i < meta.Count; i++) summary.Cell(i + 3, 1).Value = meta[i];
         summary.Column(1).Width = 96;
+        FormatExcelReportV61(summary, data);
         foreach (var table in tables)
         {
             var ws = workbook.Worksheets.Add(table.Name);
@@ -403,7 +426,8 @@ public sealed partial class MesOrderHistoryView
         workbook.SaveAs(path);
     }
 
-    private static void WritePdfV6(string path, IReadOnlyList<string> meta, IEnumerable<MesordV6ExportTable> tables)
+    private void WritePdfV6(string path, IReadOnlyList<string> meta, IEnumerable<MesordV6ExportTable> tables,
+        MesordV6Data data)
     {
         const double pageWidth = 793; const double pageHeight = 1122;
         var doc = new FlowDocument { PageWidth = pageWidth, PageHeight = pageHeight,
@@ -412,6 +436,7 @@ public sealed partial class MesOrderHistoryView
         doc.Blocks.Add(new Paragraph(new Bold(new Run("MESORD – historie výrobní zakázky"))) { FontSize = 20 });
         foreach (var line in meta)
             doc.Blocks.Add(new Paragraph(new Run(line)) { Margin = new Thickness(0, 1, 0, 2) });
+        AppendVisualPdfV61(doc, data);
         foreach (var table in tables)
         {
             doc.Blocks.Add(new Paragraph(new Bold(new Run(table.Name + " (" + table.Rows.Count + ")"))) {
