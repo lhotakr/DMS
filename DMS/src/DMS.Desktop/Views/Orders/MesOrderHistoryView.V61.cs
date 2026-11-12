@@ -40,8 +40,26 @@ public sealed partial class MesOrderHistoryView
     private List<MesordV6ShiftWindow> GetShiftWindowsFromDatabaseV61(bool selectedOnly = true)
     {
         var result = new List<MesordV6ShiftWindow>();
+        // DimShiftEvent may contain the SAME shift once for each workplace.
+        // One real shift must produce exactly one history window. Group by start
+        // and normalized shift name, choosing the latest documented end.
+        // Do not use the database ID for this: IDs are distinct for repeats.
         var source = _mesordShiftEventsV61
             .Where(s => s.Endtime > s.Starttime)
+            .GroupBy(s => new
+            {
+                s.Starttime,
+                Type = ShiftTypeV61(s.Name),
+                Unrecognized = string.IsNullOrEmpty(ShiftTypeV61(s.Name))
+                    ? (s.Name ?? string.Empty).Trim().ToUpperInvariant() : string.Empty
+            })
+            .Select(g => new MesReportingShiftEvent
+            {
+                Id = g.First().Id,
+                Starttime = g.Key.Starttime,
+                Endtime = g.Max(x => x.Endtime),
+                Name = g.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase).First().Name
+            })
             .OrderBy(s => s.Starttime).ThenBy(s => s.Name).ToList();
         if (source.Count == 0) return result;
 
@@ -82,6 +100,61 @@ public sealed partial class MesOrderHistoryView
         return result;
     }
 
+
+    // All aggregate durations use the UNION of clipped time intervals, not a
+    // SUM over shift-event rows. This is also safe when the database contains
+    // overlapping, equivalent historical shift definitions.
+    private static double UnionMinutesAcrossWindowsV62(
+        IEnumerable<(DateTime from, DateTime to)> source,
+        IReadOnlyList<MesordV6ShiftWindow> windows)
+    {
+        var slices = source.SelectMany(r => windows.Select(w =>
+            (a: r.from > w.Start ? r.from : w.Start,
+             b: r.to < w.End ? r.to : w.End)))
+            .Where(r => r.b > r.a).OrderBy(r => r.a).ThenBy(r => r.b).ToList();
+        if (slices.Count == 0) return 0d;
+        var a = slices[0].a;
+        var b = slices[0].b;
+        var total = 0d;
+        foreach (var slice in slices.Skip(1))
+        {
+            if (slice.a <= b)
+            {
+                if (slice.b > b) b = slice.b;
+            }
+            else
+            {
+                total += (b - a).TotalMinutes;
+                a = slice.a;
+                b = slice.b;
+            }
+        }
+        return total + (b - a).TotalMinutes;
+    }
+
+    // Do not merge two different workplaces into one time lane; parallel
+    // machines can legitimately accumulate more than one machine-hour.
+    private double StateMinutesV62(IEnumerable<MesStateRecord> states,
+        IReadOnlyList<MesordV6ShiftWindow> windows) =>
+        states.GroupBy(s => s.WorkcenterCode ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+            .Sum(g => UnionMinutesAcrossWindowsV62(
+                g.Select(s => (s.Starttime, s.Endtime ?? _analyticsTo)), windows));
+
+    // A total across ALL counter records for this order. Interpretation is
+    // deliberately explicit: cumulative counters must not be presented as
+    // an authoritative part count by summing snapshots.
+    private static IEnumerable<object> CounterOrderSummaryV62(IEnumerable<MesCounterRecord> counters) =>
+        counters.GroupBy(c => new { c.WorkcenterCode, c.CounterName })
+            .Select(g => new
+            {
+                Pracoviště = g.Key.WorkcenterCode,
+                Čítač = g.Key.CounterName,
+                SoučetHodnot = Math.Round(g.Sum(c => c.Value), 2),
+                Záznamů = g.Count(),
+                PosledníHodnota = Math.Round(g.OrderByDescending(c => c.Timestamp).First().Value, 2)
+            })
+            .OrderBy(x => x.Pracoviště).ThenBy(x => x.Čítač).Cast<object>();
+
     private void AddCompactOrderOverviewV61(IReadOnlyList<MesStateRecord> states,
         IReadOnlyList<MesCounterRecord> counters)
     {
@@ -95,14 +168,8 @@ public sealed partial class MesOrderHistoryView
         grid.Children.Add(left);
         var right = new StackPanel();
         right.Children.Add(Label("Souhrn čítačů", 17));
-        right.Children.Add(Table(counters.GroupBy(x => new { x.WorkcenterCode, x.CounterName })
-            .Select(g => new
-            {
-                Pracoviště = g.Key.WorkcenterCode,
-                Čítač = g.Key.CounterName,
-                Hodnota = Math.Round(g.OrderByDescending(x => x.Timestamp).First().Value, 0)
-            }).OrderBy(x => x.Pracoviště).ThenBy(x => x.Čítač).Cast<object>()));
-        right.Children.Add(Label("Čítače: poslední zaznamenaná hodnota, nikoliv automatický součet.", 12));
+        right.Children.Add(Table(CounterOrderSummaryV62(counters)));
+        right.Children.Add(Label("Součet všech zaznamenaných hodnot zakázky; u kumulativních čítačů není automaticky počtem kusů.", 12));
         Grid.SetColumn(right, 1);
         grid.Children.Add(right);
         _analyticsPanel.Children.Add(new ScrollViewer
@@ -120,7 +187,7 @@ public sealed partial class MesOrderHistoryView
             .Select(g => new
             {
                 Name = g.Key,
-                Minutes = g.Sum(s => MinutesInWindowsV6(s.Starttime, s.Endtime ?? _analyticsTo, windows)),
+                Minutes = StateMinutesV62(g, windows),
                 Brush = StateBrush(g.First())
             }).Where(x => x.Minutes > 0).OrderByDescending(x => x.Minutes).ToList();
         if (values.Count == 0) return Label("Pro tento výběr nejsou zaznamenané stavy.");
@@ -262,34 +329,40 @@ public sealed partial class MesOrderHistoryView
     {
         document.Blocks.Add(new Paragraph(new Bold(new Run("Grafický přehled směn")))
             { FontSize = 17, Margin = new Thickness(0, 15, 0, 8) });
-        foreach (var w in data.Windows.OrderBy(x => x.Start))
+        var windows = data.Windows.OrderBy(w => w.Start).ToList();
+        // Render a bounded graphical summary, never thousands of source rows.
+        // Complete detailed records remain available in the XLSX export.
+        const int maximumShiftCharts = 36;
+        var selected = windows.Take(maximumShiftCharts).ToList();
+        if (windows.Count > maximumShiftCharts)
+            document.Blocks.Add(new Paragraph(new Run(
+                $"Zobrazeno prvních {maximumShiftCharts} z {windows.Count} směn. Kompletní přehled je v XLSX; pro podrobný PDF výkaz vyber směnový den."))
+                { FontSize = 10, Margin = new Thickness(0, 4, 0, 8) });
+        foreach (var name in MesordV6ShiftNames.Concat(selected.Select(w => w.Name)).Distinct())
         {
-            var items = data.States.Where(s => Overlap(s.Starttime, s.Endtime ?? _analyticsTo, w.Start, w.End)).ToList();
-            document.Blocks.Add(new Paragraph(new Bold(new Run(
-                $"{w.Name} – {w.ShiftDay:dd.MM.yyyy}, {w.Start:HH:mm}–{w.End:HH:mm}")))
-                { FontSize = 12, Margin = new Thickness(0, 9, 0, 4) });
-            document.Blocks.Add(new BlockUIContainer(CreateShiftPieV61(items,
-                new[] { w })) { Margin = new Thickness(0, 0, 0, 5) });
-            // The same chronological state visualization as on screen, sized for A4.
-            document.Blocks.Add(new BlockUIContainer(BuildShiftSequenceCanvasV61(items, w.Start, w.End, 685))
-                { Margin = new Thickness(0, 0, 0, 5) });
-            var process = data.Messages.Where(m => Overlap(m.Starttime, m.Endtime, w.Start, w.End)).ToList();
-            if (process.Count > 0)
+            var group = selected.Where(w => w.Name == name).ToList();
+            if (group.Count == 0) continue;
+            document.Blocks.Add(new Paragraph(new Bold(new Run(name + " — " + group.Count + " směn")))
+                { FontSize = 14, Margin = new Thickness(0, 14, 0, 5) });
+            var states = data.States.Where(s => group.Any(w => Overlap(
+                s.Starttime, s.Endtime ?? _analyticsTo, w.Start, w.End))).ToList();
+            document.Blocks.Add(new BlockUIContainer(CreateShiftPieV61(states, group))
+                { Margin = new Thickness(0, 0, 0, 6) });
+            foreach (var window in group)
             {
-                document.Blocks.Add(new Paragraph(new Run("Procesní hodnoty – časová osa MES06"))
-                    { FontSize = 11, Margin = new Thickness(0, 7, 0, 3) });
-                document.Blocks.Add(new BlockUIContainer(CreateProcessTimelineV6(process,
-                    w.Start, w.End, 685)) { Margin = new Thickness(0, 0, 0, 5) });
+                var items = states.Where(s => Overlap(
+                    s.Starttime, s.Endtime ?? _analyticsTo, window.Start, window.End)).ToList();
+                document.Blocks.Add(new Paragraph(new Run(
+                    $"{window.ShiftDay:dd.MM.yyyy} · {window.Start:HH:mm}–{window.End:HH:mm}"))
+                    { FontSize = 10, Margin = new Thickness(0, 7, 0, 2) });
+                document.Blocks.Add(new BlockUIContainer(
+                    BuildShiftSequenceCanvasV61(items, window.Start, window.End, 680))
+                    { Margin = new Thickness(0, 0, 0, 4) });
             }
-            var totals = items.GroupBy(s => s.StateName).Select(g => new {
-                Name = g.Key, Minutes = g.Sum(s => Minutes(s.Starttime, s.Endtime ?? _analyticsTo, w.Start, w.End))
-            }).Where(x => x.Minutes > 0).OrderByDescending(x => x.Minutes);
-            document.Blocks.Add(new Paragraph(new Run(string.Join("   |   ",
-                totals.Select(t => $"{t.Name}: {t.Minutes:N1} min"))))
-                { FontSize = 9, Margin = new Thickness(0, 0, 0, 8) });
         }
-        document.Blocks.Add(new Paragraph(new Bold(new Run("Podrobné záznamy (příloha)")))
-            { FontSize = 16, Margin = new Thickness(0, 16, 0, 6) });
+        document.Blocks.Add(new Paragraph(new Run(
+            "Výkaz obsahuje grafický souhrn. Úplné stavové, operátorské, čítačové a procesní záznamy lze exportovat do XLSX."))
+            { FontSize = 10, Margin = new Thickness(0, 12, 0, 4) });
     }
 
     private void FormatExcelReportV61(IXLWorksheet ws, MesordV6Data data)
