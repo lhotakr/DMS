@@ -198,19 +198,11 @@ public sealed partial class MesOrderHistoryView
                     Minut = Math.Round(StateMinutesV62(g, windows), 1),
                     PodílProcent = Math.Round(100 * StateMinutesV62(g, windows) / Math.Max(1, totalStateMinutes), 1)
                 }).OrderByDescending(x => x.Minut).Cast<object>();
-            var operatorRows = operators.GroupBy(o => new { o.HumanCode, o.OperatorName })
-                .Select(g => new
-                {
-                    OsobníČíslo = g.Key.HumanCode,
-                    Jméno = g.Key.OperatorName,
-                    Hodin = Math.Round(UnionMinutesAcrossWindowsV62(
-                        g.Where(o => o.LoginFrom.HasValue).Select(o =>
-                            (o.LoginFrom!.Value, o.LoginTo ?? _analyticsTo)), windows) / 60, 2)
-                }).OrderBy(x => x.OsobníČíslo).Cast<object>();
+            var operatorRows = OperatorShiftRowsV63(operators, windows);
             var counterRows = CounterOrderSummaryV62(counters);
             AddSummaryColumnV6(summary, 0, "Stavy", stateRows);
-            AddSummaryColumnV6(summary, 1, "Operátoři", operatorRows);
-            AddSummaryColumnV6(summary, 2, "Čítače – všechny záznamy", counterRows);
+            AddSummaryColumnV6(summary, 1, "Operátoři – přihlášení", operatorRows);
+            AddSummaryColumnV6(summary, 2, "Čítače – součet hodnot", counterRows);
             content.Children.Add(new ScrollViewer { Content = summary, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Disabled });
 
@@ -285,98 +277,27 @@ public sealed partial class MesOrderHistoryView
             VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, MaxHeight = 450 };
     }
 
-    private sealed class MesordV6ExportTable
-    {
-        public string Name { get; init; } = "";
-        public string[] Headers { get; init; } = Array.Empty<string>();
-        public List<object?[]> Rows { get; } = new();
-    }
-
-    private List<MesordV6ExportTable> PrepareExportV6(MesordV6Data data)
-    {
-        var shiftOverview = new MesordV6ExportTable { Name = "Souhrn směn", Headers = new[] {
-            "Směna", "Datum", "Od", "Do", "Stavy (min)", "Operátoři", "Čítače", "Procesní hodnoty" } };
-        var states = new MesordV6ExportTable { Name = "Stavy", Headers = new[] {
-            "Směna", "Začátek", "Konec", "Pracoviště", "Stav", "Minut" } };
-        var operators = new MesordV6ExportTable { Name = "Operátoři", Headers = new[] {
-            "Směna", "Od", "Do", "Pracoviště", "Osobní číslo", "Jméno", "Hodin" } };
-        var counters = new MesordV6ExportTable { Name = "Čítače", Headers = new[] {
-            "Směna", "Čas", "Pracoviště", "Čítač", "Hodnota" } };
-        var messages = new MesordV6ExportTable { Name = "Procesní hodnoty", Headers = new[] {
-            "Směna", "Od", "Do", "Pracoviště", "Stav", "Úroveň", "Zakázka", "Artikl", "Operace" } };
-        var counterSummary = new MesordV6ExportTable { Name = "Souhrn čítačů", Headers = new[] {
-            "Pracoviště", "Čítač", "Součet hodnot", "Počet záznamů", "Poslední hodnota" } };
-        foreach (var w in data.Windows)
-        {
-            var ss = data.States.Where(s => Overlap(s.Starttime, s.Endtime ?? _analyticsTo, w.Start, w.End)).ToList();
-            var oo = data.Operators.Where(o => o.LoginFrom.HasValue &&
-                Overlap(o.LoginFrom.Value, o.LoginTo ?? _analyticsTo, w.Start, w.End)).ToList();
-            var cc = data.Counters.Where(c => c.Timestamp >= w.Start && c.Timestamp < w.End).ToList();
-            var mm = data.Messages.Where(m => Overlap(m.Starttime, m.Endtime, w.Start, w.End)).ToList();
-            shiftOverview.Rows.Add(new object?[] { w.Name, w.Start.Date, w.Start, w.End,
-                Math.Round(ss.GroupBy(s => s.StateName).Sum(g => StateMinutesV62(g, new[] { w })), 1),
-                oo.Select(o => o.HumanCode).Distinct().Count(), cc.Count, mm.Count });
-            foreach (var s in ss)
-            {
-                var a = s.Starttime > w.Start ? s.Starttime : w.Start;
-                var b = (s.Endtime ?? _analyticsTo) < w.End ? (s.Endtime ?? _analyticsTo) : w.End;
-                states.Rows.Add(new object?[] { w.Name, a, b, s.WorkcenterCode, s.StateName, Math.Round((b-a).TotalMinutes, 2) });
-            }
-            foreach (var o in oo)
-            {
-                var a = o.LoginFrom!.Value > w.Start ? o.LoginFrom.Value : w.Start;
-                var b = (o.LoginTo ?? _analyticsTo) < w.End ? (o.LoginTo ?? _analyticsTo) : w.End;
-                operators.Rows.Add(new object?[] { w.Name, a, b, o.WorkcenterCode, o.HumanCode, o.OperatorName,
-                    Math.Round((b-a).TotalHours, 2) });
-            }
-            foreach (var c in cc)
-                counters.Rows.Add(new object?[] { w.Name, c.Timestamp, c.WorkcenterCode, c.CounterName, Math.Round(c.Value, 2) });
-            foreach (var m in mm)
-            {
-                var a = m.Starttime > w.Start ? m.Starttime : w.Start;
-                var b = m.Endtime < w.End ? m.Endtime : w.End;
-                messages.Rows.Add(new object?[] { w.Name, a, b, m.WorkcenterCode, m.StateName, m.Level,
-                    m.OrderCode, m.ProductCode, m.OperationCode });
-            }
-        }
-        foreach (var group in data.Counters.GroupBy(c => new { c.WorkcenterCode, c.CounterName })
-                     .OrderBy(g => g.Key.WorkcenterCode).ThenBy(g => g.Key.CounterName))
-        {
-            counterSummary.Rows.Add(new object?[] {
-                group.Key.WorkcenterCode, group.Key.CounterName,
-                Math.Round(group.Sum(c => c.Value), 2), group.Count(),
-                Math.Round(group.OrderByDescending(c => c.Timestamp).First().Value, 2) });
-        }
-        return new List<MesordV6ExportTable> { shiftOverview, counterSummary, states, operators, counters, messages };
-    }
-
+    // MESORD v6.3: one filtered FASTEC snapshot is passed to either report writer.
     private void ExportMesordV6(bool pdf)
     {
         if (!_dataLoaded) return;
-        var fileType = pdf ? "PDF" : "XLSX";
         var ext = pdf ? ".pdf" : ".xlsx";
-        var dialog = new SaveFileDialog { DefaultExt = ext,
+        var dialog = new SaveFileDialog
+        {
+            DefaultExt = ext,
             Filter = pdf ? "PDF dokument (*.pdf)|*.pdf" : "Excel (*.xlsx)|*.xlsx",
-            FileName = $"MESORD_{_orderNumber}_{DateTime.Now:yyyyMMdd-HHmm}{ext}" };
+            FileName = $"MESORD_{_orderNumber}_{DateTime.Now:yyyyMMdd-HHmm}{ext}"
+        };
         if (dialog.ShowDialog() != true) return;
         try
         {
             var data = BuildDataV6(_operationSelector.SelectedItem as OperationChoice);
-            var tables = PrepareExportV6(data);
+            if (pdf) WritePdfV63(dialog.FileName, data);
+            else WriteExcelV63(dialog.FileName, data);
             var operation = _operationSelector.SelectedItem as OperationChoice;
-            var meta = new[] {
-                "Zakázka: " + _orderNumber,
-                "Operace: " + (operation?.Caption ?? "Celá zakázka"),
-                "Období zakázky: " + _analyticsFrom.ToString("dd.MM.yyyy HH:mm") + "–" + _analyticsTo.ToString("dd.MM.yyyy HH:mm"),
-                "Směnový den: " + (_selectedDay?.ToString("dd.MM.yyyy") ?? "všechny směnové dny"),
-                "Směny: podle historické tabulky FASTEC DimShiftEvent (Starttime/Endtime/Name)",
-                "Čítače: součet všech uložených hodnot, počet událostí a poslední hodnota. U kumulativních čítačů nemusí součet odpovídat skutečnému počtu kusů.",
-                "Procesní hodnoty: historické stavové intervaly MES06; nikoliv naměřené teploty.",
-                "Vytvořeno: " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")
-            };
-            if (pdf) WritePdfV6(dialog.FileName, meta, tables, data);
-            else WriteExcelV6(dialog.FileName, meta, tables, data);
-            _logger.Info($"MESORD Export{fileType}: Order={_orderNumber}; Operation={operation?.Code}; ShiftDay={_selectedDay:yyyy-MM-dd}; File={dialog.FileName}");
+            _logger.Info($"MESORD AUDIT_EXPORT: Format={(pdf ? "PDF" : "XLSX")}; Order={_orderNumber}; " +
+                $"Operation={operation?.Code}; ShiftDay={_selectedDay:yyyy-MM-dd}; " +
+                $"Shifts={data.Windows.Count}; File={dialog.FileName}; Author={Environment.UserName}");
             OfferOpenMesordExportV61(dialog.FileName);
         }
         catch (Exception ex)
@@ -384,99 +305,6 @@ public sealed partial class MesOrderHistoryView
             _logger.Error("MESORD export failed.", ex);
             DMS.Desktop.UI.DmsMessage.Error("MESORD", "Export se nepodařil:\n" + ex.Message, Window.GetWindow(this));
         }
-    }
-
-    private void WriteExcelV6(string path, IReadOnlyList<string> meta, IEnumerable<MesordV6ExportTable> tables,
-        MesordV6Data data)
-    {
-        using var workbook = new XLWorkbook();
-        var summary = workbook.Worksheets.Add("Zakázka");
-        summary.Cell(1, 1).Value = "MESORD – historie výrobní zakázky";
-        summary.Cell(1, 1).Style.Font.Bold = true;
-        for (var i = 0; i < meta.Count; i++) summary.Cell(i + 3, 1).Value = meta[i];
-        summary.Column(1).Width = 96;
-        FormatExcelReportV61(summary, data);
-        foreach (var table in tables)
-        {
-            var ws = workbook.Worksheets.Add(table.Name);
-            for (var c = 0; c < table.Headers.Length; c++)
-            {
-                ws.Cell(1, c + 1).Value = table.Headers[c];
-                ws.Cell(1, c + 1).Style.Font.Bold = true;
-            }
-            var row = 2;
-            foreach (var values in table.Rows)
-            {
-                for (var c = 0; c < values.Length; c++)
-                {
-                    var cell = ws.Cell(row, c + 1);
-                    switch (values[c])
-                    {
-                        case DateTime date:
-                            cell.Value = date;
-                            cell.Style.DateFormat.Format = "dd.MM.yyyy HH:mm:ss";
-                            break;
-                        case int count: cell.Value = count; break;
-                        case double number: cell.Value = number; break;
-                        case decimal amount: cell.Value = amount; break;
-                        case null: cell.Value = ""; break;
-                        default: cell.Value = Convert.ToString(values[c], CultureInfo.CurrentCulture) ?? ""; break;
-                    }
-                }
-                row++;
-            }
-            ws.SheetView.FreezeRows(1);
-            ws.ColumnsUsed().AdjustToContents();
-            ws.PageSetup.PageOrientation = XLPageOrientation.Landscape;
-        }
-        workbook.SaveAs(path);
-    }
-
-    private void WritePdfV6(string path, IReadOnlyList<string> meta, IEnumerable<MesordV6ExportTable> tables,
-        MesordV6Data data)
-    {
-        const double pageWidth = 793; const double pageHeight = 1122;
-        var doc = new FlowDocument { PageWidth = pageWidth, PageHeight = pageHeight,
-            PagePadding = new Thickness(38), ColumnWidth = pageWidth - 76,
-            FontFamily = new FontFamily("Segoe UI"), FontSize = 10 };
-        doc.Blocks.Add(new Paragraph(new Bold(new Run("MESORD – historie výrobní zakázky"))) { FontSize = 20 });
-        foreach (var line in meta)
-            doc.Blocks.Add(new Paragraph(new Run(line)) { Margin = new Thickness(0, 1, 0, 2) });
-        AppendVisualPdfV61(doc, data);
-        // A4 PDF is a concise visual report. NEVER append every source row:
-        // the previous implementation produced 419 full-page JPEG pages.
-        foreach (var table in tables)
-        {
-            doc.Blocks.Add(new Paragraph(new Run($"{table.Name}: {table.Rows.Count:N0} záznamů (podrobnosti v XLSX)"))
-                { FontSize = 10, Margin = new Thickness(0, 1, 0, 2) });
-        }
-        var paginator = ((IDocumentPaginatorSource)doc).DocumentPaginator;
-        paginator.PageSize = new Size(pageWidth, pageHeight);
-        paginator.ComputePageCount();
-        if (paginator.PageCount > 50)
-            throw new InvalidOperationException("PDF sestava je příliš rozsáhlá (" + paginator.PageCount +
-                " stran). Vyber kratší směnový interval nebo použij XLSX.");
-        var jpgPages = new List<byte[]>();
-        for (var i = 0; i < paginator.PageCount; i++)
-        {
-            var page = paginator.GetPage(i);
-            if (page == null || ReferenceEquals(page,DocumentPage.Missing)) continue;
-            var target = new DrawingVisual();
-            using (var context = target.RenderOpen())
-            {
-                context.DrawRectangle(Brushes.White, null, new Rect(0, 0, pageWidth, pageHeight));
-                context.DrawRectangle(new VisualBrush(page.Visual), null, new Rect(0, 0, pageWidth, pageHeight));
-            }
-            var bitmap = new RenderTargetBitmap((int)pageWidth, (int)pageHeight, 96, 96, PixelFormats.Pbgra32);
-            bitmap.Render(target);
-            var jpeg = new JpegBitmapEncoder { QualityLevel = 70 };
-            jpeg.Frames.Add(BitmapFrame.Create(bitmap));
-            using var stream = new MemoryStream();
-            jpeg.Save(stream);
-            jpgPages.Add(stream.ToArray());
-        }
-        if (jpgPages.Count == 0) throw new InvalidOperationException("PDF: nebyla vytvořena žádná stránka.");
-        WriteImagePdfV6(path, jpgPages, (int)pageWidth, (int)pageHeight);
     }
 
     private static void WriteImagePdfV6(string path, IReadOnlyList<byte[]> jpegPages, int width, int height)

@@ -149,9 +149,7 @@ public sealed partial class MesOrderHistoryView
             {
                 Pracoviště = g.Key.WorkcenterCode,
                 Čítač = g.Key.CounterName,
-                SoučetHodnot = Math.Round(g.Sum(c => c.Value), 2),
-                Záznamů = g.Count(),
-                PosledníHodnota = Math.Round(g.OrderByDescending(c => c.Timestamp).First().Value, 2)
+                SoučetHodnot = Math.Round(g.Sum(c => c.Value), 2)
             })
             .OrderBy(x => x.Pracoviště).ThenBy(x => x.Čítač).Cast<object>();
 
@@ -169,7 +167,6 @@ public sealed partial class MesOrderHistoryView
         var right = new StackPanel();
         right.Children.Add(Label("Souhrn čítačů", 17));
         right.Children.Add(Table(CounterOrderSummaryV62(counters)));
-        right.Children.Add(Label("Součet všech zaznamenaných hodnot zakázky; u kumulativních čítačů není automaticky počtem kusů.", 12));
         Grid.SetColumn(right, 1);
         grid.Children.Add(right);
         _analyticsPanel.Children.Add(new ScrollViewer

@@ -33,6 +33,7 @@ public sealed partial class MesOrderHistoryView
 
     private void ApplyTodoHeader(MesProductionOrderRecord order)
     {
+        _mesordExportOrderV63 = order;
         // No DMS/SAP 9200 relationship has been verified. Do not invent one.
         _plantInfo.Text = $"Závod 2000: {order.OrderCode}\nZávod 9200: — (vazba zatím není evidována)";
         _status.Text = $"{order.StatusIcon} {UserStatus(order)}";

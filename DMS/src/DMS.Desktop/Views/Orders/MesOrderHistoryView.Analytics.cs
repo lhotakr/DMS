@@ -307,7 +307,7 @@ public sealed partial class MesOrderHistoryView
             (selection == null || string.IsNullOrEmpty(selection.Code) ||
              (o.OperationCode == selection.Code && o.WorkcenterCode == selection.Workcenter))).ToList();
 
-        _analyticsPanel.Children.Add(Label($"Intervaly: {intervals.Count} · Stavy: {states.Count} · Čítače: {counters.Count} · Přihlášení: {operators.Count}"));
+        // MESORD v6.3: diagnostic row intentionally hidden from production UI.
         if (_analyticsErrors.Count > 0)
             _analyticsPanel.Children.Add(Label("Neúplná data: " + string.Join(" | ", _analyticsErrors.Distinct())));
         if (selection != null && !string.IsNullOrEmpty(selection.Code))
