@@ -250,7 +250,7 @@ public sealed partial class MesOrderHistoryView
         doc.Blocks.Add(new Paragraph(new Run($"{MesordText("Vytvořeno")}: {DateTime.Now:dd.MM.yyyy HH:mm}    {MesordText("Autor (Windows)")}: {AuthorV63}"))
             { FontSize = 10, Margin = new Thickness(0, 0, 0, 10), Foreground = Brushes.Black });
         doc.Blocks.Add(PdfTitleV63("Historie výrobní zakázky", 21));
-        doc.Blocks.Add(new Paragraph(new Run($"{MesordText("Závod 2000")}: {_orderNumber}    |    {MesordText("Závod 9200")}: {MesordText(Plant9200V63)}"))
+        doc.Blocks.Add(new Paragraph(new Run($"{MesordText("Závod 2000")}: {_orderNumber}    |    {MesordText("Závod 9200")}: {Qa9200ForMes()}"))
             { FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Brushes.Black });
         doc.Blocks.Add(new Paragraph(new Run($"{MesordText("Průběh zakázky")}: {OrderDatesV63(_analyticsFrom, _analyticsTo)}"))
             { Margin = new Thickness(0, 4, 0, 4), Foreground = Brushes.Black });

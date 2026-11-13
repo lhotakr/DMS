@@ -183,7 +183,7 @@ public partial class OrderAdvancedSearchWindow : Window
                 CultureInfo.CurrentCulture,
                 out var value))
         {
-            value = 1000;
+            value = 500;
         }
 
         return Math.Clamp(
@@ -358,7 +358,7 @@ public partial class OrderAdvancedSearchWindow : Window
             combo.SelectedIndex = 0;
         }
 
-        TxtMaxRows.Text = "1000";
+        TxtMaxRows.Text = "500";
         GridResults.ItemsSource = null;
         TxtStatus.Text = string.Empty;
         BtnApply.IsEnabled = false;

@@ -50,6 +50,7 @@ public partial class QualityOrderListView : UserControl, IDmsFunctionKeyHost
         var paths = new QualityStoragePaths(rootPath);
         paths.EnsureDirectories();
         _service = new QualityOrderMaintenanceService(new JsonQualityRepository(paths));
+        InitializeMesQaQueue(rootPath);
 
         _filterTimer = new DispatcherTimer
         {
@@ -122,6 +123,7 @@ public partial class QualityOrderListView : UserControl, IDmsFunctionKeyHost
         ColNotes.Header = T("QO.Col.Notes");
 
         ApplyColumnLayout();
+        LocalizeMesQaQueue();
     }
 
     private void ApplyColumnLayout()

@@ -70,7 +70,7 @@ public sealed class MesOrderOverviewDataService
                 FROM dbo.d_pda_po po
                 WHERE
                     NULLIF(LTRIM(RTRIM(po.code)), '') IS NOT NULL
-                    AND COALESCE(po.archive_status, 0) = 0
+                    AND (@archiveStatus IS NULL OR COALESCE(po.archive_status, 0) = @archiveStatus)
                     AND
                     (
                         @search = ''
@@ -135,7 +135,12 @@ public sealed class MesOrderOverviewDataService
         AddParameter(
             command,
             "@maxRows",
-            Math.Clamp(filter.MaxRows, 1, 500));
+            Math.Clamp(filter.MaxRows, 1, 10000));
+        var archiveParameter = command.CreateParameter();
+        archiveParameter.ParameterName = "@archiveStatus";
+        archiveParameter.DbType = DbType.Int32;
+        archiveParameter.Value = filter.ArchiveStatus.HasValue ? filter.ArchiveStatus.Value : DBNull.Value;
+        command.Parameters.Add(archiveParameter);
         AddParameter(
             command,
             "@search",

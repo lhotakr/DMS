@@ -28,8 +28,9 @@ public sealed partial class MesOrderHistoryView : UserControl
 
     public MesOrderHistoryView(string orderNumber, string configurationRootPath, DmsLogger logger,
         string? userDisplayName = null, Func<string,string>? translate = null,
-        string? selectedCulture = null)
+        string? selectedCulture = null, string? dataRootPath = null)
     {
+        _mesordDataRoot = dataRootPath ?? configurationRootPath;
         _mesordUserDisplayName = userDisplayName ?? string.Empty;
         _mesordTranslator = translate;
         _mesordCulture = string.IsNullOrWhiteSpace(selectedCulture)

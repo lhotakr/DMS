@@ -60,6 +60,7 @@ public sealed class QualityOrderMaintenanceService
             Query = Normalize(orderNumber),
             OriginalOrder = order,
             OrderNumber = order.OrderNumber,
+            MesOrderNumber2000 = order.MesOrderNumber2000,
             PrintVersionNumber = order.PrintVersionNumber,
             SapMaterialNumber = order.SapMaterialNumber,
             Machine = order.Machine,
@@ -280,6 +281,8 @@ public sealed class QualityOrderMaintenanceService
         {
             Metadata = metadata,
             OrderNumber = normalizedOrderNumber,
+            MesOrderNumber2000 = !string.IsNullOrWhiteSpace(model.MesOrderNumber2000)
+                ? Normalize(model.MesOrderNumber2000) : original?.MesOrderNumber2000 ?? string.Empty,
             PrintVersionNumber = Normalize(model.PrintVersionNumber),
             SapMaterialNumber = NormalizeSapNumber(model.SapMaterialNumber),
             Machine = Normalize(model.Machine),
@@ -383,6 +386,7 @@ public sealed class QualityOrderMaintenanceService
                 ModifiedAt = now
             },
             OrderNumber = original.OrderNumber,
+            MesOrderNumber2000 = original.MesOrderNumber2000,
             PrintVersionNumber = original.PrintVersionNumber,
             SapMaterialNumber = original.SapMaterialNumber,
             Machine = original.Machine,
@@ -476,6 +480,7 @@ public sealed class QualityOrderMaintenanceService
         return new QualityOrderListRow
         {
             OrderNumber = order.OrderNumber,
+            MesOrderNumber2000 = order.MesOrderNumber2000,
             PrintVersionNumber = order.PrintVersionNumber,
             SapMaterialNumber = order.SapMaterialNumber,
             Customer = printVersion?.Customer ?? string.Empty,

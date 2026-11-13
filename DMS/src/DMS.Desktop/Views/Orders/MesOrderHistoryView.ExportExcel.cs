@@ -113,7 +113,7 @@ public sealed partial class MesOrderHistoryView
         ws.Cell(5, 1).Value = MesordText("Zakázka 2000");
         ws.Cell(5, 2).Value = _orderNumber;
         ws.Cell(6, 1).Value = MesordText("Zakázka 9200");
-        ws.Cell(6, 2).Value = MesordText(Plant9200V63);
+        ws.Cell(6, 2).Value = Qa9200ForMes();
         ws.Cell(7, 1).Value = MesordText("Trvání zakázky");
         ws.Cell(7, 2).Value = OrderDatesV63(_analyticsFrom, _analyticsTo);
         ws.Cell(8, 1).Value = MesordText("Operace");
@@ -261,7 +261,7 @@ public sealed partial class MesOrderHistoryView
             tab.Cell(3, 1).Value = MesordText("Zakázka 2000");
             tab.Cell(3, 2).Value = _orderNumber;
             tab.Cell(4, 1).Value = MesordText("Zakázka 9200");
-            tab.Cell(4, 2).Value = MesordText(Plant9200V63);
+            tab.Cell(4, 2).Value = Qa9200ForMes();
             tab.Cell(5, 1).Value = MesordText("Skutečná směna (FASTEC)");
             tab.Cell(5, 2).Value = OrderDatesV63(window.Start, window.End);
             tab.Column(1).Width = 26;

@@ -36,7 +36,7 @@ public sealed partial class MesOrderHistoryView
         _mesordExportOrderV63 = order;
         // No DMS/SAP 9200 relationship has been verified. Do not invent one.
         _plantInfo.Text = $"{MesordText("Závod 2000")}: {order.OrderCode}\n" +
-            $"{MesordText("Závod 9200")}: {MesordText("Zatím nedoplněno (doplní kvalita)")}";
+            $"{MesordText("Závod 9200")}: {Qa9200ForMes()}";
         _status.Text = $"{order.StatusIcon} {MesordText(UserStatus(order))}";
         _summary.Text =
             $"{MesordText("Artikl")}: {order.ProductCode}  |  SAP: {order.SapArticleNumber}\n" +

@@ -107,7 +107,9 @@ public partial class OrderOverviewView : UserControl
         string user,
         Action<string> openTechnology,
         Func<string, string>? translate = null,
-        Action<string>? openMesOrder = null)
+        Action<string>? openMesOrder = null,
+        string? dataRootPath = null,
+        Action<string>? openQualityOrder = null)
     {
         InitializeComponent();
         GridOrders.MouseDoubleClick += GridOrders_MesOrderDoubleClick;
@@ -131,6 +133,9 @@ public partial class OrderOverviewView : UserControl
 
         ApplyLocalization();
         ConfigureAdditionalFilters();
+        _openQualityOrder = openQualityOrder;
+        InitializeOrd10Presets();
+        InitializeQaIntegration(dataRootPath ?? configurationRootPath);
 
         _searchDebounceTimer.Tick += SearchDebounceTimer_Tick;
 
@@ -566,7 +571,8 @@ public partial class OrderOverviewView : UserControl
                     // ORD10 v1.3 loads non-archived orders once.
                     // Search and MES status filtering are client-side.
                     SearchText = string.Empty,
-                    MaxRows = 500
+                    MaxRows = OrdMaxRows,
+                    ArchiveStatus = OrdArchiveStatus
                 };
 
             var rows =
@@ -583,6 +589,7 @@ public partial class OrderOverviewView : UserControl
 
             _allOrders =
                 rows.ToList();
+            EnrichOrdersForQaAndSap(_allOrders);
 
             ReloadStatusFilter(
                 _allOrders);
@@ -600,7 +607,7 @@ public partial class OrderOverviewView : UserControl
             ApplyClientFilter();
 
             _logger.Info(
-                $"ORD10 MES non-archived orders loaded; user={_user}; rows={_allOrders.Count}");
+                $"ORD10 MES orders loaded; user={_user}; rows={_allOrders.Count}");
         }
         catch (Exception ex)
         {
@@ -705,7 +712,7 @@ public partial class OrderOverviewView : UserControl
                 : string.Format(
                     T(
                         "ORD10.Status.Loaded",
-                        "Zobrazeno {0} z posledních 500 nearchivovaných zakázek."),
+                        "Zobrazeno {0} zakázek."),
                     resultCount);
 
         UpdateStatusFilterText();
@@ -1028,6 +1035,7 @@ public partial class OrderOverviewView : UserControl
 
         _allOrders =
             rows.ToList();
+        EnrichOrdersForQaAndSap(_allOrders);
 
         // An advanced DB search already contains its own state criteria.
         // Reset the lightweight client filters so those results are not hidden

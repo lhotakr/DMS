@@ -7,6 +7,7 @@ public sealed class QualityOrderFormModel
     public bool IsCreateMode { get; set; }
 
     public string OrderNumber { get; set; } = string.Empty;
+    public string MesOrderNumber2000 { get; set; } = string.Empty;
 
     public string PrintVersionNumber { get; set; } = string.Empty;
 

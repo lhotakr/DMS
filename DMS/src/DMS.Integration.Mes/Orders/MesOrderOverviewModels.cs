@@ -4,6 +4,8 @@ public sealed class MesOrderOverviewFilter
 {
     public string SearchText { get; init; } = string.Empty;
     public int MaxRows { get; init; } = 500;
+    /// <summary>0 active (default), 1 archived, null all.</summary>
+    public int? ArchiveStatus { get; init; } = 0;
 }
 
 public sealed class MesProductionOrderRecord
@@ -12,6 +14,9 @@ public sealed class MesProductionOrderRecord
     public string OrderCode { get; init; } = string.Empty;
     public string ProductCode { get; init; } = string.Empty;
     public string ProductDescription { get; init; } = string.Empty;
+    public string SapCacheDescription { get; set; } = string.Empty;
+    public string QaOrder9200 { get; set; } = string.Empty;
+    public string QaActionLabel { get; set; } = string.Empty;
 
     /// <summary>
     /// FASTEC dbo.d_pda_po.cf_customer.

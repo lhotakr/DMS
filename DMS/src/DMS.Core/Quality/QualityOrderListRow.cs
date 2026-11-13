@@ -3,6 +3,7 @@ namespace DMS.Core.Quality;
 public sealed class QualityOrderListRow
 {
     public string OrderNumber { get; set; } = string.Empty;
+    public string MesOrderNumber2000 { get; set; } = string.Empty;
 
     public string PrintVersionNumber { get; set; } = string.Empty;
 

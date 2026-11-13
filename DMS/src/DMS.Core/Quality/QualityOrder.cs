@@ -4,6 +4,8 @@ public sealed class QualityOrder
 {
     public QualityRecordMetadata Metadata { get; init; } = new();
     public string OrderNumber { get; init; } = string.Empty;
+    /// <summary>Source production order from FASTEC plant 2000; OrderNumber remains QA plant 9200.</summary>
+    public string MesOrderNumber2000 { get; init; } = string.Empty;
 
     public string PrintVersionNumber { get; init; } = string.Empty;
 

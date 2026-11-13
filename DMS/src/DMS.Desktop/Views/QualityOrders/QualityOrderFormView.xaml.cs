@@ -59,6 +59,7 @@ public partial class QualityOrderFormView : UserControl, IDmsFunctionKeyHost
         _repository = new JsonQualityRepository(paths);
         _service = new QualityOrderMaintenanceService(_repository);
         GridOrderTasks.ItemsSource = _orderTaskRows;
+        InitializeMesSourceField();
 
         LoadReferenceData();
         ApplyLocalization();
@@ -260,6 +261,7 @@ public partial class QualityOrderFormView : UserControl, IDmsFunctionKeyHost
 
         TxtOrderNumber.Text = _model.OrderNumber;
         TxtOrderNumber.IsReadOnly = !_createMode;
+        UpdateMesSourceField();
 
         TxtPrintVersionInput.Text = _model.PrintVersionNumber;
         TxtPvNumber.Text = NullDash(_model.PrintVersionNumber);
