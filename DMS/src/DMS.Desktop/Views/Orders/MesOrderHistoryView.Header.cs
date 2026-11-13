@@ -35,17 +35,18 @@ public sealed partial class MesOrderHistoryView
     {
         _mesordExportOrderV63 = order;
         // No DMS/SAP 9200 relationship has been verified. Do not invent one.
-        _plantInfo.Text = $"Závod 2000: {order.OrderCode}\nZávod 9200: — (vazba zatím není evidována)";
-        _status.Text = $"{order.StatusIcon} {UserStatus(order)}";
+        _plantInfo.Text = $"{MesordText("Závod 2000")}: {order.OrderCode}\n" +
+            $"{MesordText("Závod 9200")}: {MesordText("Zatím nedoplněno (doplní kvalita)")}";
+        _status.Text = $"{order.StatusIcon} {MesordText(UserStatus(order))}";
         _summary.Text =
-            $"Artikl: {order.ProductCode}  |  SAP: {order.SapArticleNumber}\n" +
-            $"Popis: {(string.IsNullOrWhiteSpace(order.ProductDescription) ? "Není dostupný v MES" : order.ProductDescription)}\n" +
-            $"Plán: {order.TargetQuantity:N0}  |  OK: {order.FinishedQuantity:N0}  |  NOK: {order.ScrapQuantity:N0}\n" +
-            $"Skutečný začátek: {order.ActualStart:dd.MM.yyyy HH:mm}  |  Konec: {order.ActualEnd:dd.MM.yyyy HH:mm}";
+            $"{MesordText("Artikl")}: {order.ProductCode}  |  SAP: {order.SapArticleNumber}\n" +
+            $"{MesordText("Popis")}: {(string.IsNullOrWhiteSpace(order.ProductDescription) ? MesordText("Není dostupný v MES") : order.ProductDescription)}\n" +
+            $"{MesordText("Plán")}: {order.TargetQuantity:N0}  |  OK: {order.FinishedQuantity:N0}  |  NOK: {order.ScrapQuantity:N0}\n" +
+            $"{MesordText("Skutečný začátek")}: {order.ActualStart:dd.MM.yyyy HH:mm}  |  {MesordText("Konec")}: {order.ActualEnd:dd.MM.yyyy HH:mm}";
         _quantityCard.Children.Clear();
         _quantityCard.Children.Add(new TextBlock
         {
-            Text="Plnění zakázky", FontSize=16, FontWeight=FontWeights.SemiBold,
+            Text=MesordText("Plnění zakázky"), FontSize=16, FontWeight=FontWeights.SemiBold,
             Margin=new Thickness(0,0,0,5)
         });
         var ok=Math.Max(0m,order.FinishedQuantity);
@@ -56,7 +57,7 @@ public sealed partial class MesOrderHistoryView
         var progress=new Grid { Height=21,Margin=new Thickness(0,0,0,5) };
         var amounts=new[] {ok,nok,pending};
         var colors=new[] {QuantityColor(36,180,102),QuantityColor(230,72,72),QuantityColor(76,142,225)};
-        var labels=new[] {"OK","NOK","Zbývá"};
+        var labels=new[] {MesordText("OK"),MesordText("NOK"),MesordText("Zbývá")};
         for (var i=0;i<3;i++)
         {
             progress.ColumnDefinitions.Add(new ColumnDefinition { Width=new GridLength((double)(amounts[i]/total),GridUnitType.Star) });

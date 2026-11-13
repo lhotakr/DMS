@@ -41,9 +41,9 @@ public sealed partial class MesOrderHistoryView
     }
 
     // MESORD v6.1: real historical shift boundaries come from FASTEC DimShiftEvent.
-    private static TextBlock Label(string text, int size = 14) => new()
+    private TextBlock Label(string text, int size = 14) => new()
     {
-        Text = text, FontSize = size, TextWrapping = TextWrapping.Wrap,
+        Text = MesordText(text), FontSize = size, TextWrapping = TextWrapping.Wrap,
         Margin = new Thickness(0, 8, 0, 5)
     };
     private static Border Card(UIElement content, Thickness? margin = null) => new()
@@ -54,12 +54,18 @@ public sealed partial class MesOrderHistoryView
         BorderThickness = new Thickness(1),
         BorderBrush = new SolidColorBrush(Color.FromRgb(92, 103, 118))
     };
-    private static DataGrid Table(IEnumerable<object> rows) => new()
+    private DataGrid Table(IEnumerable<object> rows)
     {
-        ItemsSource = rows.ToList(), AutoGenerateColumns = true,
-        IsReadOnly = true, CanUserAddRows = false,
-        MinHeight = 90, MaxHeight = 280, Margin = new Thickness(0, 3, 0, 12)
-    };
+        var table = new DataGrid
+        {
+            ItemsSource = rows.ToList(), AutoGenerateColumns = true,
+            IsReadOnly = true, CanUserAddRows = false,
+            MinHeight = 90, MaxHeight = 280, Margin = new Thickness(0, 3, 0, 12)
+        };
+        table.AutoGeneratingColumn += (_, args) =>
+            args.Column.Header = MesordText(args.PropertyName);
+        return table;
+    }
     private static Color? ParseFastecColor(string raw)
     {
         if (string.IsNullOrWhiteSpace(raw)) return null;
@@ -123,7 +129,9 @@ public sealed partial class MesOrderHistoryView
     {
         var items = states.GroupBy(x=>x.StateName).Select(g=>new
         {
-            Name=g.Key, Value=g.Sum(x=>Minutes(x.Starttime,x.Endtime ?? _analyticsTo,start,end)),
+            Name=g.Key, Value=StateMinutesV62(g, new[] {
+                new MesordV6ShiftWindow { Start = start, End = end,
+                    ShiftDay = start.Date, Name = "Order" } }),
             Color=StateBrush(g.First())
         }).Where(x=>x.Value>0).OrderByDescending(x=>x.Value).ToList();
         if (items.Count == 0) return Label("Pro tuto směnu nejsou dostupné záznamy stavů.");
@@ -227,6 +235,13 @@ public sealed partial class MesOrderHistoryView
         }
         Deduplicate();
         _dataLoaded = true;
+        _logger.Info($"MESORD DATA_LOADED: Order={_orderNumber}; From={_analyticsFrom:O}; To={_analyticsTo:O}; " +
+            $"Shifts={_mesordShiftEventsV61.Count}; Production={_allProduction.Count}; " +
+            $"States={_allStates.Count}; Counters={_allCounters.Count}; " +
+            $"Operators={_allOperators.Count}; ProcessValues={_processMessages.Count}; " +
+            $"Warnings={_analyticsErrors.Count}");
+        if (_analyticsErrors.Count > 0)
+            _logger.Warning($"MESORD DATA_PARTIAL: Order={_orderNumber}; MissingOrFailedSources={_analyticsErrors.Count}");
         _operationSelector.SelectionChanged -= OperationChanged;
         _operationSelector.Items.Clear();
         _operationSelector.Items.Add(new OperationChoice { Caption = "Celá zakázka" });
@@ -309,7 +324,7 @@ public sealed partial class MesOrderHistoryView
 
         // MESORD v6.3: diagnostic row intentionally hidden from production UI.
         if (_analyticsErrors.Count > 0)
-            _analyticsPanel.Children.Add(Label("Neúplná data: " + string.Join(" | ", _analyticsErrors.Distinct())));
+            _analyticsPanel.Children.Add(Label(MesordText("Neúplná data:") + " " + string.Join(" | ", _analyticsErrors.Distinct())));
         if (selection != null && !string.IsNullOrEmpty(selection.Code))
             _analyticsPanel.Children.Add(Label("Poznámka: stavy a čítače nemají ve zdrojových záznamech číslo operace. Přiřazení k operaci vychází z překryvu výrobních intervalů a pracoviště."));
 

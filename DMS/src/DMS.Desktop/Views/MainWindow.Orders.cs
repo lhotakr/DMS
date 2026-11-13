@@ -10,7 +10,8 @@ public partial class MainWindow
     {
         WorkspacePanel.Children.Clear();
         WorkspacePanel.Children.Add(new DMS.Desktop.Views.Orders.MesOrderHistoryView(
-            orderNumber, _appSettings.ConfigurationRootPath, _logger));
+            orderNumber, _appSettings.ConfigurationRootPath, _logger,
+            _currentUser.DisplayName, key => T(key), _localizationService.ActiveCulture));
         ResetWorkspaceScroll();
     }
     private void RenderOrderOverview()

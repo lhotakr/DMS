@@ -26,19 +26,25 @@ public sealed partial class MesOrderHistoryView : UserControl
     private readonly DataGrid _operations = new() { AutoGenerateColumns = false, IsReadOnly = true, CanUserAddRows = false, MinHeight = 180 };
     private bool _loaded;
 
-    public MesOrderHistoryView(string orderNumber, string configurationRootPath, DmsLogger logger)
+    public MesOrderHistoryView(string orderNumber, string configurationRootPath, DmsLogger logger,
+        string? userDisplayName = null, Func<string,string>? translate = null,
+        string? selectedCulture = null)
     {
+        _mesordUserDisplayName = userDisplayName ?? string.Empty;
+        _mesordTranslator = translate;
+        _mesordCulture = string.IsNullOrWhiteSpace(selectedCulture)
+            ? System.Globalization.CultureInfo.CurrentUICulture.Name : selectedCulture;
         _orderNumber = (orderNumber ?? string.Empty).Trim();
         _configRoot = configurationRootPath;
         _logger = logger;
         _calendar.SetResourceReference(FrameworkElement.StyleProperty, "DmsMesOrderCalendarStyle");
         var root = new StackPanel { Margin = new Thickness(18) };
-        root.Children.Add(new TextBlock { Text = "MESORD – historie výrobní zakázky", FontSize = 23, FontWeight = FontWeights.SemiBold });
+        root.Children.Add(new TextBlock { Text = MesordText("Historie výrobní zakázky"), FontSize = 23, FontWeight = FontWeights.SemiBold });
         root.Children.Add(_plantInfo);
         root.Children.Add(_status);
         root.Children.Add(_summary);
         root.Children.Add(_quantityCard);
-        root.Children.Add(new TextBlock { Text = "Operace zakázky", FontSize = 18, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 8) });
+        root.Children.Add(new TextBlock { Text = MesordText("Operace zakázky"), FontSize = 18, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 12, 0, 8) });
         AddColumn("Operace", nameof(MesProductionOrderOperationRecord.OperationCode));
         AddColumn("Pracoviště", nameof(MesProductionOrderOperationRecord.WorkcenterCode));
         AddColumn("Popis", nameof(MesProductionOrderOperationRecord.Description));
@@ -49,10 +55,7 @@ public sealed partial class MesOrderHistoryView : UserControl
         root.Children.Add(_operations);
         root.Children.Add(_analyticsPanel);
         // MESORD ToDo 2026-11-06: removed outdated reporting-source warning.
-        root.Children.Add(new TextBlock {
-            Text = "Intercompany: vazba na zakázku závodu 9200 a evidence kvality jsou připraveny jako samostatné rozšíření, nikoli jako změna dat FASTEC.",
-            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 8)
-        });
+
         Content = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = root };
         Loaded += async (_, _) => { if (_loaded) return; _loaded = true; await LoadAsync(); };
     }
@@ -65,7 +68,7 @@ public sealed partial class MesOrderHistoryView : UserControl
 
         _operations.Columns.Add(new DataGridTextColumn
         {
-            Header = header, Binding = binding,
+            Header = MesordText(header), Binding = binding,
             Width = new DataGridLength(1, DataGridLengthUnitType.Star)
         });
     }
