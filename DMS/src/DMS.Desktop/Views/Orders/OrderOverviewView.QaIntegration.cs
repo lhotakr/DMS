@@ -1,6 +1,7 @@
 using DMS.Core.Quality;
 using DMS.Core.Sap;
 using DMS.Desktop.UI;
+using DMS.Desktop.Views.QualityOrders;
 using DMS.Integration.Mes.Orders;
 using System.Windows;
 using System.Windows.Controls;
@@ -109,21 +110,24 @@ public partial class OrderOverviewView
                     "ORD10", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            if (row.QaActionLabel == T("ORD10.QA.Pending", "Čeká na QA"))
-            {
-                DmsMessage.Show(T("ORD10.QA.AlreadyPending", "Požadavek již čeká na převzetí kvalitou."),
-                    "ORD10", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-            var reply = DmsMessage.Show(
-                $"{T("ORD10.QA.Confirm", "Předat zakázku kvalitě?")}\n2000: {row.OrderCode}\nSAP: {row.SapArticleNumber}\n{T("ORD10.QA.Quantity", "Cíl")}: {row.TargetQuantity:N0}",
-                "ORD10", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (reply != MessageBoxResult.Yes) return;
-            var created = _qaRegistrationStore.Register(row.OrderCode, row.SapArticleNumber, row.TargetQuantity, _user);
+            var existing = _qaRegistrationStore.Load().FirstOrDefault(item =>
+                string.Equals(item.Order2000, row.OrderCode, StringComparison.OrdinalIgnoreCase));
+            var created = _qaRegistrationStore.Register(
+                row.OrderCode, row.SapArticleNumber, row.TargetQuantity, _user, row.ProductCode);
+            if (existing is null)
+                _logger.AuditCreated("ORD10", "MesQaRegistration", created.Order2000, _user,
+                    $"Action=Register; Sap={created.SapMaterialNumber}; MesProduct={created.MesProductCode}; TargetQuantity={created.TargetQuantity}; Status=Pending");
             row.QaActionLabel = T("ORD10.QA.Pending", "Čeká na QA");
             GridOrders.Items.Refresh();
-            _logger.AuditCreated("ORD10", "MesQaRegistration", created.Order2000, _user,
-                $"Action=Register; Sap={created.SapMaterialNumber}; TargetQuantity={created.TargetQuantity}; Status=Pending");
+            var dialog = new MesQaRegistrationWindow(_dataRootPath, _logger, _user, _translate, row.OrderCode)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            dialog.ShowDialog();
+            EnrichOrdersForQaAndSap(new[] { row });
+            GridOrders.Items.Refresh();
+            if (!string.IsNullOrWhiteSpace(dialog.AcceptedOrder9200) && _openQualityOrder is not null)
+                _openQualityOrder(dialog.AcceptedOrder9200);
         }
         catch (Exception ex)
         {

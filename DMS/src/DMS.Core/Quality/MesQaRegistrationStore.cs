@@ -9,6 +9,8 @@ public sealed class MesQaRegistration
     public string Order2000 { get; set; } = string.Empty;
     public string Order9200 { get; set; } = string.Empty;
     public string SapMaterialNumber { get; set; } = string.Empty;
+    /// <summary>Original MES product/print version (e.g. 0112345.100.99001).</summary>
+    public string MesProductCode { get; set; } = string.Empty;
     public decimal TargetQuantity { get; set; }
     public string Status { get; set; } = "Pending";
     public string RegisteredBy { get; set; } = string.Empty;
@@ -60,7 +62,7 @@ public sealed class MesQaRegistrationStore
         return result;
     }
 
-    public MesQaRegistration Register(string order2000, string sapMaterial, decimal targetQuantity, string user)
+    public MesQaRegistration Register(string order2000, string sapMaterial, decimal targetQuantity, string user, string mesProductCode = "")
     {
         if (string.IsNullOrWhiteSpace(order2000)) throw new ArgumentException("MES order 2000 is required.");
         if (targetQuantity <= 0 || decimal.Truncate(targetQuantity) != targetQuantity || targetQuantity > int.MaxValue)
@@ -74,11 +76,20 @@ public sealed class MesQaRegistrationStore
                 if (existing.TargetQuantity != targetQuantity ||
                     !string.Equals(existing.SapMaterialNumber, sapMaterial?.Trim(), StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("Registration already exists with different MES data. Resolve it in Quality.");
+                var incomingCode = mesProductCode?.Trim() ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(existing.MesProductCode) &&
+                    !string.IsNullOrWhiteSpace(incomingCode) &&
+                    !string.Equals(existing.MesProductCode.Trim(), incomingCode, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Existing registration references another MES print version.");
+                // Backward-compatible enrichment of pending records created by v1.2.
+                if (string.IsNullOrWhiteSpace(existing.MesProductCode))
+                    existing.MesProductCode = incomingCode;
                 return existing;
             }
             var request = new MesQaRegistration
             {
                 Order2000 = order2000.Trim(), SapMaterialNumber = sapMaterial?.Trim() ?? "",
+                MesProductCode = mesProductCode?.Trim() ?? "",
                 TargetQuantity = targetQuantity, RegisteredBy = user, RegisteredAt = DateTime.Now
             };
             rows.Add(request);
