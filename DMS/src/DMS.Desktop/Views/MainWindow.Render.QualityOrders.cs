@@ -1,4 +1,4 @@
-﻿using DMS.Desktop.Views.QualityOrders;
+using DMS.Desktop.Views.QualityOrders;
 
 namespace DMS.Desktop.Views;
 
@@ -53,6 +53,8 @@ public partial class MainWindow
         view.TransactionRequested += ExecuteTransactionFromView;
         WorkspacePanel.Children.Add(view);
 
+        ShowQaMesLivePanel(query);
+
         _logger.AdminAction(
             "QO02",
             "OpenQualityOrderEdit",
@@ -85,6 +87,8 @@ public partial class MainWindow
         view.TransactionRequested += ExecuteTransactionFromView;
         WorkspacePanel.Children.Add(view);
 
+        ShowQaMesLivePanel(query);
+
         _logger.AdminAction(
             "QO03",
             "OpenQualityOrderDisplay",
@@ -106,6 +110,7 @@ public partial class MainWindow
             translateFormat: (key, args) => T(key, args));
 
         view.TransactionRequested += ExecuteTransactionFromView;
+        view.ConfigureMesLive(_appSettings.ConfigurationRootPath);
         WorkspacePanel.Children.Add(view);
 
         _logger.AdminAction(
@@ -139,6 +144,8 @@ public partial class MainWindow
 
         view.TransactionRequested += ExecuteTransactionFromView;
         WorkspacePanel.Children.Add(view);
+
+        ShowQaMesLivePanel(query);
 
         _logger.AdminAction(
             "QO06",

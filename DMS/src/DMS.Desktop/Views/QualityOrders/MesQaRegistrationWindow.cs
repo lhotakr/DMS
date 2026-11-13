@@ -26,6 +26,11 @@ public sealed class MesQaRegistrationWindow : Window
         Width = 240, TextWrapping = TextWrapping.Wrap,
         VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0)
     };
+    private readonly TextBlock _assignedArticle = new()
+    {
+        Width = 310, TextWrapping = TextWrapping.Wrap,
+        VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0)
+    };
 
     public MesQaRegistrationWindow(string dmsDataRoot, DmsLogger? logger, string user, Func<string, string>? translate = null, string? selectedOrder2000 = null)
     {
@@ -54,6 +59,9 @@ public sealed class MesQaRegistrationWindow : Window
         fields.Children.Add(_order9200);
         fields.Children.Add(new TextBlock { Text = L("QO.MES.PrintVersion", "Tisková verze") + ":", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,6,0) });
         fields.Children.Add(_printVersion);
+        fields.Children.Add(new TextBlock { Text = L("QO.MES.AssignedArticle", "Přiřazený artikl") + ":",
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,6,0) });
+        fields.Children.Add(_assignedArticle);
         _grid.SelectionChanged += (_, _) => UpdateDetectedPrintVersion();
         var btn = new Button { Content = L("QO.MES.Accept", "Převzít do QA"), Padding = new Thickness(12, 5, 12, 5) };
         btn.Click += (_, _) => AcceptSelected(); fields.Children.Add(btn);
@@ -74,8 +82,33 @@ public sealed class MesQaRegistrationWindow : Window
     {
         _grid.Columns.Add(new DataGridTextColumn
         {
-            Header = L(key, fallback), Binding = new Binding(property), Width = new DataGridLength(width)
+            Header = L(key, fallback),
+            Binding = new Binding(property)
+            {
+                StringFormat = property == "TargetQuantity" ? "N0" :
+                    property == "RegisteredAt" ? "dd.MM.yyyy HH:mm" : null,
+                Converter = property == "Status" ? new RegistrationStatusConverter(this) : null
+            },
+            Width = new DataGridLength(width)
         });
+    }
+
+    private sealed class RegistrationStatusConverter : System.Windows.Data.IValueConverter
+    {
+        private readonly MesQaRegistrationWindow _owner;
+        public RegistrationStatusConverter(MesQaRegistrationWindow owner) => _owner = owner;
+        public object Convert(object value, Type targetType, object parameter,
+            System.Globalization.CultureInfo culture)
+        {
+            var status = value?.ToString() ?? string.Empty;
+            return status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
+                ? _owner.L("QO.MES.Status.Accepted", "Převzato")
+                : status.Equals("Pending", StringComparison.OrdinalIgnoreCase)
+                    ? _owner.L("QO.MES.Status.Pending", "Čeká") : status;
+        }
+        public object ConvertBack(object value, Type targetType, object parameter,
+            System.Globalization.CultureInfo culture) =>
+            throw new NotSupportedException();
     }
 
     private string L(string key, string fallback)
@@ -174,37 +207,65 @@ public sealed class MesQaRegistrationWindow : Window
             DmsConfirmDialog.ShowInfo(this, "QA", L("QO.MES.AcceptFailed", "Převzetí selhalo: ") + ex.Message);
         }
     }
-    // MES 0112345.100.99001 and QA 0112345100.99001 represent the same print version.
-    // Preserve leading zeros and reject ambiguous matches; do not guess a print version.
+    // QA and MES occasionally omit the optional leading 01. Never select a
+    // version by string resemblance alone when several candidates exist.
     private static string CanonicalVersion(string? value) =>
-        new string((value ?? string.Empty).Where(c => c != '.' && c != ' ' && c != '-').ToArray())
-            .ToUpperInvariant();
+        new string((value ?? string.Empty)
+            .Where(c => c != '.' && c != ' ' && c != '-')
+            .ToArray()).ToUpperInvariant();
+
+    private static bool SamePrintVersion(string? left, string? right)
+    {
+        var a = CanonicalVersion(left);
+        var b = CanonicalVersion(right);
+        if (a.Length == 0 || b.Length == 0) return false;
+        return a == b ||
+            (a.StartsWith("01", StringComparison.Ordinal) && a.Substring(2) == b) ||
+            (b.StartsWith("01", StringComparison.Ordinal) && b.Substring(2) == a);
+    }
+
+    private static string CanonicalSap(string? value)
+    {
+        var v = (value ?? string.Empty).Trim();
+        if (v.Length == 0) return string.Empty;
+        if (v.All(char.IsDigit))
+        {
+            var noZeros = v.TrimStart('0');
+            return noZeros.Length == 0 ? "0" : noZeros;
+        }
+        return v.ToUpperInvariant();
+    }
 
     private QualityPrintVersion ResolvePrintVersion(MesQaRegistration row)
     {
-        var all = _repository.LoadPrintVersions().ToList();
-        var code = CanonicalVersion(row.MesProductCode);
-        var matches = string.IsNullOrWhiteSpace(code)
-            ? new List<QualityPrintVersion>()
-            : all.Where(item =>
-                CanonicalVersion(item.FullPrintVersionNumber) == code ||
-                CanonicalVersion(item.LegacyArticleNumber) == code).ToList();
-        // Old v1.2 requests contain no MES product code: only use an unambiguous SAP match.
-        if (matches.Count == 0 && string.IsNullOrWhiteSpace(code))
-        {
-            var sap = (row.SapMaterialNumber ?? string.Empty).Trim();
-            if (!string.IsNullOrWhiteSpace(sap))
-                matches = all.Where(item =>
-                    string.Equals(item.SapMaterialNumber?.Trim(), sap, StringComparison.OrdinalIgnoreCase)).ToList();
-        }
-        matches = matches.GroupBy(item => item.FullPrintVersionNumber, StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.First()).ToList();
-        if (matches.Count == 1) return matches[0];
-        if (matches.Count == 0)
-            throw new InvalidOperationException(L("QO.MES.AutoVersionMissing",
-                "Tisková verze z MES nebyla v QA jednoznačně nalezena. Zkontroluj evidenci tiskových verzí."));
-        throw new InvalidOperationException(L("QO.MES.AutoVersionAmbiguous",
-            "Pro artikl MES existuje více tiskových verzí. Převzetí bylo zastaveno."));
+        var all = _repository.LoadPrintVersions()
+            .Where(x => !string.IsNullOrWhiteSpace(x.FullPrintVersionNumber))
+            .GroupBy(x => x.FullPrintVersionNumber, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First()).ToList();
+        var sap = CanonicalSap(row.SapMaterialNumber);
+        var mesCode = row.MesProductCode;
+
+        // Prefer exact SAP identity; use print-version code to disambiguate SAP
+        // materials that have more than one print version.
+        var sapMatches = sap.Length == 0 ? new List<QualityPrintVersion>() :
+            all.Where(x => CanonicalSap(x.SapMaterialNumber) == sap).ToList();
+        var candidates = sapMatches.Count > 0 ? sapMatches : all;
+        var codeMatches = candidates.Where(x =>
+            SamePrintVersion(x.FullPrintVersionNumber, mesCode) ||
+            SamePrintVersion(x.LegacyArticleNumber, mesCode)).ToList();
+
+        if (codeMatches.Count == 1) return codeMatches[0];
+        if (codeMatches.Count > 1)
+            throw new InvalidOperationException(L("QO.MES.AutoVersionAmbiguous",
+                "Bylo nalezeno více tiskových verzí. Převzetí bylo zastaveno."));
+        // If the SAP material is unique in QA, MES product formatting does not
+        // invalidate the otherwise unambiguous material identity.
+        if (sapMatches.Count == 1) return sapMatches[0];
+        if (sapMatches.Count > 1)
+            throw new InvalidOperationException(L("QO.MES.MultipleSapVersions",
+                "SAP artikl má více tiskových verzí. Upřesni evidenci QA."));
+        throw new InvalidOperationException(L("QO.MES.AutoVersionMissing",
+            "Nebyla nalezena odpovídající tisková verze podle SAP čísla ani kódu MES."));
     }
 
     private void UpdateDetectedPrintVersion()
@@ -212,16 +273,23 @@ public sealed class MesQaRegistrationWindow : Window
         if (_grid.SelectedItem is not MesQaRegistration row)
         {
             _printVersion.Text = "—";
+            _assignedArticle.Text = "—";
             return;
         }
         try
         {
-            _printVersion.Text = ResolvePrintVersion(row).FullPrintVersionNumber;
+            var version = ResolvePrintVersion(row);
+            _printVersion.Text = version.FullPrintVersionNumber;
+            var sap = string.IsNullOrWhiteSpace(version.SapMaterialNumber)
+                ? row.SapMaterialNumber : version.SapMaterialNumber;
+            _assignedArticle.Text =
+                (string.IsNullOrWhiteSpace(sap) ? "—" : sap) +
+                (string.IsNullOrWhiteSpace(version.Title) ? "" : " · " + version.Title);
         }
-        catch
+        catch (InvalidOperationException ex)
         {
-            _printVersion.Text = L("QO.MES.AutoVersionUnknown", "Nenalezeno – zkontroluj tiskovou verzi QA");
+            _printVersion.Text = L("QO.MES.AutoVersionUnknown", "Nenalezeno");
+            _assignedArticle.Text = ex.Message;
         }
     }
-
 }

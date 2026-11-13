@@ -11,7 +11,7 @@ namespace DMS.Integration.Mes.Orders;
 /// Operation source: dbo.d_pda_po_routing.
 /// Actual workcenter is resolved from the analytical MDA history when available.
 /// </summary>
-public sealed class MesOrderOverviewDataService
+public sealed partial class MesOrderOverviewDataService
 {
     private readonly object _settings;
     private readonly string _analyticsSchema;
