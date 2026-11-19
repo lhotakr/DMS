@@ -1,4 +1,5 @@
-﻿using DMS.Integration.Mes.Database;
+using DMS.Integration.Mes.Database;
+using DMS.Integration.Mes.Reporting.Definitions;
 using DMS.Integration.Mes.Reporting.Models;
 using Microsoft.Data.SqlClient;
 
@@ -10,10 +11,12 @@ public sealed class MesReportingDataService
     private readonly MesDatabaseConnectionSettings _settings;
     private readonly IMesSqlConnectionFactory _connectionFactory;
     private readonly string _schema;
+    private readonly string? _overridePath;
 
     public MesReportingDataService(
         MesDatabaseConnectionSettings settings,
-        IMesSqlConnectionFactory? connectionFactory = null)
+        IMesSqlConnectionFactory? connectionFactory = null,
+        string? overrideFilePath = null)
     {
         _settings =
             settings
@@ -28,6 +31,7 @@ public sealed class MesReportingDataService
         _schema =
             MesConnectionHealthService.ValidateIdentifier(
                 _settings.ReportingSchema);
+        _overridePath = overrideFilePath;
     }
 
     public async Task<IReadOnlyList<MesWorkcenterRecord>> GetWorkcentersAsync(
@@ -139,6 +143,9 @@ public sealed class MesReportingDataService
             ORDER BY mes.Starttime DESC;
             """;
 
+        if (!string.IsNullOrWhiteSpace(_overridePath))
+            command.CommandText = MesSqlOverrideCatalog.Resolve(_overridePath, "PRODUCTION", command.CommandText, _schema);
+
         AddCommonParameters(
             command,
             filter);
@@ -246,6 +253,9 @@ public sealed class MesReportingDataService
             ORDER BY stateFact.Starttime DESC;
             """;
 
+        if (!string.IsNullOrWhiteSpace(_overridePath))
+            command.CommandText = MesSqlOverrideCatalog.Resolve(_overridePath, "STATES", command.CommandText, _schema);
+
         AddCommonParameters(
             command,
             filter);
@@ -338,6 +348,9 @@ public sealed class MesReportingDataService
                 AND (@productCode = N'' OR op.ProductCode = @productCode)
             ORDER BY counterFact.Timestamp DESC;
             """;
+
+        if (!string.IsNullOrWhiteSpace(_overridePath))
+            command.CommandText = MesSqlOverrideCatalog.Resolve(_overridePath, "COUNTERS", command.CommandText, _schema);
 
         AddCommonParameters(
             command,

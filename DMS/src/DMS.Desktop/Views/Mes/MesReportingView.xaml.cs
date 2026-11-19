@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.IO;
 
 namespace DMS.Desktop.Views.Mes;
 
@@ -426,8 +427,7 @@ public partial class MesReportingView
                 _settingsPath);
 
         var reportingService =
-            new MesReportingDataService(
-                _settings);
+            new MesReportingDataService(_settings, overrideFilePath: MesSqlOverrideCatalog.FilePath(Path.GetDirectoryName(_settingsPath) ?? "."));
 
         var workcenters =
             await reportingService
@@ -685,8 +685,7 @@ public partial class MesReportingView
         try
         {
             var service =
-                new MesReportingDataService(
-                    _settings);
+                new MesReportingDataService(_settings, overrideFilePath: MesSqlOverrideCatalog.FilePath(Path.GetDirectoryName(_settingsPath) ?? "."));
 
             _mes06CounterReportMode =
                 IsProductionReport(

@@ -587,6 +587,7 @@ public partial class MainWindow : Window
         definitions = DMS.Core.Administration.DmsThemeDesignerTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Recipes.RecipeImportTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Mes.MesReportingTransactionDefinitions.AddMissing(definitions);
+        definitions = DMS.Core.Administration.DmsDataCatalogTransactionDefinitions.AddMissing(definitions);
         definitions = DMS.Core.Scheduling.ScheduledJobsTransactionDefinitions.AddMissing(definitions);
         definitions = WorkLogTransactionDefinitions.AddMissing(definitions);
 
@@ -616,6 +617,7 @@ public partial class MainWindow : Window
     new SimpleMessageTransactionHandler("TransactionManagement", "Správa transakcí"),
     new SimpleMessageTransactionHandler("RoleManagement", "Správa rolí"),
     new SimpleMessageTransactionHandler("ModuleManagement", "Správa modulů"),
+    new SimpleMessageTransactionHandler("DataSourceCatalog", "Datové zdroje a SQL dotazy"),
     new SimpleMessageTransactionHandler("ThemeDesigner", "Theme & UI Designer"),
     new SimpleMessageTransactionHandler("UserManagement", "Správa uživatelů"),
     new SimpleMessageTransactionHandler("LogViewer", "Log aplikace"),
@@ -1502,6 +1504,10 @@ public partial class MainWindow : Window
 
             case "SYS13":
                 RenderModuleManagement();
+                break;
+
+            case "SYS15":
+                RenderDataSourceAdministration();
                 break;
 
 

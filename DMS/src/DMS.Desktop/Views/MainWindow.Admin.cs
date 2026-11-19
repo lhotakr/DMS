@@ -1,4 +1,4 @@
-﻿using DMS.Desktop.Configuration.SystemSettings;
+using DMS.Desktop.Configuration.SystemSettings;
 using DMS.Desktop.Services.MasterData;
 using DMS.Desktop.Views.Admin;
 using DMS.Desktop.Views.MasterData;
@@ -240,5 +240,21 @@ public partial class MainWindow
         ApplyLocalization();
 
         _logger.Info("Lokalizace byla znovu načtena po uložení v SYS01.");
+    }
+
+    private void RenderDataSourceAdministration()
+    {
+        if (!_currentUser.HasAnyRole(new[] { "DMS_ADMIN" }))
+        {
+            _logger.Warning("SYS15 access denied: administrator role is required.");
+            return;
+        }
+        WorkspacePanel.Children.Clear();
+        WorkspacePanel.Children.Add(new DataSourceAdministrationView(
+            _appSettings.ConfigurationRootPath,
+            _logger,
+            _currentUser.DisplayName,
+            key => T(key)));
+        ResetWorkspaceScroll();
     }
 }
