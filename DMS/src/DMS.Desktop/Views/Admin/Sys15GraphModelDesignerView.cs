@@ -190,7 +190,7 @@ public sealed class Sys15GraphModelDesignerView : UserControl
         left.Children.Add(MakeButton(T("SYS15.Graph.AddNode", "Přidat do modelu"), (_, _) => AddNode()));
         left.Children.Add(new TextBlock
         {
-            Text = T("SYS15.Graph.Limits", "MES načítá pouze strukturu SQL. XLSX / CSV / JSON načítají názvy sloupců. Zdrojová data ani hesla se do modelu neukládají."),
+            Text = T("SYS15.Graph.LimitsV03", "MES, soubory, QA a SAP cache: načtení struktury a omezený náhled. Do modelu se neukládají hodnoty ani hesla."),
             TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0), Opacity = .8
         });
         _sourceChoice.Margin = new Thickness(0, 4, 0, 8);
@@ -201,7 +201,12 @@ public sealed class Sys15GraphModelDesignerView : UserControl
             _sourceDetail.Text = string.Empty;
             if (_sourceChoice.SelectedItem is DmsDataSourceEntry src)
             {
-                _sourceDetail.Text = $"{src.Kind}  ·  {src.Location}";
+                _sourceDetail.Text = src.Kind switch
+                {
+                    "SAP_CACHE" => T("SYS15.Graph.SapSourcePathV03", "SAP cache: SapMirror, fallback Data"),
+                    "QA_JSON" => T("SYS15.Graph.QaSourcePathV03", "QA: Data/Quality"),
+                    _ => $"{src.Kind}  ·  {src.Location}"
+                };
                 if (_tableCache.TryGetValue(src.Code, out var cached))
                 {
                     _tableChoice.ItemsSource = cached;
@@ -489,6 +494,7 @@ public sealed class Sys15GraphModelDesignerView : UserControl
             List<SchemaTable> tables;
             if (entry.Kind == "MES_SQL") tables = await ReadMesSchemaAsync();
             else if (entry.Kind is "XLSX" or "CSV" or "JSON") tables = await Task.Run(() => ReadFileSchema(entry));
+            else if (entry.Kind is "QA_JSON" or "SAP_CACHE") tables = await Task.Run(() => ReadInternalSchema(entry));
             else throw new InvalidOperationException(T("SYS15.Graph.Unsupported", "Pro tento zdroj zatím není dostupný prohlížeč struktury."));
             if (_sourceChoice.SelectedItem is not DmsDataSourceEntry actual || actual.Code != entry.Code) return;
             _tableCache[entry.Code] = tables;
@@ -556,8 +562,9 @@ public sealed class Sys15GraphModelDesignerView : UserControl
             foreach (var sheet in workbook.Worksheets.Take(100))
             {
                 var used = sheet.FirstRowUsed();
-                var headers = used?.CellsUsed().Take(150).Select((c, i) => string.IsNullOrWhiteSpace(c.GetString()) ? $"Column_{i + 1}" : c.GetString().Trim()).ToArray()
-                    ?? Array.Empty<string>();
+                var headers = used is null ? Array.Empty<string>() :
+                    MakeUniqueColumnNames(used.CellsUsed().Take(150)
+                        .Select(c => c.GetString()), 150).ToArray();
                 AddSchema(result, sheet.Name, headers);
             }
         }
@@ -579,12 +586,109 @@ public sealed class Sys15GraphModelDesignerView : UserControl
         return result;
     }
 
+    // File formats may legitimately contain repeated column headings (for example SAP exports).
+    // Do not drop those fields: assign a stable display name in source-column order.
+    private static List<string> MakeUniqueColumnNames(IEnumerable<string?> rawNames, int maximum)
+    {
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var names = new List<string>();
+        foreach (var raw in rawNames.Take(maximum))
+        {
+            var name = string.IsNullOrWhiteSpace(raw) ? $"Column_{names.Count + 1}" : raw.Trim();
+            if (name.Length > 170) name = name.Substring(0, 170);
+            var candidate = name;
+            var suffix = 2;
+            while (!used.Add(candidate)) candidate = $"{name} ({suffix++})";
+            names.Add(candidate);
+        }
+        return names;
+    }
+
     private static void AddSchema(List<SchemaTable> tables, string name, IEnumerable<string> columns)
     {
-        var unique = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var items = columns.Select((s, i) => string.IsNullOrWhiteSpace(s) ? $"Column_{i+1}" : s.Trim())
-            .Where(s => unique.Add(s)).Take(150).Select(s => new DmsGraphColumn { Name = s, DataType = "Text" }).ToList();
-        if (items.Count > 0 && !tables.Any(t => t.Name == name)) tables.Add(new SchemaTable { Name = name, Columns = items });
+        var items = MakeUniqueColumnNames(columns, 150)
+            .Select(x => new DmsGraphColumn { Name = x, DataType = "Text" }).ToList();
+        if (items.Count > 0 && !tables.Any(t => t.Name == name))
+            tables.Add(new SchemaTable { Name = name, Columns = items });
+    }
+
+    // Internal adapters reuse the active DMS environment, not paths supplied by the graph.
+    // The model stores only table names/columns, never data or credentials.
+    private string InternalRoot => Path.GetFullPath(Path.Combine(_configRoot, ".."));
+
+    private IReadOnlyList<string> InternalFiles(DmsDataSourceEntry source)
+    {
+        var root = InternalRoot;
+        if (source.Kind == "QA_JSON")
+        {
+            var folder = Path.Combine(root, "Data", "Quality");
+            if (!Directory.Exists(folder)) return Array.Empty<string>();
+            return Directory.EnumerateFiles(folder, "*.json", SearchOption.TopDirectoryOnly)
+                .Where(p => Path.GetFileName(p).StartsWith("quality-", StringComparison.OrdinalIgnoreCase) ||
+                            Path.GetFileName(p).Equals("mes-qa-registrations.json", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(Path.GetFileName).Take(100).ToArray();
+        }
+        if (source.Kind == "SAP_CACHE")
+        {
+            var primary = Path.Combine(root, "SapMirror");
+            var fallback = Path.Combine(root, "Data");
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            // SapMirror wins for duplicate filenames, exactly as SapStoragePaths does.
+            foreach (var folder in new[] { primary, fallback })
+            {
+                if (!Directory.Exists(folder)) continue;
+                foreach (var file in Directory.EnumerateFiles(folder, "sap-*.json", SearchOption.TopDirectoryOnly))
+                    result.TryAdd(Path.GetFileName(file), file);
+            }
+            return result.Values.OrderBy(Path.GetFileName).Take(100).ToArray();
+        }
+        throw new InvalidOperationException("Unsupported internal data source.");
+    }
+
+    private string ResolveInternalFile(DmsDataSourceEntry source, string objectName)
+    {
+        // Restrict to a filename present in the approved DMS source directory.
+        // This also prevents path traversal via malicious model metadata.
+        if (!string.Equals(Path.GetFileName(objectName), objectName, StringComparison.Ordinal) ||
+            !objectName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Invalid internal table name.");
+        return InternalFiles(source).FirstOrDefault(f =>
+            Path.GetFileName(f).Equals(objectName, StringComparison.OrdinalIgnoreCase))
+            ?? throw new FileNotFoundException("Internal DMS table was not found: " + objectName);
+    }
+
+    private List<SchemaTable> ReadInternalSchema(DmsDataSourceEntry source)
+    {
+        var result = new List<SchemaTable>();
+        foreach (var file in InternalFiles(source))
+        {
+            var info = new FileInfo(file);
+            if (info.Length > 20_000_000) continue; // avoid reading unbounded snapshots
+            using var input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var json = JsonDocument.Parse(input);
+            var sample = FirstJsonRecord(json.RootElement);
+            if (sample.ValueKind != JsonValueKind.Object) continue;
+            var cols = sample.EnumerateObject().Take(150)
+                .Select(x => new DmsGraphColumn { Name = x.Name, DataType = x.Value.ValueKind.ToString() }).ToList();
+            if (cols.Count == 0) continue;
+            result.Add(new SchemaTable { Name = Path.GetFileName(file), Columns = cols });
+        }
+        return result;
+    }
+
+    private static JsonElement FirstJsonRecord(JsonElement root)
+    {
+        if (root.ValueKind == JsonValueKind.Array)
+            return root.GetArrayLength() == 0 ? default : root[0];
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            // Support both plain arrays and wrapped snapshots (e.g. { Items: [...] }).
+            foreach (var property in root.EnumerateObject())
+                if (property.Value.ValueKind == JsonValueKind.Array && property.Value.GetArrayLength() > 0 &&
+                    property.Value[0].ValueKind == JsonValueKind.Object)
+                    return property.Value[0];
+        }
+        return root;
     }
 
     private void AddNode()
@@ -816,7 +920,9 @@ public sealed class Sys15GraphModelDesignerView : UserControl
             {
                 var table = source.Kind == "MES_SQL"
                     ? await LoadMesPreviewAsync(node, cts.Token)
-                    : await Task.Run(() => LoadFilePreview(source, node, cts.Token), cts.Token);
+                    : source.Kind is "QA_JSON" or "SAP_CACHE"
+                        ? await Task.Run(() => LoadInternalPreview(source, node, cts.Token), cts.Token)
+                        : await Task.Run(() => LoadFilePreview(source, node, cts.Token), cts.Token);
                 if (cts.IsCancellationRequested) return;
                 grid.ItemsSource = table.DefaultView;
                 status.Text = $"{T("SYS15.Graph.PreviewRows", "Načtené řádky")}: {table.Rows.Count} / 100  ·  {T("SYS15.Graph.ReadOnly", "Pouze pro čtení")}";
@@ -883,7 +989,9 @@ public sealed class Sys15GraphModelDesignerView : UserControl
                 ?? throw new InvalidOperationException("Worksheet not found in the source file.");
             var header = sheet.FirstRowUsed();
             if (header is null) return data;
-            var map = header.CellsUsed().Select((cell, i) => new { Name = string.IsNullOrWhiteSpace(cell.GetString()) ? $"Column_{i+1}" : cell.GetString().Trim(), Index = cell.Address.ColumnNumber })
+            var physical = header.CellsUsed().Take(150).ToList();
+            var names = MakeUniqueColumnNames(physical.Select(cell => cell.GetString()), 150);
+            var map = names.Select((name, i) => new { Name = name, Index = physical[i].Address.ColumnNumber })
                 .ToDictionary(x => x.Name, x => x.Index, StringComparer.OrdinalIgnoreCase);
             foreach (var row in sheet.RowsUsed().Where(r => r.RowNumber() > header.RowNumber()).Take(100))
             {
@@ -918,7 +1026,41 @@ public sealed class Sys15GraphModelDesignerView : UserControl
                     item.TryGetProperty(name, out var property) ? property.ToString() : ""));
             }
         }
-        else throw new InvalidOperationException("Preview is supported for MES, XLSX, CSV and JSON sources.");
+        else throw new InvalidOperationException("Preview is supported for MES, XLSX, CSV, JSON, SAP cache and QA sources.");
+        return data;
+    }
+
+    private DataTable LoadInternalPreview(DmsDataSourceEntry source, DmsGraphNode node, CancellationToken token)
+    {
+        var path = ResolveInternalFile(source, node.ObjectName);
+        var info = new FileInfo(path);
+        if (info.Length > 20_000_000)
+            throw new InvalidOperationException("Internal DMS source is larger than the 20 MB preview limit.");
+        var columns = node.Columns.Take(80).Select(c => c.Name).ToArray();
+        var data = CreatePreviewTable(columns);
+        using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var json = JsonDocument.Parse(input);
+        var root = json.RootElement;
+        JsonElement collection = root;
+        if (root.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in root.EnumerateObject())
+            {
+                if (property.Value.ValueKind == JsonValueKind.Array && property.Value.GetArrayLength() > 0 &&
+                    property.Value[0].ValueKind == JsonValueKind.Object)
+                { collection = property.Value; break; }
+            }
+        }
+        var records = collection.ValueKind == JsonValueKind.Array
+            ? collection.EnumerateArray().Take(100)
+            : new[] { collection }.AsEnumerable();
+        foreach (var record in records)
+        {
+            token.ThrowIfCancellationRequested();
+            if (record.ValueKind != JsonValueKind.Object) continue;
+            AddPreviewRow(data, columns.Select(name =>
+                record.TryGetProperty(name, out var property) ? property.ToString() : ""));
+        }
         return data;
     }
 
