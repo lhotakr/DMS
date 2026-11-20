@@ -62,6 +62,7 @@ public sealed class DataSourceAdministrationView : UserControl
         root.Children.Add(tabs);
         tabs.Items.Add(new TabItem { Header = T("SYS15.Tab.Sources", "Datové zdroje"), Content = BuildSources() });
         tabs.Items.Add(new TabItem { Header = T("SYS15.Tab.Sql", "Výchozí SQL dotazy MES06"), Content = BuildQueries() });
+        tabs.Items.Add(new TabItem { Header = T("SYS15.Graph.Tab", "DatovĂ© modely"), Content = new Sys15GraphModelDesignerView(_configRoot, _logger, _user, _translate) });
         ReloadSources();
         _queryChoice.SelectedIndex = 0;
         _logger.AdminAction("SYS15", "DATA_CATALOG_OPEN", _user, "Catalog and SQL editor opened");
