@@ -22,33 +22,9 @@ public sealed class SchedulerWorker
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
-        var settings =
-            await _settingsRepository.LoadAsync(
-                stoppingToken);
-
-        var runtime =
-            SchedulerRuntimeFactory.Create(
-                settings);
-
-        runtime.Logger.Write(
-            $"SERVICE_START Environment={settings.EnvironmentName}; DataRoot={settings.DataRoot}");
-
-        try
-        {
-            await runtime.Engine.RunLoopAsync(
-                TimeSpan.FromSeconds(
-                    settings.PollingSeconds),
-                stoppingToken);
-        }
-        catch (OperationCanceledException)
-            when (stoppingToken.IsCancellationRequested)
-        {
-            // Normal service shutdown.
-        }
-        finally
-        {
-            runtime.Logger.Write(
-                "SERVICE_STOP");
-        }
+        // SCHEDULER_STORAGE_FALLBACK_V101: retry when network storage disappears.
+        // The engine is suspended until required sources are readable again.
+        var settings = await _settingsRepository.LoadAsync(stoppingToken);
+        await SchedulerStorageRecovery.RunAsync(settings, "SERVICE", stoppingToken);
     }
 }

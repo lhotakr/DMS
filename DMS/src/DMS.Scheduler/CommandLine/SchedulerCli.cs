@@ -145,8 +145,7 @@ public static class SchedulerCli
         SchedulerSettings settings,
         bool background)
     {
-        var runtime = SchedulerRuntimeFactory.Create(settings);
-
+        // SCHEDULER_STORAGE_FALLBACK_V101: foreground/background share recovery.
         using var cts = new CancellationTokenSource();
 
         ConsoleCancelEventHandler? handler = null;
@@ -162,14 +161,10 @@ public static class SchedulerCli
             Console.CancelKeyPress += handler;
         }
 
-        runtime.Logger.Write(
-            $"USER_SCHEDULER_START Environment={settings.EnvironmentName}; DataRoot={settings.DataRoot}; Background={background}");
-
         try
         {
-            await runtime.Engine.RunLoopAsync(
-                TimeSpan.FromSeconds(settings.PollingSeconds),
-                cts.Token);
+            await SchedulerStorageRecovery.RunAsync(
+                settings, background ? "USER_BACKGROUND" : "USER_FOREGROUND", cts.Token);
         }
         catch (OperationCanceledException)
             when (cts.IsCancellationRequested)
@@ -180,7 +175,7 @@ public static class SchedulerCli
             if (handler is not null)
                 Console.CancelKeyPress -= handler;
 
-            runtime.Logger.Write("USER_SCHEDULER_STOP");
+
         }
 
         return 0;

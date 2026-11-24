@@ -19,21 +19,21 @@ public sealed class SchedulerRuntime
 public static class SchedulerRuntimeFactory
 {
     public static SchedulerRuntime Create(
-        SchedulerSettings settings)
+        SchedulerSettings settings,
+        SchedulerTextLogger? existingLogger = null)
     {
         ArgumentNullException.ThrowIfNull(settings);
 
         settings.Normalize();
 
-        Directory.CreateDirectory(
-            settings.SchedulerRoot);
+        // SCHEDULER_STORAGE_FALLBACK_V101: logger is ready BEFORE touching the share.
+        var logger = existingLogger ??
+            new SchedulerTextLogger(settings.LogPath, settings.LocalFallbackLogPath);
 
-        Directory.CreateDirectory(
-            settings.OutputPath);
+        SchedulerStorageRecovery.VerifyRequiredFiles(settings);
 
-        var logger =
-            new SchedulerTextLogger(
-                settings.LogPath);
+        Directory.CreateDirectory(settings.SchedulerRoot);
+        Directory.CreateDirectory(settings.OutputPath);
 
         var mesSettings =
             new MesDatabaseSettingsService()
@@ -117,54 +117,75 @@ public static class SchedulerRuntimeFactory
 
 public sealed class SchedulerTextLogger
 {
-    private readonly string _path;
+    private readonly string _primaryPath;
+    private readonly string _localPath;
     private readonly object _sync = new();
+    private bool _primaryUnavailable;
 
-    public SchedulerTextLogger(
-        string path)
+    public SchedulerTextLogger(string primaryPath, string? localPath = null)
     {
-        _path =
-            path
-            ?? throw new ArgumentNullException(
-                nameof(path));
+        _primaryPath = primaryPath ?? throw new ArgumentNullException(nameof(primaryPath));
+        _localPath = string.IsNullOrWhiteSpace(localPath)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "DMS", "Scheduler", "scheduler-fallback.log")
+            : localPath;
     }
 
-    public void Write(
-        string message)
+    public void Write(string message)
     {
-        var line =
-            $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} {message}";
-
-        Console.WriteLine(
-            line);
+        // SCHEDULER_STORAGE_FALLBACK_V101: best-effort dual write.
+        // Failure of a network log must NEVER abort a scheduled report.
+        var line = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} {message}";
+        try { Console.WriteLine(line); } catch { /* Console can be redirected/closed. */ }
 
         lock (_sync)
         {
-            var directory =
-                Path.GetDirectoryName(
-                    _path);
+            if (!TryAppend(_localPath, line, out var localError))
+                SafeConsoleError($"LOCAL_LOG_FAILED Path={_localPath}; Error={localError}");
 
-            if (!string.IsNullOrWhiteSpace(
-                    directory))
+            if (!TryAppend(_primaryPath, line, out var primaryError))
             {
-                Directory.CreateDirectory(
-                    directory);
+                if (!_primaryUnavailable)
+                {
+                    _primaryUnavailable = true;
+                    var notice = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} " +
+                        $"STORAGE_LOG_FALLBACK Primary={_primaryPath}; Local={_localPath}; Error={primaryError}";
+                    SafeConsoleError(notice);
+                    TryAppend(_localPath, notice, out _);
+                }
             }
-
-            // Allow background scheduler, Run-now and log viewers to coexist.
-            using var stream =
-                new FileStream(
-                    _path,
-                    FileMode.Append,
-                    FileAccess.Write,
-                    FileShare.ReadWrite);
-
-            using var writer =
-                new StreamWriter(
-                    stream);
-
-            writer.WriteLine(
-                line);
+            else if (_primaryUnavailable)
+            {
+                _primaryUnavailable = false;
+                var notice = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} STORAGE_LOG_RESTORED Primary={_primaryPath}";
+                SafeConsoleError(notice);
+                TryAppend(_localPath, notice, out _);
+                TryAppend(_primaryPath, notice, out _);
+            }
         }
+    }
+
+    private static bool TryAppend(string path, string line, out string? error)
+    {
+        error = null;
+        try
+        {
+            var dir = Path.GetDirectoryName(path);
+            if (!string.IsNullOrWhiteSpace(dir)) Directory.CreateDirectory(dir);
+            using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+            using var writer = new StreamWriter(stream);
+            writer.WriteLine(line);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"{ex.GetType().Name}: {ex.Message}";
+            return false;
+        }
+    }
+
+    private static void SafeConsoleError(string text)
+    {
+        try { Console.Error.WriteLine(text); } catch { /* Do not hide original errors. */ }
     }
 }

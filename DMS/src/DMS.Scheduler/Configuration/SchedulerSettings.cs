@@ -27,6 +27,25 @@ public sealed class SchedulerSettings
 
     public string OutputPath =>
         Path.Combine(SchedulerRoot, "Output");
+
+    // SCHEDULER_STORAGE_FALLBACK_V101: local to the running service account.
+    // Leave empty to use the account's LocalApplicationData directory.
+    public string LocalFallbackRoot { get; set; } = string.Empty;
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string LocalFallbackLogPath
+    {
+        get
+        {
+            var root = string.IsNullOrWhiteSpace(LocalFallbackRoot)
+                ? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
+                : Environment.ExpandEnvironmentVariables(LocalFallbackRoot.Trim());
+            if (string.IsNullOrWhiteSpace(root)) root = Path.GetTempPath();
+            if (string.IsNullOrWhiteSpace(LocalFallbackRoot))
+                root = Path.Combine(root, "DMS", "Scheduler");
+            return Path.Combine(root, "scheduler-fallback.log");
+        }
+    }
     public SmtpSettings Smtp { get; set; } = new();
     public SharePointSettings SharePoint { get; set; } = new();
 
