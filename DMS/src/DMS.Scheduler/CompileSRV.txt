@@ -1,0 +1,5 @@
+1) Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+
+2) run script Publish-Scheduler-Server2016.ps1
+
+3) That's it! The script will handle the rest of the publishing process for the Scheduler Server on Windows Server 2016. :D

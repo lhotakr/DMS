@@ -1,6 +1,7 @@
 using DMS.Scheduler.CommandLine;
 using DMS.Scheduler.Configuration;
 using DMS.Scheduler.ConsoleUi;
+using DMS.Scheduler.Service;
 using System.Text;
 
 namespace DMS.Scheduler;
@@ -13,6 +14,13 @@ internal static class Program
         // SCHEDULER_STARTUP_FALLBACK_V3
         try
         {
+
+        // DMS_SCHEDULER_WINDOWS_SERVICE_V102: Windows Service entry point.
+        if (args.Length > 0 &&
+            string.Equals(args[0], "service-host", StringComparison.OrdinalIgnoreCase))
+        {
+            return await SchedulerServiceHost.RunAsync(args.Skip(1).ToArray());
+        }
 
         Console.InputEncoding = Encoding.UTF8;
         Console.OutputEncoding = Encoding.UTF8;
@@ -39,7 +47,11 @@ internal static class Program
             string? diagnosticPath = null;
             try
             {
-                var local = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+                var isService = args.Length > 0 &&
+                    string.Equals(args[0], "service-host", StringComparison.OrdinalIgnoreCase);
+                var local = System.Environment.GetFolderPath(
+                    isService ? System.Environment.SpecialFolder.CommonApplicationData :
+                                System.Environment.SpecialFolder.LocalApplicationData);
                 if (string.IsNullOrWhiteSpace(local)) local = System.AppContext.BaseDirectory;
                 var folder = System.IO.Path.Combine(local, "DMS", "Scheduler");
                 System.IO.Directory.CreateDirectory(folder);
